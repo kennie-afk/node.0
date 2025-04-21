@@ -1,0 +1,462 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap');
+
+:root {
+    --primaryColor: linear-gradient(to right, rgba(138, 18, 18, 1), rgba(180, 50, 50, 0.7), rgba(255, 200, 200, 0.3));
+    --mainWhite: #fff;
+    --mainBlack: rgb(187, 162, 15);
+    --mainGrey: rgb(138, 18, 18);
+    --mainSpacing: 0.1rem;
+    --mainTransition: all 0.3s linear;
+    --gradientRed: linear-gradient(to right, rgba(138, 18, 18, 1), rgba(180, 50, 50, 0.7), rgba(255, 200, 200, 0.3));
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    color: var(--mainBlack);
+    background-size: 100% 100%;
+}
+
+/* --------------- Navbar ---------------- */
+.navbar {
+    position: sticky;
+    top: 0;
+    height: 66px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    background: var(--primaryColor);
+    z-index: 1;
+}
+
+
+.navbar-center {
+    width: 100%;
+    max-width: 1170px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+}
+
+h1 {
+    font-size: 48px;
+    font-weight: bold;
+    text-align: center;
+}
+
+h1 span {
+    color: var(--mainBlack);
+}
+
+h1 {
+    color: var(--mainWhite);
+   
+}
+
+.nav-icon {
+    font-size: 1.5rem;
+    color: var(--mainWhite);
+}
+
+.cart-btn {
+    position: relative;
+    cursor: pointer;
+}
+
+.cart-items {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--primaryColor);
+    padding: 0 5px;
+    border-radius: 30%;
+    color: var(--mainWhite);
+}
+
+/* --------------- Hero Section ---------------- */
+.hero {
+    min-height: calc(100vh - 60px);
+    background: url("images/bcg1.jpeg") center/cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.banner {
+    background: rgba(255, 255, 255, 0.5);
+    padding: 20px;
+    color: var(--mainBlack);
+    font-size: 40px;
+    font-weight: bold;
+    text-align: center;
+    width: 50%;
+    max-width: 800px;
+    margin: 100px auto 0;
+    border-radius: 10px;
+    position: relative;
+    z-index: 2;
+    backdrop-filter: blur(5px);
+    transition: transform 0.3s ease-in-out, color 0.3s ease-in-out, background-image 0.8s ease-in-out;
+    overflow: hidden;
+    word-wrap: break-word;
+    background-image: linear-gradient(to top, rgba(255, 255, 255, 0.5) 20%, transparent 80%);
+    background-size: 100% 300%;
+    background-position: bottom;
+    height: 200px;
+    padding: 20px;
+    padding-bottom: 60px;
+
+}
+
+/* Hover Effect - Background Image Appears */
+.banner:hover {
+    transform: translateY(-10px);
+    background-image: url(images/product-bg3.jpg);
+    background-size: cover;
+    background-position: bottom;
+    animation: bannerScroll 8s infinite alternate ease-in-out;
+    color: white;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+}
+
+.banner:hover .banner-title {
+    color: white;
+}
+
+.banner:not(:hover) .banner-title {
+    color: var(--mainBlack);
+}
+
+
+/* Banner Button Positioned Slightly Above the Border */
+.banner-btn {
+    padding: 1rem 3rem;
+    text-transform: uppercase;
+    letter-spacing: var(--mainSpacing);
+    font-size: 1rem;
+    background: var(--primaryColor);
+    color: var(--mainBlack);
+    border: 2px solid var(--primaryColor);
+    transition: var(--mainTransition);
+    cursor: pointer;
+    border-radius: 5px;
+    font-weight: bold;
+
+    position: absolute;
+    /* Positions button inside banner */
+    bottom: 10%;
+    /* Adjust this to move it higher or lower */
+    left: 50%;
+    transform: translateX(-50%);
+    /* Centers horizontally */
+}
+
+.banner-title {
+    transition: color 0.5s ease-in-out;
+}
+
+/* Button Hover Effect */
+.banner:hover .banner-btn {
+    background: rgba(0, 0, 0, 0.3);
+    color: white !important;
+    border: 2px solid white;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.6);
+}
+
+@media screen and (max-width: 768px) {
+    .banner {
+        width: 80%;
+        min-height: 200px;
+    }
+
+    .banner-btn {
+        font-size: 0.9rem;
+        padding: 0.8rem 2rem;
+        margin-bottom: 15px;
+        padding: 20px;
+        bottom: -15px;
+    }
+}
+
+/* Smooth Background Scrolling */
+@keyframes bannerScroll {
+    0% {
+        background-position: bottom;
+    }
+
+    100% {
+        background-position: top;
+    }
+}
+
+
+
+
+/* --------------- Products Section ---------------- */
+.products {
+    padding: 4rem 0;
+    background-image: var(--mainWhite);
+}
+
+.section-title h2 {
+    text-align: center;
+    font-size: 2.5rem;
+    margin-bottom: 5rem;
+    text-transform: capitalize;
+    letter-spacing: var(--mainSpacing);
+}
+
+.products-center {
+    width: 90vw;
+    margin: 0 auto;
+    max-width: 1170px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-column-gap: 1.5rem;
+    grid-row-gap: 2rem;
+}
+
+.img-container {
+    position: relative;
+    overflow: hidden;
+}
+
+.bag-btn {
+    position: absolute;
+    top: 70%;
+    right: 0;
+    background: var(--primaryColor);
+    border: none;
+    text-transform: uppercase;
+    padding: 0.5rem 0.75rem;
+    letter-spacing: var(--mainSpacing);
+    font-weight: bold;
+    transition: var(--mainTransition);
+    transform: translateX(101%);
+    cursor: pointer;
+}
+
+.bag-btn:hover {
+    color: var(--mainWhite);
+    
+}
+
+.fa-shopping-cart {
+    margin-right: 0.5rem;
+}
+
+.img-container:hover .bag-btn {
+    transform: translateX(0);
+}
+
+.product-img {
+    display: block;
+    width: 100%;
+    min-height: 12rem;
+    transition: var(--mainTransition);
+}
+
+
+
+
+/* Create a red color effect on hover */
+.img-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /*background: linear-gradient(to right, rgb(243, 176, 5), rgba(167, 122, 9, 0));*/
+    background: rgba(167, 122, 9, 0);
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.img-container:hover::after {
+    opacity: 0.4;
+    /* you can increase to 0.5 for stronger red */
+}
+.img-container:hover .product-img {
+    opacity: 0.5;
+}
+
+.product h3 {
+    text-transform: capitalize;
+    font-size: 1.1rem;
+    margin-top: 1rem;
+    letter-spacing: var(--mainSpacing);
+    text-align: center;
+}
+
+.product h4 {
+    margin-top: 0.7rem;
+    letter-spacing: var(--mainSpacing);
+    color: var(--primaryColor);
+    text-align: center;
+}
+
+/* --------------- Cart ---------------- */
+.cart-overlay {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    transition: var(--mainTransition);
+    background: linear-gradient(to left, rgba(138, 18, 18, 1), rgba(180, 50, 50, 0.7), rgba(255, 200, 200, 0.3));
+    z-index: 2;
+    visibility: hidden;
+}
+
+.cart {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    overflow: scroll;
+    z-index: 3;
+    background: rgba(240, 240, 230, 0.8);
+    padding: 1.5rem;
+    transition: var(--mainTransition);
+    transform: translateX(100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    /* Pushes clear button to the bottom */
+}
+
+.cart-content {
+    flex-grow: 1;
+    /* Allows items to take up space before pushing the button down */
+    overflow-y: auto;
+    /* Enables scrolling if many items are present */
+}
+
+.clear-cart {
+    position: sticky;
+    bottom: 0;
+    width: 50%;
+    padding: 1rem;
+    background: var(--primaryColor);
+    color: var(--mainWhite);
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: var(--mainTransition);
+}
+.cart img {
+    max-width: 80%;
+    /* Adjusts the width to 80% of the container's width */
+    height: auto;
+    /* Maintains the aspect ratio of the image */
+    margin: 0 auto;
+    /* Centers the image */
+}
+
+.clear-cart:hover {
+    background: linear-gradient(to left, rgba(167, 122, 9, 1), rgba(167, 122, 9, 0));
+}
+
+.showCart {
+    transform: translateX(0);
+}
+
+.transparentBcg {
+    visibility: visible;
+}
+
+@media screen and (min-width: 768px) {
+    .cart {
+        width: 30vw;
+        min-width: 450px;
+    }
+}
+
+.close-cart {
+    font-size: 1.7rem;
+    cursor: pointer;
+}
+
+.cart h2 {
+    text-transform: capitalize;
+    text-align: center;
+    letter-spacing: var(--mainSpacing);
+    margin-bottom: 2rem;
+}
+
+/*---------- Cart Item -------------------- */
+.card-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px;
+    border-bottom: 1px solid var(--mainGrey);
+    font-size: 0.9rem;
+    /* Reduce font size */
+}
+
+.card-item h4 {
+    font-size: 1rem;
+    margin: 0;
+}
+
+.card-item h5 {
+    font-size: 0.9rem;
+    color: var(--mainBlack);
+}
+
+
+
+.card-item .fa-chevron-up,
+.card-item .fa-chevron-down {
+    font-size: 0.8rem;
+    /* Reduce icon size */
+    cursor: pointer;
+}
+
+.card-item .item-amount {
+    font-size: 0.9rem;
+    /* Adjust amount text */
+}
+
+/*---------- End of Cart Item -------------------- */
+
+.cart-footer {
+    margin-top: 2rem;
+    letter-spacing: var(--mainSpacing);
+    text-align: center;
+}
+
+.cart-footer h3 {
+    text-transform: capitalize;
+    margin-bottom: 1rem;
+}
+
+.card-item .remove-item {
+    font-size: 0.8rem;
+    color: red;
+    cursor: pointer;
+}
+
+.footer {
+    background-image: linear-gradient(to right, rgb(230, 223, 223), rgba(224, 23, 23, 0.7), rgba(255, 200, 200, 0.3));
+    color: var(--mainWhite);
+    text-align: center;
+    padding: 1rem 0;
+    font-size: 1.5rem;
+}
+
+.footer-highlight {
+    color: rgb(187, 162, 15);
+    
+}
