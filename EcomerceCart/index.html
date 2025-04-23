@@ -18,7 +18,7 @@
     <!--navigation bar-->
     <nav class="navbar">
         <div class="navbar-center">
-            <span class="nav-icon">
+            <span id="menu-icon" class="nav-icon">
                 <i class="fas fa-bars"></i>
             </span>
             <h1>Golden<span>Home</span></h1>
@@ -33,6 +33,7 @@
         </div>
     </nav>
     <!--end of the navigation bar-->
+    <div id="menu-click" class="menu-click"></div>
 
      <!--eazzy section-->
 <div class="hero">
@@ -48,6 +49,23 @@
                 });
                 console.log('Shop now button clicked!');
             }
+
+          const MenuIcon = document.getElementById('menu-icon');
+            const MenuClick = document.getElementById('menu-click');
+
+            // When you click the MenuIcon → show the menu
+            MenuIcon.addEventListener("click", () => {
+                MenuClick.style.display = 'block'; // or whatever logic shows your menu
+            });
+
+            // Listen for any click on the document
+            document.addEventListener("click", (event) => {
+                // Check if the clicked element is NOT inside the menu icon AND NOT inside the menu itself
+                if (!MenuIcon.contains(event.target) && !MenuClick.contains(event.target)) {
+                    MenuClick.style.display = 'none'; // hide the menu
+                }
+            });
+
         </script>
 
     </div>
