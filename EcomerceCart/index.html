@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GoldenHome</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+    href="https://fonts.googleapis.com/css2?family=Allura&family=Big+Shoulders:opsz,wght@10..72,100..900&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+    rel="stylesheet">
+
+</head>
+<body>
+   
+    <!--navigation bar-->
+    <nav class="navbar">
+        <div class="navbar-center">
+            <div class="menu" id="menu">
+            <span id="menu-icon" class="nav-icon">
+                <i class="fas fa-bars"></i>
+               
+            </span>
+            
+           
+            </div>
+           
+            <h1>Golden<span>Home</span></h1>
+            <div class="cart-btn">
+                <span class="nav-icon">
+                    <i class="fas fa-cart-plus"></i>
+                </span>
+                <div class="cart-items">
+                    0
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!--end of the navigation bar-->
+    
+
+     <!--eazzy section-->
+<div class="hero">
+    <div class="banner">
+        <h1 class="banner-title">Furniture Collection</h1>
+        <button class="banner-btn" onclick="scrollToProducts()">Shop now</button>
+        
+        <script>
+            window.addEventListener('DOMContentLoaded', () => {
+                // Scroll to products section when button clicked
+                const shopNowBtn = document.getElementById('shop-now-btn');
+                const productsSection = document.getElementById('products');
+
+                if (shopNowBtn && productsSection) {
+                    shopNowBtn.addEventListener('click', () => {
+                        productsSection.scrollIntoView({ behavior: 'smooth' });
+                        console.log('Shop now button clicked!');
+                    });
+                }
+
+                // Toggle mobile menu
+                const MenuIcon = document.getElementById('menu-icon');
+                const cartOverlay = document.querySelector(".cart-overlay");
+
+                if (MenuIcon && MenuClick) {
+                    MenuIcon.addEventListener("click", () => {
+                        MenuClick.style.display = 'block';
+                    });
+
+                    document.addEventListener("click", (event) => {
+                        if (
+                            !MenuIcon.contains(event.target) &&
+                           (!cartOverlay || !cartOverlay.contains(event.target))
+                        ) {
+                            MenuClick.style.display = 'none';
+                        }
+                    });
+                }
+            });
+        </script>
+
+
+    </div>
+</div>
+     <!--end of eazyy-->
+
+
+     <!--products-->
+     <section id="products" class="products">
+        <div class="section-title">
+            <h2>our products</h2>
+        </div>
+        <div class="products-center">
+            
+        </div>
+     </section>
+     <!--end of products-->
+
+
+     <!--cart-->
+     <div class="cart-overlay">
+        <div class="cart">
+            <span class="close-cart">
+                <i class="fas fa-window-close"></i>
+            </span>
+            <h2>your cart</h2>
+            <div class="cart-content">
+                <!--cart item-->
+                
+                <!--end of cart item-->
+            </div>
+            <div class="cart-footer">
+                <h3>your total: $ <span class="cart-total">0</span></h3>
+                <button class="clear-cart banner-btn">clear cart</button>
+            </div>
+        </div>
+     </div>
+     <!--end of cart-->
+
+    
+<!-- footer -->
+<footer class="footer">
+    <div class="footer-content">
+        <p>&copy; 2025 Golden<span class="footer-highlight">Home. All rights reserved.</span></p>
+    </div>
+</footer>
+<!-- end of footer -->
+
+
+    <script src="script.js"></script>
+    
+</body>
+</html>
