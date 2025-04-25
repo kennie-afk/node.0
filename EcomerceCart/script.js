@@ -14,8 +14,11 @@ let cart = [];
 let buttonsDOM = [];
 
 // Contentful API Configuration
-const CONTENTFUL_SPACE_ID = process.env.CONTENTFUL_SPACE_ID;
-const CONTENTFUL_ACCESS_TOKEN = process.env.CONTENTFUL_ACCESS_TOKEN;
+const CONTENTFUL_SPACE_ID = "mcv7hmhlas6q";
+const CONTENTFUL_ACCESS_TOKEN = "REDACTED_ROTATED_CREDENTIAL";
+
+/*const CONTENTFUL_SPACE_ID = process.env.CONTENTFUL_SPACE_ID;
+const CONTENTFUL_ACCESS_TOKEN = process.env.CONTENTFUL_ACCESS_TOKEN;*/
 
 // Getting the products
 class Products {
