@@ -18,17 +18,6 @@
     <!--navigation bar-->
     <nav class="navbar">
         <div class="navbar-center">
- 
-            <div class="menu" id="menu">
-            <span id="menu-icon" class="nav-icon">
-                <i class="fas fa-bars"></i>
-               
-            </span>
-            
-           
-            </div>
-           
-
             <span id="menu-icon" class="nav-icon">
                 <i class="fas fa-bars"></i>
             </span>
@@ -55,7 +44,7 @@
 <div class="hero">
     <div class="banner">
         <h1 class="banner-title">Furniture Collection</h1>
-        <button class="banner-btn" onclick="scrollToProducts()">Shop now</button>
+        <button class="banner-btn" id="shop-now-btn">Shop now</button>
         
         <script>
 
@@ -92,31 +81,34 @@
             });
         </script>
 
+        <script>
 
-            function scrollToProducts() {
-                // Scroll to the products section smoothly
-                document.querySelector('#products').scrollIntoView({
-                    behavior: 'smooth'
-                });
-                console.log('Shop now button clicked!');
-            }
+           document.addEventListener("DOMContentLoaded", () => {
+                const shopNowBtn = document.getElementById('shop-now-btn');
+                const productsSection = document.getElementById('products');
 
-          const MenuIcon = document.getElementById('menu-icon');
-            const MenuClick = document.getElementById('menu-click');
+                if (shopNowBtn && productsSection) {
+                    shopNowBtn.addEventListener('click', () => {
+                        productsSection.scrollIntoView({ behavior: 'smooth' });
+                        console.log('Shop now button clicked!');
+                    });
+                }
 
-            // When you click the MenuIcon → show the menu
-            MenuIcon.addEventListener("click", () => {
-                MenuClick.style.display = 'block'; // or whatever logic shows your menu
-            });
+                const menuIcon = document.getElementById('menu-icon');
+                const menuClick = document.getElementById('menu-click');
 
-            // Listen for any click on the document
-            document.addEventListener("click", (event) => {
-                // Check if the clicked element is NOT inside the menu icon AND NOT inside the menu itself
-                if (!MenuIcon.contains(event.target) && !MenuClick.contains(event.target)) {
-                    MenuClick.style.display = 'none'; // hide the menu
+                if (menuIcon && menuClick) {
+                    menuIcon.addEventListener("click", () => {
+                        menuClick.style.display = 'block';
+                    });
+
+                    document.addEventListener("click", (event) => {
+                        if (!menuIcon.contains(event.target) && !menuClick.contains(event.target)) {
+                            menuClick.style.display = 'none';
+                        }
+                    });
                 }
             });
-
         </script>
 
 
