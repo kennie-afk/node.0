@@ -35,9 +35,15 @@
     </nav>
     <!--end of the navigation bar-->
 
-    
-
-    <div id="menu-click" class="menu-click"></div>
+    <!-- Hidden menu -->
+<div id="nav-menu" class="nav-menu">
+  <ul>
+    <li><a href="#home">Home</a></li>
+    <li><a href="#products">Products</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><a href="#about">About Us</a></li>
+  </ul>
+</div>
 
 
      <!--eazzy section-->
@@ -46,70 +52,7 @@
         <h1 class="banner-title">Furniture Collection</h1>
         <button class="banner-btn" id="shop-now-btn">Shop now</button>
         
-        <script>
-
-            window.addEventListener('DOMContentLoaded', () => {
-                // Scroll to products section when button clicked
-                const shopNowBtn = document.getElementById('shop-now-btn');
-                const productsSection = document.getElementById('products');
-
-                if (shopNowBtn && productsSection) {
-                    shopNowBtn.addEventListener('click', () => {
-                        productsSection.scrollIntoView({ behavior: 'smooth' });
-                        console.log('Shop now button clicked!');
-                    });
-                }
-
-                // Toggle mobile menu
-                const MenuIcon = document.getElementById('menu-icon');
-                const cartOverlay = document.querySelector(".cart-overlay");
-
-                if (MenuIcon && MenuClick) {
-                    MenuIcon.addEventListener("click", () => {
-                        MenuClick.style.display = 'block';
-                    });
-
-                    document.addEventListener("click", (event) => {
-                        if (
-                            !MenuIcon.contains(event.target) &&
-                           (!cartOverlay || !cartOverlay.contains(event.target))
-                        ) {
-                            MenuClick.style.display = 'none';
-                        }
-                    });
-                }
-            });
-        </script>
-
-        <script>
-
-           document.addEventListener("DOMContentLoaded", () => {
-                const shopNowBtn = document.getElementById('shop-now-btn');
-                const productsSection = document.getElementById('products');
-
-                if (shopNowBtn && productsSection) {
-                    shopNowBtn.addEventListener('click', () => {
-                        productsSection.scrollIntoView({ behavior: 'smooth' });
-                        console.log('Shop now button clicked!');
-                    });
-                }
-
-                const menuIcon = document.getElementById('menu-icon');
-                const menuClick = document.getElementById('menu-click');
-
-                if (menuIcon && menuClick) {
-                    menuIcon.addEventListener("click", () => {
-                        menuClick.style.display = 'block';
-                    });
-
-                    document.addEventListener("click", (event) => {
-                        if (!menuIcon.contains(event.target) && !menuClick.contains(event.target)) {
-                            menuClick.style.display = 'none';
-                        }
-                    });
-                }
-            });
-        </script>
+       
 
 
     </div>
@@ -160,6 +103,29 @@
 
 
     <script src="script.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const menuIcon = document.getElementById('menu-icon');
+            const navMenu = document.getElementById('nav-menu');
+
+            menuIcon.addEventListener('click', () => {
+                if (navMenu.style.display === 'flex') {
+                    navMenu.style.display = 'none';
+                } else {
+                    navMenu.style.display = 'flex';
+                }
+            });
+
+            // Hide menu if you click outside of it
+            document.addEventListener('click', (event) => {
+                if (!menuIcon.contains(event.target) && !navMenu.contains(event.target)) {
+                    navMenu.style.display = 'none';
+                }
+            });
+        });
+    </script>
+
     
 </body>
 </html>
