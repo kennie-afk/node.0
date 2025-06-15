@@ -17,7 +17,7 @@ app.get('/', async (req, res) => {
     const memberCount = await db.Member.count(); 
 
     res.status(200).json({
-      message: `Welcome to Church CMS Backend! Database connected (MySQL).`,
+      message: `Welcome to Church CMS Backend! MySQL Database connected.`,
       usersInDb: userCount,
       familiesInDb: familyCount,
       membersInDb: memberCount,
