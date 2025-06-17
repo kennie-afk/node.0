@@ -1,7 +1,7 @@
 import { DataTypes, Model, Optional } from "sequelize";
 import { Sequelize } from "sequelize";
 
-interface UserAttributes {
+export interface UserAttributes {
   id: number;
   username: string;
   email: string;
@@ -9,7 +9,7 @@ interface UserAttributes {
   isAdmin: boolean;
 }
 
-interface UserCreationAttributes extends Optional <UserAttributes, 'id' | 'isAdmin'> {}
+export interface UserCreationAttributes extends Optional <UserAttributes, 'id' | 'isAdmin'> {}
 
 export class User extends Model<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public id!: number;
@@ -22,9 +22,17 @@ export class User extends Model<UserAttributes, UserCreationAttributes> implemen
   public readonly updatedAt!: Date;
 
   static associate(models: any) {
+    models.User.hasMany(models.Event, {
+      foreignKey: 'organizerUserId',
+      as: 'organizedEvents'
+    });
+
+    models.User.hasMany(models.Announcement, {
+      foreignKey: 'authorUserId',
+      as: 'authoredAnnouncements'
+    });
   }
 }
-
 
 export function initUser (sequelize: Sequelize) {
   User.init(
@@ -53,8 +61,8 @@ export function initUser (sequelize: Sequelize) {
       },
       isAdmin: {
         type: DataTypes.BOOLEAN,
-        allowNull: false,        
-        defaultValue: true,      
+        allowNull: false,
+        defaultValue: true,
       },
     }, {
       sequelize,

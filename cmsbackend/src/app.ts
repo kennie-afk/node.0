@@ -1,26 +1,33 @@
-import express from 'express';          
-import db from '@models';                 
-import userRoutes from '@routes/user.routes'; 
-import familyRoutes from '@routes/family.routes'; 
-import memberRoutes from '@routes/member.routes'; 
+import express from 'express';
+import db from '@models';
 
-const app = express();                    
-const PORT = process.env.PORT || 3000;     
+import userRoutes from '@users/user.routes';
+import familyRoutes from '@families/family.routes';
+import memberRoutes from '@members/member.routes';
+import announcementRoutes from '@announcements/announcement.routes';
+
+const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-
 
 app.get('/', async (req, res) => {
   try {
     const userCount = await db.User.count();
     const familyCount = await db.Family.count();
-    const memberCount = await db.Member.count(); 
+    const memberCount = await db.Member.count();
+    const eventCount = await db.Event.count();
+    const announcementCount = await db.Announcement.count();
+    const sermonCount = await db.Sermon.count();
 
     res.status(200).json({
       message: `Welcome to Church CMS Backend! MySQL Database connected.`,
       usersInDb: userCount,
       familiesInDb: familyCount,
       membersInDb: memberCount,
+      eventsInDb: eventCount,
+      announcementsInDb: announcementCount,
+      sermonsInDb: sermonCount,
     });
   } catch (error) {
     console.error('Error fetching counts:', error);
@@ -29,11 +36,9 @@ app.get('/', async (req, res) => {
 });
 
 app.use('/users', userRoutes);
-
 app.use('/families', familyRoutes);
-
 app.use('/members', memberRoutes);
-
+app.use('/announcements', announcementRoutes);
 
 async function startServer() {
   try {

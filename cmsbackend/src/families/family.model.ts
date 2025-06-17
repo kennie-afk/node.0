@@ -1,6 +1,6 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import { Sequelize } from 'sequelize';
-import { Member } from './member';
+import { Member } from '../members/member.model'; 
 
 interface FamilyAttributes {
   id: number;
@@ -35,12 +35,12 @@ export class Family extends Model<FamilyAttributes, FamilyCreationAttributes> im
   static associate(models: any) {
     models.Family.hasMany(models.Member, {
       foreignKey: 'familyId',
-      as: 'members' 
+      as: 'members'
     });
 
     models.Family.belongsTo(models.Member, {
       foreignKey: 'headOfFamilyMemberId',
-      as: 'headOfFamily' 
+      as: 'headOfFamily'
     });
   }
 }

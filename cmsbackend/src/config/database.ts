@@ -5,7 +5,7 @@ import path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const env = process.env.NODE_ENV || 'development';
-const config = require('../../config/config.json')[env];
+const config = require('../../config/config.json')[env]; 
 
 const sequelize = new Sequelize(
   config.database,
@@ -14,7 +14,7 @@ const sequelize = new Sequelize(
   {
     host: config.host,
     dialect: config.dialect,
-    logging: console.log,
+    logging: false, 
     pool: {
       max: 5,
       min: 0,

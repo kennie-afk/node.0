@@ -1,0 +1,143 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deleteMember = exports.updateMember = exports.getMemberById = exports.getAllMembers = exports.createMember = void 0;
+const memberService = __importStar(require("./member.service"));
+/**
+ * @param req
+ * @param res
+ */
+const createMember = async (req, res) => {
+    try {
+        const memberData = req.body;
+        const newMember = await memberService.createMember(memberData);
+        return res.status(201).json(newMember);
+    }
+    catch (error) {
+        console.error('Error in createMember controller:', error.message);
+        if (error.message.includes('Unique constraint error')) {
+            const field = error.message.split(': ')[1].split(' ')[0];
+            return res.status(409).json({ message: `${field} already exists.` });
+        }
+        if (error.message.includes('required.')) {
+            return res.status(400).json({ message: error.message });
+        }
+        if (error.message.includes('not found.')) {
+            return res.status(400).json({ message: error.message });
+        }
+        return res.status(500).json({ message: 'Failed to create member.' });
+    }
+};
+exports.createMember = createMember;
+/**
+ * @param req
+ * @param res
+ */
+const getAllMembers = async (req, res) => {
+    try {
+        const members = await memberService.getAllMembers();
+        return res.status(200).json(members);
+    }
+    catch (error) {
+        console.error('Error in getAllMembers controller:', error.message);
+        return res.status(500).json({ message: 'Failed to retrieve members.' });
+    }
+};
+exports.getAllMembers = getAllMembers;
+/**
+ * @param req
+ * @param res
+ */
+const getMemberById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const member = await memberService.getMemberById(Number(id));
+        if (!member) {
+            return res.status(404).json({ message: 'Member not found.' });
+        }
+        return res.status(200).json(member);
+    }
+    catch (error) {
+        console.error('Error in getMemberById controller:', error.message);
+        return res.status(500).json({ message: 'Failed to retrieve member.' });
+    }
+};
+exports.getMemberById = getMemberById;
+/**
+ * @param req
+ * @param res
+ */
+const updateMember = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const memberData = req.body;
+        const updatedMember = await memberService.updateMember(Number(id), memberData);
+        if (!updatedMember) {
+            return res.status(404).json({ message: 'Member not found or no changes made.' });
+        }
+        return res.status(200).json(updatedMember);
+    }
+    catch (error) {
+        console.error('Error in updateMember controller:', error.message);
+        if (error.message.includes('Unique constraint error')) {
+            const field = error.message.split(': ')[1].split(' ')[0];
+            return res.status(409).json({ message: `${field} already exists.` });
+        }
+        if (error.message.includes('not found for update.')) {
+            return res.status(400).json({ message: error.message });
+        }
+        return res.status(500).json({ message: 'Failed to update member.' });
+    }
+};
+exports.updateMember = updateMember;
+/**
+ * @param req
+ * @param res
+ */
+const deleteMember = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deletedRowCount = await memberService.deleteMember(Number(id));
+        if (deletedRowCount === 0) {
+            return res.status(404).json({ message: 'Member not found.' });
+        }
+        return res.status(204).send();
+    }
+    catch (error) {
+        console.error('Error in deleteMember controller:', error.message);
+        return res.status(500).json({ message: 'Failed to delete member.' });
+    }
+};
+exports.deleteMember = deleteMember;

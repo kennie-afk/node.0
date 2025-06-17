@@ -15,10 +15,13 @@
     "baseUrl": "./",
     "paths": {
       "@models": ["src/models/index.ts"],
-      "@models/*": ["src/models/*"],
       "@config/*": ["src/config/*"],
-      "@controllers/*": ["src/controllers/*"], 
-      "@routes/*": ["src/routes/*"]             
+      "@users/*": ["src/users/*"],
+      "@families/*": ["src/families/*"],
+      "@members/*": ["src/members/*"],
+      "@events/*": ["src/events/*"],
+      "@announcements/*": ["src/announcements/*"],
+      "@sermons/*": ["src/sermons/*"]
     }
   },
   "include": ["src/**/*.ts"],
