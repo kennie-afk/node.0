@@ -19,7 +19,7 @@
       "@users/*": ["src/users/*"],
       "@families/*": ["src/families/*"],
       "@members/*": ["src/members/*"],
-      "@events/*": ["src/events/*"],
+      "@events/*": ["src/events/*"],         
       "@announcements/*": ["src/announcements/*"],
       "@sermons/*": ["src/sermons/*"]
     }

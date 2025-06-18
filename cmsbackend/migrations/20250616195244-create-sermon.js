@@ -1,4 +1,3 @@
-// migrations/XXXXXXXXXXXXXX-create-sermon.js (replace XXXXXXXXXXXXXX with your actual timestamp)
 'use strict';
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -14,31 +13,31 @@ module.exports = {
         type: Sequelize.STRING(255),
         allowNull: false,
       },
-      speaker_member_id: { // Corresponds to 'speakerMemberId' in model
+      speaker_member_id: {
         type: Sequelize.INTEGER.UNSIGNED,
         allowNull: true,
         references: {
-          model: 'members', // References the 'members' table
+          model: 'members', 
           key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'SET NULL', // If speaker member is deleted, set this FK to NULL
+        onDelete: 'SET NULL', 
       },
-      event_id: { // Corresponds to 'eventId' in model
+      event_id: { 
         type: Sequelize.INTEGER.UNSIGNED,
-        allowNull: true, // Event is optional (will be auto-created by controller)
+        allowNull: true, 
         references: {
-          model: 'events', // References the 'events' table
+          model: 'events',
           key: 'id',
         },
         onUpdate: 'CASCADE',
-        onDelete: 'SET NULL', // If event is deleted, set this FK to NULL
+        onDelete: 'SET NULL',
       },
-      date_preached: { // Corresponds to 'datePreached' in model
+      date_preached: {
         type: Sequelize.DATEONLY,
         allowNull: false,
       },
-      passage_reference: { // Corresponds to 'passageReference' in model
+      passage_reference: { 
         type: Sequelize.STRING(100),
         allowNull: true,
       },
@@ -46,11 +45,11 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true,
       },
-      audio_url: { // Corresponds to 'audioUrl' in model
+      audio_url: {
         type: Sequelize.STRING(255),
         allowNull: true,
       },
-      video_url: { // Corresponds to 'videoUrl' in model
+      video_url: { 
         type: Sequelize.STRING(255),
         allowNull: true,
       },

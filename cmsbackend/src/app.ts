@@ -4,7 +4,9 @@ import db from '@models';
 import userRoutes from '@users/user.routes';
 import familyRoutes from '@families/family.routes';
 import memberRoutes from '@members/member.routes';
+import eventRoutes from '@events/event.routes';
 import announcementRoutes from '@announcements/announcement.routes';
+import sermonRoutes from '@sermons/sermon.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -38,7 +40,9 @@ app.get('/', async (req, res) => {
 app.use('/users', userRoutes);
 app.use('/families', familyRoutes);
 app.use('/members', memberRoutes);
+app.use('/events', eventRoutes); 
 app.use('/announcements', announcementRoutes);
+app.use('/sermons', sermonRoutes);
 
 async function startServer() {
   try {
