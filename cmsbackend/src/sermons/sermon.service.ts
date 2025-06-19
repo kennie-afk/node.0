@@ -48,7 +48,7 @@ export const createSermon = async (sermonData: {
         type: 'Service',
         startTime: eventStartTime,
         location: 'Main Auditorium',
-        organizerUserId: 1, // Assuming admin user ID 1 for automatic event creation
+        organizerUserId: 1,
         isRecurring: false,
       });
       console.log(`Automatic event created for sermon "${title}" with ID: ${createdEvent.id}`);
