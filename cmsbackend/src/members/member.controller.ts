@@ -1,10 +1,6 @@
-import { Request, Response } from 'express'; 
-import * as memberService from './member.service'; 
+import { Request, Response } from 'express';
+import * as memberService from './member.service';
 
-/**
- * @param req 
- * @param res 
- */
 export const createMember = async (req: Request, res: Response): Promise<Response> => {
   try {
     const memberData = req.body;
@@ -26,13 +22,23 @@ export const createMember = async (req: Request, res: Response): Promise<Respons
   }
 };
 
-/**
- * @param req 
- * @param res 
- */
 export const getAllMembers = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const members = await memberService.getAllMembers();
+    const filters = req.query;
+    const includeFamily = filters.includeFamily === 'true';
+    const includeMinistries = filters.includeMinistries === 'true';
+    const includeSmallGroups = filters.includeSmallGroups === 'true';
+    const includeContributions = filters.includeContributions === 'true';
+    const includeLedMinistries = filters.includeLedMinistries === 'true';
+
+    const members = await memberService.getAllMembers({
+      ...filters,
+      includeFamily,
+      includeMinistries,
+      includeSmallGroups,
+      includeContributions,
+      includeLedMinistries
+    });
     return res.status(200).json(members);
   } catch (error: any) {
     console.error('Error in getAllMembers controller:', error.message);
@@ -40,14 +46,23 @@ export const getAllMembers = async (req: Request, res: Response): Promise<Respon
   }
 };
 
-/**
- * @param req 
- * @param res 
- */
 export const getMemberById = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { id } = req.params;
-    const member = await memberService.getMemberById(Number(id));
+    const includeFamily = req.query.includeFamily === 'true';
+    const includeMinistries = req.query.includeMinistries === 'true';
+    const includeSmallGroups = req.query.includeSmallGroups === 'true';
+    const includeContributions = req.query.includeContributions === 'true';
+    const includeLedMinistries = req.query.includeLedMinistries === 'true';
+
+    const member = await memberService.getMemberById(
+      Number(id),
+      includeFamily,
+      includeMinistries,
+      includeSmallGroups,
+      includeContributions,
+      includeLedMinistries
+    );
 
     if (!member) {
       return res.status(404).json({ message: 'Member not found.' });
@@ -60,10 +75,6 @@ export const getMemberById = async (req: Request, res: Response): Promise<Respon
   }
 };
 
-/**
- * @param req 
- * @param res 
- */
 export const updateMember = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { id } = req.params;
@@ -89,10 +100,6 @@ export const updateMember = async (req: Request, res: Response): Promise<Respons
   }
 };
 
-/**
- * @param req 
- * @param res 
- */
 export const deleteMember = async (req: Request, res: Response): Promise<Response> => {
   try {
     const { id } = req.params;
@@ -102,7 +109,7 @@ export const deleteMember = async (req: Request, res: Response): Promise<Respons
       return res.status(404).json({ message: 'Member not found.' });
     }
 
-    return res.status(204).send(); 
+    return res.status(204).send();
   } catch (error: any) {
     console.error('Error in deleteMember controller:', error.message);
     return res.status(500).json({ message: 'Failed to delete member.' });

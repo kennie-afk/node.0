@@ -19,9 +19,13 @@
       "@users/*": ["src/users/*"],
       "@families/*": ["src/families/*"],
       "@members/*": ["src/members/*"],
-      "@events/*": ["src/events/*"],         
+      "@events/*": ["src/events/*"],
       "@announcements/*": ["src/announcements/*"],
-      "@sermons/*": ["src/sermons/*"]
+      "@sermons/*": ["src/sermons/*"],
+      "@contributions/*": ["src/contributions/*"],
+      "@attendance/*": ["src/attendance/*"],
+      "@ministries/*": ["src/ministries/*"],
+      "@small_groups/*": ["src/small_groups/*"]
     }
   },
   "include": ["src/**/*.ts"],

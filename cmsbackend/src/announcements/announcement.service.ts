@@ -1,9 +1,23 @@
 import db from '@models';
 import { Announcement } from './announcement.model';
 import { User } from '../users/user.model';
+import { Op } from 'sequelize';
 
 const AnnouncementDbModel = db.Announcement;
 const UserDbModel = db.User;
+
+interface AnnouncementFilters {
+  title?: string;
+  content?: string;
+  isPublished?: boolean;
+  targetAudience?: 'All' | 'Members' | 'Leaders' | 'Specific Group';
+  publicationDateStart?: string;
+  publicationDateEnd?: string;
+  expiryDateStart?: string;
+  expiryDateEnd?: string;
+  limit?: number;
+  offset?: number;
+}
 
 export const createAnnouncement = async (announcementData: {
   title: string;
@@ -40,10 +54,65 @@ export const createAnnouncement = async (announcementData: {
   }
 };
 
-export const getAllAnnouncements = async (): Promise<Array<InstanceType<typeof Announcement>>> => {
+export const getAllAnnouncements = async (
+  filters: AnnouncementFilters
+): Promise<Array<InstanceType<typeof Announcement>>> => {
   try {
+    const where: any = {};
+
+    if (filters.title) {
+      where.title = { [Op.like]: `%${filters.title}%` };
+    }
+    if (filters.content) {
+      where.content = { [Op.like]: `%${filters.content}%` };
+    }
+    if (filters.isPublished !== undefined) {
+      where.isPublished = filters.isPublished;
+    }
+    if (filters.targetAudience) {
+      where.targetAudience = filters.targetAudience;
+    }
+
+    if (filters.publicationDateStart && filters.publicationDateEnd) {
+      where.publicationDate = {
+        [Op.between]: [
+          new Date(filters.publicationDateStart),
+          new Date(filters.publicationDateEnd)
+        ]
+      };
+    } else if (filters.publicationDateStart) {
+      where.publicationDate = {
+        [Op.gte]: new Date(filters.publicationDateStart)
+      };
+    } else if (filters.publicationDateEnd) {
+      where.publicationDate = {
+        [Op.lte]: new Date(filters.publicationDateEnd)
+      };
+    }
+
+    if (filters.expiryDateStart && filters.expiryDateEnd) {
+      where.expiryDate = {
+        [Op.between]: [
+          new Date(filters.expiryDateStart),
+          new Date(filters.expiryDateEnd)
+        ]
+      };
+    } else if (filters.expiryDateStart) {
+      where.expiryDate = {
+        [Op.gte]: new Date(filters.expiryDateStart)
+      };
+    } else if (filters.expiryDateEnd) {
+      where.expiryDate = {
+        [Op.lte]: new Date(filters.expiryDateEnd)
+      };
+    }
+
     const announcements = await AnnouncementDbModel.findAll({
-      include: [{ model: db.User, as: 'author' }]
+      where,
+      limit: filters.limit ? Number(filters.limit) : undefined,
+      offset: filters.offset ? Number(filters.offset) : undefined,
+      include: [{ model: db.User, as: 'author', attributes: ['id', 'username'] }],
+      order: [['publicationDate', 'DESC']],
     });
     return announcements;
   } catch (error: any) {
@@ -54,7 +123,7 @@ export const getAllAnnouncements = async (): Promise<Array<InstanceType<typeof A
 export const getAnnouncementById = async (id: number): Promise<InstanceType<typeof Announcement> | null> => {
   try {
     const announcement = await AnnouncementDbModel.findByPk(id, {
-      include: [{ model: db.User, as: 'author' }]
+      include: [{ model: db.User, as: 'author', attributes: ['id', 'username'] }]
     });
     return announcement;
   } catch (error: any) {
@@ -90,7 +159,7 @@ export const updateAnnouncement = async (id: number, announcementData: {
     }
 
     const updatedAnnouncement = await AnnouncementDbModel.findByPk(id, {
-      include: [{ model: db.User, as: 'author' }]
+      include: [{ model: db.User, as: 'author', attributes: ['id', 'username'] }]
     });
     return updatedAnnouncement;
   } catch (error: any) {

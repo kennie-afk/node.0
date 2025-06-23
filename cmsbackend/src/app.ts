@@ -1,3 +1,5 @@
+'use strict';
+
 import express from 'express';
 import db from '@models';
 
@@ -7,6 +9,10 @@ import memberRoutes from '@members/member.routes';
 import eventRoutes from '@events/event.routes';
 import announcementRoutes from '@announcements/announcement.routes';
 import sermonRoutes from '@sermons/sermon.routes';
+import contributionRoutes from '@contributions/contribution.routes';
+import attendanceRoutes from '@attendance/attendance.routes';
+import ministryRoutes from '@ministries/ministry.routes';
+import smallGroupRoutes from '@small_groups/small_group.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +27,10 @@ app.get('/', async (req, res) => {
     const eventCount = await db.Event.count();
     const announcementCount = await db.Announcement.count();
     const sermonCount = await db.Sermon.count();
+    const contributionCount = await db.Contribution.count();
+    const attendanceCount = await db.Attendance.count();
+    const ministryCount = await db.Ministry.count();
+    const smallGroupCount = await db.SmallGroup.count();
 
     res.status(200).json({
       message: `Welcome to Church CMS Backend! MySQL Database connected.`,
@@ -30,6 +40,10 @@ app.get('/', async (req, res) => {
       eventsInDb: eventCount,
       announcementsInDb: announcementCount,
       sermonsInDb: sermonCount,
+      contributionsInDb: contributionCount,
+      attendanceInDb: attendanceCount,
+      ministriesInDb: ministryCount,
+      smallGroupsInDb: smallGroupCount,
     });
   } catch (error) {
     console.error('Error fetching counts:', error);
@@ -40,9 +54,13 @@ app.get('/', async (req, res) => {
 app.use('/users', userRoutes);
 app.use('/families', familyRoutes);
 app.use('/members', memberRoutes);
-app.use('/events', eventRoutes); 
+app.use('/events', eventRoutes);
 app.use('/announcements', announcementRoutes);
 app.use('/sermons', sermonRoutes);
+app.use('/contributions', contributionRoutes);
+app.use('/attendance', attendanceRoutes);
+app.use('/ministries', ministryRoutes);
+app.use('/small-groups', smallGroupRoutes);
 
 async function startServer() {
   try {
