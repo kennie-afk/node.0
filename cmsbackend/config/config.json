@@ -3,21 +3,21 @@
     "username": "root",       
     "password": "",            
     "database": "church_cms_db", 
-    "host": "127.0.0.1",      
+    "host": "host.docker.internal",      
     "dialect": "mysql"
   },
   "test": {
     "username": "root",
     "password": "",
     "database": "church_cms_db_test",
-    "host": "127.0.0.1",
+    "host": "host.docker.internal",
     "dialect": "mysql"
   },
   "production": {
     "username": "root",
     "password": null,
     "database": "database_production",
-    "host": "127.0.0.1",
+    "host": "host.docker.internal",
     "dialect": "mysql"
   }
   

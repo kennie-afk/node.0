@@ -27,6 +27,7 @@ export const createAnnouncement = async (announcementData: {
   expiryDate?: Date;
   isPublished?: boolean;
   targetAudience?: 'All' | 'Members' | 'Leaders' | 'Specific Group';
+
 }): Promise<InstanceType<typeof Announcement>> => {
   try {
     const { title, content, authorUserId, ...rest } = announcementData;

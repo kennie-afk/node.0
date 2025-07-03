@@ -229,7 +229,7 @@ export const updateAttendance = async (id: number, attendanceData: {
     });
     return updatedAttendance;
   } catch (error: any) {
-    throw new Error(`Service error updating attendance record with ID ${id}: ${error.message}`);
+    throw new Error(`Service error updating attendance recod with the ID ${id}: ${error.message}`);
   }
 };
 
