@@ -13,6 +13,24 @@ class Member extends sequelize_1.Model {
             foreignKey: 'speakerMemberId',
             as: 'sermons'
         });
+        models.Member.belongsToMany(models.Ministry, {
+            through: models.MinistryMember,
+            foreignKey: 'memberId',
+            as: 'ministries'
+        });
+        models.Member.belongsToMany(models.SmallGroup, {
+            through: models.SmallGroupMember,
+            foreignKey: 'memberId',
+            as: 'smallGroups'
+        });
+        models.Member.hasMany(models.Ministry, {
+            foreignKey: 'leaderId',
+            as: 'ledMinistries'
+        });
+        models.Member.hasMany(models.Contribution, {
+            foreignKey: 'memberId',
+            as: 'contributions'
+        });
     }
 }
 exports.Member = Member;

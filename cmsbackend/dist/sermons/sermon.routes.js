@@ -1,1 +1,11 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const sermon_controller_1 = require("./sermon.controller");
+const router = (0, express_1.Router)();
+router.post('/', sermon_controller_1.createSermon);
+router.get('/', sermon_controller_1.getAllSermons);
+router.get('/:id', sermon_controller_1.getSermonById);
+router.put('/:id', sermon_controller_1.updateSermon);
+router.delete('/:id', sermon_controller_1.deleteSermon);
+exports.default = router;

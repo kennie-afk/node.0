@@ -21,8 +21,32 @@ export const createContribution = async (req: Request, res: Response): Promise<R
 
 export const getAllContributions = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const contributions = await contributionService.getAllContributions(req.query as any);
-    return res.status(200).json(contributions);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = (page - 1) * limit;
+
+    const filters = req.query as {
+      type?: string;
+      startDate?: string;
+      endDate?: string;
+      memberId?: number;
+    };
+
+    const { contributions, totalCount } = await contributionService.getAllContributions(
+      filters,
+      limit,
+      offset
+    );
+
+    return res.status(200).json({
+      data: contributions,
+      meta: {
+        totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error: any) {
     console.error('Error in getAllContributions controller:', error.message);
     return res.status(500).json({ message: 'Failed to retrieve contributions.' });

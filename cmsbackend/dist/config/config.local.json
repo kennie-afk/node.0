@@ -1,0 +1,9 @@
+{
+  "development": {
+    "username": "root",
+    "password": "",  
+    "database": "church_cms_db",
+    "host": "localhost",
+    "dialect": "mysql"
+  }
+}

@@ -63,9 +63,7 @@ export const getAllSmallGroups = async (filters: {
   meetingDay?: string;
   meetingTime?: string;
   isActive?: boolean;
-  limit?: number;
-  offset?: number;
-}) => {
+}, limit: number, offset: number): Promise<{ smallGroups: Array<InstanceType<typeof SmallGroup>>, totalCount: number }> => {
   try {
     const where: any = {};
     const include: any[] = [
@@ -90,14 +88,14 @@ export const getAllSmallGroups = async (filters: {
       where.isActive = filters.isActive;
     }
 
-    const smallGroups = await SmallGroupDbModel.findAll({
+    const { count, rows } = await SmallGroupDbModel.findAndCountAll({
       where,
-      limit: filters.limit ? Number(filters.limit) : undefined,
-      offset: filters.offset ? Number(filters.offset) : undefined,
+      limit,
+      offset,
       order: [['name', 'ASC']],
       include: include,
     });
-    return smallGroups;
+    return { smallGroups: rows, totalCount: count };
   } catch (error: any) {
     throw new Error(`Service error fetching all small groups: ${error.message}`);
   }

@@ -24,6 +24,10 @@ export const createMember = async (req: Request, res: Response): Promise<Respons
 
 export const getAllMembers = async (req: Request, res: Response): Promise<Response> => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = (page - 1) * limit;
+
     const filters = req.query;
     const includeFamily = filters.includeFamily === 'true';
     const includeMinistries = filters.includeMinistries === 'true';
@@ -31,15 +35,24 @@ export const getAllMembers = async (req: Request, res: Response): Promise<Respon
     const includeContributions = filters.includeContributions === 'true';
     const includeLedMinistries = filters.includeLedMinistries === 'true';
 
-    const members = await memberService.getAllMembers({
+    const { members, totalCount } = await memberService.getAllMembers({
       ...filters,
       includeFamily,
       includeMinistries,
       includeSmallGroups,
       includeContributions,
       includeLedMinistries
+    }, limit, offset);
+
+    return res.status(200).json({
+      data: members,
+      meta: {
+        totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
     });
-    return res.status(200).json(members);
   } catch (error: any) {
     console.error('Error in getAllMembers controller:', error.message);
     return res.status(500).json({ message: 'Failed to retrieve members.' });

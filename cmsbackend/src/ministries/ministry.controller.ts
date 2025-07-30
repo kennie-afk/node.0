@@ -20,9 +20,22 @@ export const createMinistry = async (req: Request, res: Response): Promise<Respo
 
 export const getAllMinistries = async (req: Request, res: Response): Promise<Response> => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = (page - 1) * limit;
     const filters = req.query;
-    const ministries = await ministryService.getAllMinistries(filters);
-    return res.status(200).json(ministries);
+
+    const { ministries, totalCount } = await ministryService.getAllMinistries(filters, limit, offset);
+
+    return res.status(200).json({
+      data: ministries,
+      meta: {
+        totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error: any) {
     console.error('Error in getAllMinistries controller:', error.message);
     return res.status(500).json({ message: 'Failed to retrieve ministries.' });

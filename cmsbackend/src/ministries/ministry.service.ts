@@ -55,9 +55,7 @@ export const getAllMinistries = async (filters: {
   name?: string;
   leaderId?: number;
   isActive?: boolean;
-  limit?: number;
-  offset?: number;
-}) => {
+}, limit: number, offset: number): Promise<{ ministries: Array<InstanceType<typeof Ministry>>, totalCount: number }> => {
   try {
     const where: any = {};
     const include: any[] = [
@@ -75,14 +73,14 @@ export const getAllMinistries = async (filters: {
       where.isActive = filters.isActive;
     }
 
-    const ministries = await MinistryDbModel.findAll({
+    const { count, rows } = await MinistryDbModel.findAndCountAll({
       where,
-      limit: filters.limit ? Number(filters.limit) : undefined,
-      offset: filters.offset ? Number(filters.offset) : undefined,
+      limit,
+      offset,
       order: [['name', 'ASC']],
       include: include,
     });
-    return ministries;
+    return { ministries: rows, totalCount: count };
   } catch (error: any) {
     throw new Error(`Service error fetching all ministries: ${error.message}`);
   }

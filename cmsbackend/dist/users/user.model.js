@@ -5,6 +5,11 @@ exports.initUser = initUser;
 const sequelize_1 = require("sequelize");
 class User extends sequelize_1.Model {
     static associate(models) {
+        console.log('DEBUG: In User.associate method');
+        console.log('DEBUG: models.Event:', models.Event);
+        console.log('DEBUG: models.Announcement:', models.Announcement);
+        console.log('DEBUG: Is models.Event a Sequelize Model subclass?', models.Event && models.Event.prototype instanceof sequelize_1.Model);
+        console.log('DEBUG: Is models.Announcement a Sequelize Model subclass?', models.Announcement && models.Announcement.prototype instanceof sequelize_1.Model);
         models.User.hasMany(models.Event, {
             foreignKey: 'organizerUserId',
             as: 'organizedEvents'

@@ -20,9 +20,22 @@ export const createSmallGroup = async (req: Request, res: Response): Promise<Res
 
 export const getAllSmallGroups = async (req: Request, res: Response): Promise<Response> => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = (page - 1) * limit;
     const filters = req.query;
-    const smallGroups = await smallGroupService.getAllSmallGroups(filters);
-    return res.status(200).json(smallGroups);
+
+    const { smallGroups, totalCount } = await smallGroupService.getAllSmallGroups(filters, limit, offset);
+
+    return res.status(200).json({
+      data: smallGroups,
+      meta: {
+        totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error: any) {
     console.error('Error in getAllSmallGroups controller:', error.message);
     return res.status(500).json({ message: 'Failed to retrieve small groups.' });
@@ -40,7 +53,7 @@ export const getSmallGroupById = async (req: Request, res: Response): Promise<Re
 
     return res.status(200).json(smallGroup);
   }
-   catch (error: any) {
+  catch (error: any) {
     console.error('Error in getSmallGroupById controller:', error.message);
     return res.status(500).json({ message: 'Failed to retrieve small group.' });
   }

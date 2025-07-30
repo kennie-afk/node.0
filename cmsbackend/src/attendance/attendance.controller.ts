@@ -26,9 +26,33 @@ export const createAttendance = async (req: Request, res: Response): Promise<Res
 
 export const getAllAttendance = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const filters = req.query;
-    const attendanceRecords = await attendanceService.getAllAttendance(filters);
-    return res.status(200).json(attendanceRecords);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = (page - 1) * limit;
+
+    const filters = req.query as {
+      memberId?: number;
+      eventId?: number;
+      sermonId?: number;
+      attendanceDate?: string;
+      attendanceType?: 'In-person' | 'Online' | 'Other';
+    };
+
+    const { attendanceRecords, totalCount } = await attendanceService.getAllAttendance(
+      filters,
+      limit,
+      offset
+    );
+    
+    return res.status(200).json({
+      data: attendanceRecords,
+      meta: {
+        totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error: any) {
     console.error('Error in getAllAttendance controller:', error);
     return res.status(500).json({ message: 'Failed to retrieve attendance records.' });

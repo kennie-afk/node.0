@@ -35,10 +35,6 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteMember = exports.updateMember = exports.getMemberById = exports.getAllMembers = exports.createMember = void 0;
 const memberService = __importStar(require("./member.service"));
-/**
- * @param req
- * @param res
- */
 const createMember = async (req, res) => {
     try {
         const memberData = req.body;
@@ -61,14 +57,34 @@ const createMember = async (req, res) => {
     }
 };
 exports.createMember = createMember;
-/**
- * @param req
- * @param res
- */
 const getAllMembers = async (req, res) => {
     try {
-        const members = await memberService.getAllMembers();
-        return res.status(200).json(members);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+        const filters = req.query;
+        const includeFamily = filters.includeFamily === 'true';
+        const includeMinistries = filters.includeMinistries === 'true';
+        const includeSmallGroups = filters.includeSmallGroups === 'true';
+        const includeContributions = filters.includeContributions === 'true';
+        const includeLedMinistries = filters.includeLedMinistries === 'true';
+        const { members, totalCount } = await memberService.getAllMembers({
+            ...filters,
+            includeFamily,
+            includeMinistries,
+            includeSmallGroups,
+            includeContributions,
+            includeLedMinistries
+        }, limit, offset);
+        return res.status(200).json({
+            data: members,
+            meta: {
+                totalCount,
+                page,
+                limit,
+                totalPages: Math.ceil(totalCount / limit),
+            },
+        });
     }
     catch (error) {
         console.error('Error in getAllMembers controller:', error.message);
@@ -76,14 +92,15 @@ const getAllMembers = async (req, res) => {
     }
 };
 exports.getAllMembers = getAllMembers;
-/**
- * @param req
- * @param res
- */
 const getMemberById = async (req, res) => {
     try {
         const { id } = req.params;
-        const member = await memberService.getMemberById(Number(id));
+        const includeFamily = req.query.includeFamily === 'true';
+        const includeMinistries = req.query.includeMinistries === 'true';
+        const includeSmallGroups = req.query.includeSmallGroups === 'true';
+        const includeContributions = req.query.includeContributions === 'true';
+        const includeLedMinistries = req.query.includeLedMinistries === 'true';
+        const member = await memberService.getMemberById(Number(id), includeFamily, includeMinistries, includeSmallGroups, includeContributions, includeLedMinistries);
         if (!member) {
             return res.status(404).json({ message: 'Member not found.' });
         }
@@ -95,10 +112,6 @@ const getMemberById = async (req, res) => {
     }
 };
 exports.getMemberById = getMemberById;
-/**
- * @param req
- * @param res
- */
 const updateMember = async (req, res) => {
     try {
         const { id } = req.params;
@@ -122,10 +135,6 @@ const updateMember = async (req, res) => {
     }
 };
 exports.updateMember = updateMember;
-/**
- * @param req
- * @param res
- */
 const deleteMember = async (req, res) => {
     try {
         const { id } = req.params;

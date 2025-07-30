@@ -17,6 +17,10 @@ export const createAnnouncement = async (req: Request, res: Response): Promise<R
 
 export const getAllAnnouncements = async (req: Request, res: Response): Promise<Response> => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = (page - 1) * limit;
+
     const filters: any = {};
     if (req.query.title) filters.title = req.query.title as string;
     if (req.query.content) filters.content = req.query.content as string;
@@ -26,11 +30,18 @@ export const getAllAnnouncements = async (req: Request, res: Response): Promise<
     if (req.query.publicationDateEnd) filters.publicationDateEnd = req.query.publicationDateEnd as string;
     if (req.query.expiryDateStart) filters.expiryDateStart = req.query.expiryDateStart as string;
     if (req.query.expiryDateEnd) filters.expiryDateEnd = req.query.expiryDateEnd as string;
-    if (req.query.limit) filters.limit = Number(req.query.limit);
-    if (req.query.offset) filters.offset = Number(req.query.offset);
 
-    const announcements = await announcementService.getAllAnnouncements(filters);
-    return res.status(200).json(announcements);
+    const { announcements, totalCount } = await announcementService.getAllAnnouncements(filters, limit, offset);
+    
+    return res.status(200).json({
+      data: announcements,
+      meta: {
+        totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error: any) {
     console.error('Error in getAllAnnouncements controller:', error.message);
     return res.status(500).json({ message: 'Failed to retrieve announcements.' });

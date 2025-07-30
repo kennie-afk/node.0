@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const small_group_controller_1 = require("./small_group.controller");
+const router = (0, express_1.Router)();
+router.post('/', small_group_controller_1.createSmallGroup);
+router.get('/', small_group_controller_1.getAllSmallGroups);
+router.get('/:id', small_group_controller_1.getSmallGroupById);
+router.put('/:id', small_group_controller_1.updateSmallGroup);
+router.delete('/:id', small_group_controller_1.deleteSmallGroup);
+router.post('/:smallGroupId/members/:memberId', small_group_controller_1.addMemberToSmallGroup);
+router.delete('/:smallGroupId/members/:memberId', small_group_controller_1.removeMemberFromSmallGroup);
+router.get('/:smallGroupId/members', small_group_controller_1.getMembersOfSmallGroup);
+exports.default = router;

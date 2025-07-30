@@ -1,11 +1,22 @@
 import { Sequelize } from 'sequelize';
-import * as dotenv from 'dotenv';
-import path from 'path';
-
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 const env = process.env.NODE_ENV || 'development';
-const config = require('../../config/config.json')[env]; 
+const isLocalDev = process.env.IS_LOCAL_DEV === 'true'; 
+
+let config;
+if (isLocalDev) {
+  config = require('./config.local.json')[env];
+  console.log('DEBUG: Loading local database config (localhost).');
+} else {
+  config = require('./config.json')[env];
+  console.log(`DEBUG: Loading standard database config (host: ${config.host}).`);
+}
+
+console.log('DEBUG: Value of env:', env);
+console.log('DEBUG: Value of isLocalDev:', isLocalDev);
+console.log('DEBUG: Raw config object after require:', require(isLocalDev ? './config.local.json' : './config.json'));
+console.log('DEBUG: Final config object (config[env]):', config);
+console.log('DEBUG: Attempting to access config.database:', config ? config.database : 'config is undefined');
 
 const sequelize = new Sequelize(
   config.database,
@@ -14,7 +25,7 @@ const sequelize = new Sequelize(
   {
     host: config.host,
     dialect: config.dialect,
-    logging: false, 
+    logging: false,
     pool: {
       max: 5,
       min: 0,

@@ -1,0 +1,14 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const ministry_controller_1 = require("./ministry.controller");
+const router = (0, express_1.Router)();
+router.post('/', ministry_controller_1.createMinistry);
+router.get('/', ministry_controller_1.getAllMinistries);
+router.get('/:id', ministry_controller_1.getMinistryById);
+router.put('/:id', ministry_controller_1.updateMinistry);
+router.delete('/:id', ministry_controller_1.deleteMinistry);
+router.post('/:ministryId/members/:memberId', ministry_controller_1.addMemberToMinistry);
+router.delete('/:ministryId/members/:memberId', ministry_controller_1.removeMemberFromMinistry);
+router.get('/:ministryId/members', ministry_controller_1.getMembersOfMinistry);
+exports.default = router;

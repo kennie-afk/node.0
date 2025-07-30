@@ -31,8 +31,20 @@ export const createUser = async (req: Request, res: Response): Promise<Response>
 
 export const getAllUsers = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const users = await userService.getAllUsers();
-    return res.status(200).json(users);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = (page - 1) * limit;
+
+    const { users, totalCount } = await userService.getAllUsers(limit, offset);
+    return res.status(200).json({
+      data: users,
+      meta: {
+        totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error: any) {
     console.error('Error in getAllUsers controller:', error.message);
     return res.status(500).json({ message: 'Failed to retrieve users.' });

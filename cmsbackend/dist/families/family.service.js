@@ -5,13 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteFamily = exports.updateFamily = exports.getFamilyById = exports.getAllFamilies = exports.createFamily = void 0;
 const _models_1 = __importDefault(require("@models"));
+const sequelize_1 = require("sequelize");
 const FamilyDbModel = _models_1.default.Family;
 const MemberDbModel = _models_1.default.Member;
-/**
- * @param familyData
- * @returns
- * @throws {Error}
- */
 const createFamily = async (familyData) => {
     try {
         const { familyName, headOfFamilyMemberId, ...rest } = familyData;
@@ -40,26 +36,58 @@ const createFamily = async (familyData) => {
     }
 };
 exports.createFamily = createFamily;
-/**
- * @returns
- */
-const getAllFamilies = async () => {
+const getAllFamilies = async (filters, limit, offset) => {
     try {
-        const families = await FamilyDbModel.findAll();
-        return families;
+        const where = {};
+        const include = [];
+        if (filters.familyName) {
+            where.familyName = { [sequelize_1.Op.like]: `%${filters.familyName}%` };
+        }
+        if (filters.city) {
+            where.city = { [sequelize_1.Op.like]: `%${filters.city}%` };
+        }
+        if (filters.county) {
+            where.county = { [sequelize_1.Op.like]: `%${filters.county}%` };
+        }
+        if (filters.headOfFamilyMemberId) {
+            where.headOfFamilyMemberId = filters.headOfFamilyMemberId;
+            include.push({
+                model: MemberDbModel,
+                as: 'headOfFamily',
+                attributes: ['id', 'firstName', 'lastName'],
+                required: false
+            });
+        }
+        if (filters.email) {
+            where.email = { [sequelize_1.Op.like]: `%${filters.email}%` };
+        }
+        if (filters.phoneNumber) {
+            where.phoneNumber = { [sequelize_1.Op.like]: `%${filters.phoneNumber}%` };
+        }
+        const { count, rows } = await FamilyDbModel.findAndCountAll({
+            where,
+            limit,
+            offset,
+            order: [['familyName', 'ASC']],
+            include: include,
+        });
+        return { families: rows, totalCount: count };
     }
     catch (error) {
         throw new Error(`Service error fetching all families: ${error.message}`);
     }
 };
 exports.getAllFamilies = getAllFamilies;
-/**
- * @param id
- * @returns
- */
 const getFamilyById = async (id) => {
     try {
-        const family = await FamilyDbModel.findByPk(id);
+        const family = await FamilyDbModel.findByPk(id, {
+            include: [{
+                    model: MemberDbModel,
+                    as: 'headOfFamily',
+                    attributes: ['id', 'firstName', 'lastName'],
+                    required: false
+                }]
+        });
         return family;
     }
     catch (error) {
@@ -67,10 +95,6 @@ const getFamilyById = async (id) => {
     }
 };
 exports.getFamilyById = getFamilyById;
-/**
- * @param id
- * @param familyData
- */
 const updateFamily = async (id, familyData) => {
     try {
         const { headOfFamilyMemberId, ...rest } = familyData;
@@ -86,7 +110,14 @@ const updateFamily = async (id, familyData) => {
         if (updatedRowsCount === 0) {
             return null;
         }
-        const updatedFamily = await FamilyDbModel.findByPk(id);
+        const updatedFamily = await FamilyDbModel.findByPk(id, {
+            include: [{
+                    model: MemberDbModel,
+                    as: 'headOfFamily',
+                    attributes: ['id', 'firstName', 'lastName'],
+                    required: false
+                }]
+        });
         return updatedFamily;
     }
     catch (error) {
@@ -98,10 +129,6 @@ const updateFamily = async (id, familyData) => {
     }
 };
 exports.updateFamily = updateFamily;
-/**
- * @param id
- * @returns
- */
 const deleteFamily = async (id) => {
     try {
         const deletedRowCount = await FamilyDbModel.destroy({

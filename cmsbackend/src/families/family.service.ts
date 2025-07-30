@@ -1,15 +1,11 @@
 import db from '@models';
 import { Family } from './family.model';
 import { Member } from '../members/member.model'; 
+import { Op } from 'sequelize';
 
 const FamilyDbModel = db.Family;
 const MemberDbModel = db.Member; 
 
-/**
- * @param familyData 
- * @returns 
- * @throws {Error} 
- */
 export const createFamily = async (familyData: {
   familyName: string;
   headOfFamilyMemberId?: number;
@@ -51,38 +47,75 @@ export const createFamily = async (familyData: {
   }
 };
 
-/**
- * @returns 
- */
-export const getAllFamilies = async (): Promise<Array<InstanceType<typeof Family>>> => { 
+export const getAllFamilies = async (filters: {
+  familyName?: string;
+  city?: string;
+  county?: string;
+  headOfFamilyMemberId?: number;
+  email?: string;
+  phoneNumber?: string;
+}, limit: number, offset: number): Promise<{ families: Array<InstanceType<typeof Family>>, totalCount: number }> => { 
   try {
-    const families = await FamilyDbModel.findAll(); 
-    return families;
+    const where: any = {};
+    const include: any[] = [];
+
+    if (filters.familyName) {
+      where.familyName = { [Op.like]: `%${filters.familyName}%` };
+    }
+    if (filters.city) {
+      where.city = { [Op.like]: `%${filters.city}%` };
+    }
+    if (filters.county) {
+      where.county = { [Op.like]: `%${filters.county}%` };
+    }
+    if (filters.headOfFamilyMemberId) {
+      where.headOfFamilyMemberId = filters.headOfFamilyMemberId;
+      include.push({
+        model: MemberDbModel,
+        as: 'headOfFamily',
+        attributes: ['id', 'firstName', 'lastName'],
+        required: false
+      });
+    }
+    if (filters.email) {
+      where.email = { [Op.like]: `%${filters.email}%` };
+    }
+    if (filters.phoneNumber) {
+      where.phoneNumber = { [Op.like]: `%${filters.phoneNumber}%` };
+    }
+
+    const { count, rows } = await FamilyDbModel.findAndCountAll({ 
+      where,
+      limit,
+      offset,
+      order: [['familyName', 'ASC']],
+      include: include,
+    });
+    return { families: rows, totalCount: count };
   } catch (error: any) {
     throw new Error(`Service error fetching all families: ${error.message}`);
   }
 };
 
-/**
- * @param id 
- * @returns 
- */
 export const getFamilyById = async (id: number): Promise<InstanceType<typeof Family> | null> => { 
   try {
-    const family = await FamilyDbModel.findByPk(id); 
+    const family = await FamilyDbModel.findByPk(id, {
+      include: [{
+        model: MemberDbModel,
+        as: 'headOfFamily',
+        attributes: ['id', 'firstName', 'lastName'],
+        required: false
+      }]
+    }); 
     return family;
   } catch (error: any) {
     throw new Error(`Service error fetching family by ID ${id}: ${error.message}`);
   }
 };
 
-/**
- * @param id 
- * @param familyData 
- */
 export const updateFamily = async (id: number, familyData: {
   familyName?: string;
-  headOfFamilyMemberId?: number;
+  headOfFamilyMemberId?: number | null;
   address?: string;
   city?: string;
   county?: string;
@@ -109,7 +142,14 @@ export const updateFamily = async (id: number, familyData: {
       return null;
     }
 
-    const updatedFamily = await FamilyDbModel.findByPk(id); 
+    const updatedFamily = await FamilyDbModel.findByPk(id, {
+      include: [{
+        model: MemberDbModel,
+        as: 'headOfFamily',
+        attributes: ['id', 'firstName', 'lastName'],
+        required: false
+      }]
+    }); 
     return updatedFamily;
   } catch (error: any) {
     if (error.name === 'SequelizeUniqueConstraintError') {
@@ -120,10 +160,6 @@ export const updateFamily = async (id: number, familyData: {
   }
 };
 
-/**
- * @param id 
- * @returns 
- */
 export const deleteFamily = async (id: number): Promise<number> => {
   try {
     const deletedRowCount = await FamilyDbModel.destroy({ 

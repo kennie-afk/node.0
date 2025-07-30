@@ -41,12 +41,15 @@ export const createEvent = async (eventData: {
   }
 };
 
-export const getAllEvents = async (): Promise<Array<InstanceType<typeof Event>>> => {
+export const getAllEvents = async (limit: number, offset: number): Promise<{ events: Array<InstanceType<typeof Event>>, totalCount: number }> => {
   try {
-    const events = await EventDbModel.findAll({
-      include: [{ model: db.User, as: 'organizer' }]
+    const { count, rows } = await EventDbModel.findAndCountAll({
+      limit,
+      offset,
+      include: [{ model: db.User, as: 'organizer' }],
+      order: [['startTime', 'DESC']],
     });
-    return events;
+    return { events: rows, totalCount: count };
   } catch (error: any) {
     throw new Error(`Service error fetching all events: ${error.message}`);
   }

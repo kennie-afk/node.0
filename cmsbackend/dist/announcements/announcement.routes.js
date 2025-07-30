@@ -1,1 +1,11 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const announcement_controller_1 = require("./announcement.controller");
+const router = (0, express_1.Router)();
+router.post('/', announcement_controller_1.createAnnouncement);
+router.get('/', announcement_controller_1.getAllAnnouncements);
+router.get('/:id', announcement_controller_1.getAnnouncementById);
+router.put('/:id', announcement_controller_1.updateAnnouncement);
+router.delete('/:id', announcement_controller_1.deleteAnnouncement);
+exports.default = router;

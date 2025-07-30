@@ -1,7 +1,11 @@
+import 'module-alias/register';
+import dotenv from 'dotenv';
+dotenv.config();
+
 'use strict';
 
-import express from 'express';
-import db from '@models';
+import express, { Request, Response, NextFunction } from 'express';
+import db from '@models'; 
 
 import userRoutes from '@users/user.routes';
 import familyRoutes from '@families/family.routes';
@@ -14,10 +18,12 @@ import attendanceRoutes from '@attendance/attendance.routes';
 import ministryRoutes from '@ministries/ministry.routes';
 import smallGroupRoutes from '@small_groups/small_group.routes';
 
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+
 
 app.get('/', async (req, res) => {
   try {
@@ -62,10 +68,21 @@ app.use('/attendance', attendanceRoutes);
 app.use('/ministries', ministryRoutes);
 app.use('/small-groups', smallGroupRoutes);
 
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error(err.stack);
+  res.status(500).send('Something broke!');
+});
+
+
 async function startServer() {
   try {
+    console.log(`DEBUG: Attempting to connect to DB host: ${db.sequelize.config.host}`);
+
     await db.sequelize.authenticate();
     console.log('Database connection has been established successfully.');
+
+    await db.sequelize.sync({ alter: true }); 
+    console.log('Database tables synchronized successfully.');
 
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);

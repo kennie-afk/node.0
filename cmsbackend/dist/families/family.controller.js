@@ -1,54 +1,77 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteFamily = exports.updateFamily = exports.getFamilyById = exports.getAllFamilies = exports.createFamily = void 0;
-const _models_1 = __importDefault(require("@models"));
-const Family = _models_1.default.Family;
-/**
- * @param req
- * @param res
- * @returns
- */
+const familyService = __importStar(require("./family.service"));
 const createFamily = async (req, res) => {
     try {
-        const { familyName, headOfFamilyMemberId, address, city, county, postalCode, phoneNumber, email, notes, } = req.body;
-        if (!familyName) {
-            return res.status(400).json({ message: 'Family name is required.' });
-        }
-        const newFamily = await Family.create({
-            familyName,
-            headOfFamilyMemberId,
-            address,
-            city,
-            county,
-            postalCode,
-            phoneNumber,
-            email,
-            notes,
-        });
+        const familyData = req.body;
+        const newFamily = await familyService.createFamily(familyData);
         return res.status(201).json(newFamily);
     }
     catch (error) {
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            const field = error.errors[0].path;
-            return res.status(409).json({ message: `Family with this ${field} already exists.` });
-        }
         console.error('Error creating family:', error);
+        if (error.message.includes('required.')) {
+            return res.status(400).json({ message: error.message });
+        }
+        if (error.message.includes('not found.')) {
+            return res.status(400).json({ message: error.message });
+        }
+        if (error.message.includes('Unique constraint error')) {
+            return res.status(409).json({ message: error.message });
+        }
         return res.status(500).json({ message: 'Failed to create family.' });
     }
 };
 exports.createFamily = createFamily;
-/**
- * @param req
- * @param res
- * @returns
- */
 const getAllFamilies = async (req, res) => {
     try {
-        const families = await Family.findAll();
-        return res.status(200).json(families);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = (page - 1) * limit;
+        const filters = req.query;
+        const { families, totalCount } = await familyService.getAllFamilies(filters, limit, offset);
+        return res.status(200).json({
+            data: families,
+            meta: {
+                totalCount,
+                page,
+                limit,
+                totalPages: Math.ceil(totalCount / limit),
+            },
+        });
     }
     catch (error) {
         console.error('Error fetching families:', error);
@@ -56,15 +79,10 @@ const getAllFamilies = async (req, res) => {
     }
 };
 exports.getAllFamilies = getAllFamilies;
-/**
- * @param req
- * @param res
- * @returns
- */
 const getFamilyById = async (req, res) => {
     try {
         const { id } = req.params;
-        const family = await Family.findByPk(id);
+        const family = await familyService.getFamilyById(Number(id));
         if (!family) {
             return res.status(404).json({ message: 'Family not found.' });
         }
@@ -76,45 +94,32 @@ const getFamilyById = async (req, res) => {
     }
 };
 exports.getFamilyById = getFamilyById;
-/**
- * @param req
- * @param res
- * @returns
- */
 const updateFamily = async (req, res) => {
     try {
         const { id } = req.params;
-        const [updatedRowsCount, updatedFamilies] = await Family.update(req.body, {
-            where: { id },
-            returning: true,
-        });
-        if (updatedRowsCount === 0) {
+        const familyData = req.body;
+        const updatedFamily = await familyService.updateFamily(Number(id), familyData);
+        if (!updatedFamily) {
             return res.status(404).json({ message: 'Family not found or no changes made.' });
         }
-        const updatedFamily = await Family.findByPk(id);
         return res.status(200).json(updatedFamily);
     }
     catch (error) {
-        if (error.name === 'SequelizeUniqueConstraintError') {
-            const field = error.errors[0].path;
-            return res.status(409).json({ message: `Family with this ${field} already exists.` });
+        if (error.message.includes('not found for update.')) {
+            return res.status(400).json({ message: error.message });
+        }
+        if (error.message.includes('Unique constraint error')) {
+            return res.status(409).json({ message: error.message });
         }
         console.error('Error updating family:', error);
         return res.status(500).json({ message: 'Failed to update family.' });
     }
 };
 exports.updateFamily = updateFamily;
-/**
- * @param req
- * @param res
- * @returns
- */
 const deleteFamily = async (req, res) => {
     try {
         const { id } = req.params;
-        const deletedRowCount = await Family.destroy({
-            where: { id },
-        });
+        const deletedRowCount = await familyService.deleteFamily(Number(id));
         if (deletedRowCount === 0) {
             return res.status(404).json({ message: 'Family not found.' });
         }

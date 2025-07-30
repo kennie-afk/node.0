@@ -31,10 +31,14 @@ const createUser = async (userData) => {
     }
 };
 exports.createUser = createUser;
-const getAllUsers = async () => {
+const getAllUsers = async (limit, offset) => {
     try {
-        const users = await UserDbModel.findAll();
-        return users;
+        const { count, rows } = await UserDbModel.findAndCountAll({
+            limit,
+            offset,
+            order: [['username', 'ASC']],
+        });
+        return { users: rows, totalCount: count };
     }
     catch (error) {
         throw new Error(`Service error fetching all users: ${error.message}`);

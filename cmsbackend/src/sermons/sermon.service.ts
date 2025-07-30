@@ -71,15 +71,18 @@ export const createSermon = async (sermonData: {
   }
 };
 
-export const getAllSermons = async (): Promise<Array<InstanceType<typeof Sermon>>> => {
+export const getAllSermons = async (limit: number, offset: number): Promise<{ sermons: Array<InstanceType<typeof Sermon>>, totalCount: number }> => {
   try {
-    const sermons = await SermonDbModel.findAll({
+    const { count, rows } = await SermonDbModel.findAndCountAll({
+      limit,
+      offset,
       include: [
         { model: db.Member, as: 'speaker' },
         { model: db.Event, as: 'event' }
-      ]
+      ],
+      order: [['datePreached', 'DESC']],
     });
-    return sermons;
+    return { sermons: rows, totalCount: count };
   } catch (error: any) {
     throw new Error(`Service error fetching all sermons: ${error.message}`);
   }

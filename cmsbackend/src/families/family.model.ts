@@ -5,14 +5,14 @@ import { Member } from '../members/member.model';
 interface FamilyAttributes {
   id: number;
   familyName: string;
-  headOfFamilyMemberId?: number;
-  address?: string;
-  city?: string;
-  county?: string;
-  postalCode?: string;
-  phoneNumber?: string;
-  email?: string;
-  notes?: string;
+  headOfFamilyMemberId?: number | null;
+  address?: string | null;
+  city?: string | null;
+  county?: string | null;
+  postalCode?: string | null;
+  phoneNumber?: string | null;
+  email?: string | null;
+  notes?: string | null;
 }
 
 interface FamilyCreationAttributes extends Optional<FamilyAttributes, 'id' | 'headOfFamilyMemberId'> {}
@@ -20,14 +20,14 @@ interface FamilyCreationAttributes extends Optional<FamilyAttributes, 'id' | 'he
 export class Family extends Model<FamilyAttributes, FamilyCreationAttributes> implements FamilyAttributes {
   public id!: number;
   public familyName!: string;
-  public headOfFamilyMemberId?: number;
-  public address?: string;
-  public city?: string;
-  public county?: string;
-  public postalCode?: string;
-  public phoneNumber?: string;
-  public email?: string;
-  public notes?: string;
+  public headOfFamilyMemberId!: number | null;
+  public address!: string | null;
+  public city!: string | null;
+  public county!: string | null;
+  public postalCode!: string | null;
+  public phoneNumber!: string | null;
+  public email!: string | null;
+  public notes!: string | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;

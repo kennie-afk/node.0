@@ -73,14 +73,12 @@ export const getAllMembers = async (filters: {
   city?: string;
   county?: string;
   familyId?: number;
-  limit?: number;
-  offset?: number;
   includeFamily?: boolean;
   includeMinistries?: boolean;
   includeSmallGroups?: boolean;
   includeContributions?: boolean;
   includeLedMinistries?: boolean;
-}): Promise<Array<InstanceType<typeof Member>>> => {
+}, limit: number, offset: number): Promise<{ members: Array<InstanceType<typeof Member>>, totalCount: number }> => {
   try {
     const where: any = {};
     const include: any[] = [];
@@ -163,14 +161,14 @@ export const getAllMembers = async (filters: {
       });
     }
 
-    const members = await MemberDbModel.findAll({
+    const { count, rows } = await MemberDbModel.findAndCountAll({
       where,
-      limit: filters.limit ? Number(filters.limit) : undefined,
-      offset: filters.offset ? Number(filters.offset) : undefined,
+      limit,
+      offset,
       order: [['lastName', 'ASC'], ['firstName', 'ASC']],
       include: include,
     });
-    return members;
+    return { members: rows, totalCount: count };
   } catch (error: any) {
     throw new Error(`Service error fetching all members: ${error.message}`);
   }

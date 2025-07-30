@@ -19,8 +19,21 @@ export const createSermon = async (req: Request, res: Response): Promise<Respons
 
 export const getAllSermons = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const sermons = await sermonService.getAllSermons();
-    return res.status(200).json(sermons);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = (page - 1) * limit;
+
+    const { sermons, totalCount } = await sermonService.getAllSermons(limit, offset);
+
+    return res.status(200).json({
+      data: sermons,
+      meta: {
+        totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error: any) {
     console.error('Error in getAllSermons controller:', error.message);
     return res.status(500).json({ message: 'Failed to retrieve sermons.' });

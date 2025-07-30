@@ -18,8 +18,6 @@ interface AttendanceFilters {
   sermonId?: number;
   attendanceDate?: string;
   attendanceType?: 'In-person' | 'Online' | 'Other';
-  limit?: number;
-  offset?: number;
 }
 
 export const createAttendance = async (attendanceData: {
@@ -99,7 +97,11 @@ export const createAttendance = async (attendanceData: {
   }
 };
 
-export const getAllAttendance = async (filters: AttendanceFilters): Promise<Array<InstanceType<typeof Attendance>>> => {
+export const getAllAttendance = async (
+  filters: AttendanceFilters,
+  limit: number,
+  offset: number
+): Promise<{ attendanceRecords: Array<InstanceType<typeof Attendance>>, totalCount: number }> => {
   try {
     const where: any = {};
     const include: any[] = [
@@ -135,14 +137,14 @@ export const getAllAttendance = async (filters: AttendanceFilters): Promise<Arra
         };
     }
 
-    const attendanceRecords = await AttendanceDbModel.findAll({
+    const { count, rows } = await AttendanceDbModel.findAndCountAll({
       where,
-      limit: filters.limit ? Number(filters.limit) : undefined,
-      offset: filters.offset ? Number(filters.offset) : undefined,
+      limit,
+      offset,
       order: [['attendanceDate', 'DESC']],
       include: include,
     });
-    return attendanceRecords;
+    return { attendanceRecords: rows, totalCount: count };
   } catch (error: any) {
     throw new Error(`Service error fetching all attendance records: ${error.message}`);
   }

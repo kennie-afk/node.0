@@ -15,8 +15,6 @@ interface AnnouncementFilters {
   publicationDateEnd?: string;
   expiryDateStart?: string;
   expiryDateEnd?: string;
-  limit?: number;
-  offset?: number;
 }
 
 export const createAnnouncement = async (announcementData: {
@@ -56,8 +54,10 @@ export const createAnnouncement = async (announcementData: {
 };
 
 export const getAllAnnouncements = async (
-  filters: AnnouncementFilters
-): Promise<Array<InstanceType<typeof Announcement>>> => {
+  filters: AnnouncementFilters,
+  limit: number,
+  offset: number
+): Promise<{ announcements: Array<InstanceType<typeof Announcement>>, totalCount: number }> => {
   try {
     const where: any = {};
 
@@ -108,14 +108,14 @@ export const getAllAnnouncements = async (
       };
     }
 
-    const announcements = await AnnouncementDbModel.findAll({
+    const { count, rows } = await AnnouncementDbModel.findAndCountAll({
       where,
-      limit: filters.limit ? Number(filters.limit) : undefined,
-      offset: filters.offset ? Number(filters.offset) : undefined,
+      limit,
+      offset,
       include: [{ model: db.User, as: 'author', attributes: ['id', 'username'] }],
       order: [['publicationDate', 'DESC']],
     });
-    return announcements;
+    return { announcements: rows, totalCount: count };
   } catch (error: any) {
     throw new Error(`Service error fetching all announcements: ${error.message}`);
   }

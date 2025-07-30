@@ -19,8 +19,21 @@ export const createEvent = async (req: Request, res: Response): Promise<Response
 
 export const getAllEvents = async (req: Request, res: Response): Promise<Response> => {
   try {
-    const events = await eventService.getAllEvents();
-    return res.status(200).json(events);
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = (page - 1) * limit;
+
+    const { events, totalCount } = await eventService.getAllEvents(limit, offset);
+
+    return res.status(200).json({
+      data: events,
+      meta: {
+        totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error: any) {
     console.error('Error in getAllEvents controller:', error.message);
     return res.status(500).json({ message: 'Failed to retrieve events.' });

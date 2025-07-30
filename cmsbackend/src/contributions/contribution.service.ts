@@ -98,14 +98,16 @@ export const createContribution = async (data: {
   }
 };
 
-export const getAllContributions = async (filters: {
-  type?: string;
-  startDate?: string;
-  endDate?: string;
-  memberId?: number;
-  limit?: number;
-  offset?: number;
-}) => {
+export const getAllContributions = async (
+  filters: {
+    type?: string;
+    startDate?: string;
+    endDate?: string;
+    memberId?: number;
+  },
+  limit: number,
+  offset: number
+): Promise<{ contributions: Array<InstanceType<typeof Contribution>>, totalCount: number }> => {
   try {
     const where: any = {};
     const include: any[] = [];
@@ -144,14 +146,14 @@ export const getAllContributions = async (filters: {
       };
     }
 
-    const contributions = await ContributionDbModel.findAll({
+    const { count, rows } = await ContributionDbModel.findAndCountAll({
       where,
-      limit: filters.limit ? Number(filters.limit) : undefined,
-      offset: filters.offset ? Number(filters.offset) : undefined,
+      limit,
+      offset,
       order: [['contributionDate', 'DESC']],
       include: include
     });
-    return contributions;
+    return { contributions: rows, totalCount: count };
   } catch (error: any) {
     console.error('Service error fetching all contributions:', error.message);
     throw new Error(`Service error fetching all contributions: ${error.message}`);

@@ -1,24 +1,23 @@
 {
   "development": {
-    "username": "root",       
-    "password": "",            
-    "database": "church_cms_db", 
-    "host": "host.docker.internal",      
+    "username": "root",
+    "password": "",
+    "database": "church_cms_db",
+    "host": "mysql_db",
     "dialect": "mysql"
   },
   "test": {
     "username": "root",
     "password": "",
     "database": "church_cms_db_test",
-    "host": "host.docker.internal",
+    "host": "localhost",
     "dialect": "mysql"
   },
   "production": {
     "username": "root",
     "password": null,
-    "database": "database_production",
-    "host": "host.docker.internal",
+    "database": "church_cms_db",
+    "host": "mysql_db",
     "dialect": "mysql"
   }
-  
 }
