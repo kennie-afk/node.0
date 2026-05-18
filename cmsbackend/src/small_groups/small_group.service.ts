@@ -4,6 +4,7 @@ import { Ministry } from '@ministries/ministry.model';
 import { Member } from '@members/member.model';
 import { SmallGroupMember } from './small_group_member.model';
 import { Op } from 'sequelize';
+import { NotFoundError, BadRequestError } from '../utils/errors';
 
 const SmallGroupDbModel = db.SmallGroup;
 const MinistryDbModel = db.Ministry;
@@ -25,13 +26,13 @@ export const createSmallGroup = async (data: {
 
     const parentMinistry = await MinistryDbModel.findByPk(ministryId);
     if (!parentMinistry) {
-      throw new Error(`Ministry with ID ${ministryId} not found.`);
+      throw new NotFoundError(`Ministry with ID ${ministryId} not found.`);
     }
 
     if (leaderId) {
       const leader = await MemberDbModel.findByPk(leaderId);
       if (!leader) {
-        throw new Error(`Leader with ID ${leaderId} not found.`);
+        throw new NotFoundError(`Leader with ID ${leaderId} not found.`);
       }
     }
 
@@ -51,9 +52,9 @@ export const createSmallGroup = async (data: {
     return createdSmallGroup;
   } catch (error: any) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      throw new Error(`Small Group with name '${data.name}' already exists under ministry ID ${data.ministryId}.`);
+      throw new BadRequestError(`Small Group with name '${data.name}' already exists under ministry ID ${data.ministryId}.`);
     }
-    throw new Error(`Service error creating small group: ${error.message}`);
+    throw error;
   }
 };
 
@@ -97,7 +98,7 @@ export const getAllSmallGroups = async (filters: {
     });
     return { smallGroups: rows, totalCount: count };
   } catch (error: any) {
-    throw new Error(`Service error fetching all small groups: ${error.message}`);
+    throw error;
   }
 };
 
@@ -112,7 +113,7 @@ export const getSmallGroupById = async (id: number) => {
     });
     return smallGroup;
   } catch (error: any) {
-    throw new Error(`Service error fetching small group by ID ${id}: ${error.message}`);
+    throw error;
   }
 };
 
@@ -137,14 +138,14 @@ export const updateSmallGroup = async (id: number, smallGroupData: {
     if (ministryId !== undefined && ministryId !== null) {
       const parentMinistry = await MinistryDbModel.findByPk(ministryId);
       if (!parentMinistry) {
-        throw new Error(`Ministry with ID ${ministryId} not found.`);
+        throw new NotFoundError(`Ministry with ID ${ministryId} not found.`);
       }
     }
 
     if (leaderId !== undefined && leaderId !== null) {
       const leader = await MemberDbModel.findByPk(leaderId);
       if (!leader) {
-        throw new Error(`Leader with ID ${leaderId} not found.`);
+        throw new NotFoundError(`Leader with ID ${leaderId} not found.`);
       }
     }
 
@@ -169,9 +170,9 @@ export const updateSmallGroup = async (id: number, smallGroupData: {
     return updatedSmallGroup;
   } catch (error: any) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      throw new Error(`Small Group with name '${smallGroupData.name}' already exists under ministry ID ${smallGroupData.ministryId}.`);
+      throw new BadRequestError(`Small Group with name '${smallGroupData.name}' already exists under ministry ID ${smallGroupData.ministryId}.`);
     }
-    throw new Error(`Service error updating small group with ID ${id}: ${error.message}`);
+    throw error;
   }
 };
 
@@ -182,7 +183,7 @@ export const deleteSmallGroup = async (id: number) => {
     });
     return deletedRowCount;
   } catch (error: any) {
-    throw new Error(`Service error deleting small group with ID ${id}: ${error.message}`);
+    throw error;
   }
 };
 
@@ -190,12 +191,12 @@ export const addMemberToSmallGroup = async (smallGroupId: number, memberId: numb
   try {
     const smallGroup = await SmallGroupDbModel.findByPk(smallGroupId);
     if (!smallGroup) {
-      throw new Error('Small Group not found.');
+      throw new NotFoundError('Small Group not found.');
     }
 
     const member = await MemberDbModel.findByPk(memberId);
     if (!member) {
-      throw new Error('Member not found.');
+      throw new NotFoundError('Member not found.');
     }
 
     const [smallGroupMember, created] = await SmallGroupMemberDbModel.findOrCreate({
@@ -204,12 +205,12 @@ export const addMemberToSmallGroup = async (smallGroupId: number, memberId: numb
     });
 
     if (!created) {
-      throw new Error('Member is already part of this small group.');
+      throw new BadRequestError('Member is already part of this small group.');
     }
 
     return smallGroupMember;
   } catch (error: any) {
-    throw new Error(`Service error adding member to small group: ${error.message}`);
+    throw error;
   }
 };
 
@@ -220,7 +221,7 @@ export const removeMemberFromSmallGroup = async (smallGroupId: number, memberId:
     });
     return deletedCount;
   } catch (error: any) {
-    throw new Error(`Service error removing member from small group: ${error.message}`);
+    throw error;
   }
 };
 
@@ -236,11 +237,11 @@ export const getMembersOfSmallGroup = async (smallGroupId: number) => {
     });
 
     if (!smallGroup) {
-      throw new Error('Small Group not found.');
+      return null;
     }
 
     return smallGroup.members;
   } catch (error: any) {
-    throw new Error(`Service error fetching members of small group: ${error.message}`);
+    throw error;
   }
 };

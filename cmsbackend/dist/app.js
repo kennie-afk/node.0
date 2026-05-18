@@ -6,10 +6,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("module-alias/register");
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
-'use strict';
 const express_1 = __importDefault(require("express"));
+const helmet_1 = __importDefault(require("helmet"));
+const cors_1 = __importDefault(require("cors"));
+const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const _models_1 = __importDefault(require("@models"));
+const errors_1 = require("./utils/errors");
 const user_routes_1 = __importDefault(require("@users/user.routes"));
+const auth_routes_1 = __importDefault(require("./auth/auth.routes"));
 const family_routes_1 = __importDefault(require("@families/family.routes"));
 const member_routes_1 = __importDefault(require("@members/member.routes"));
 const event_routes_1 = __importDefault(require("@events/event.routes"));
@@ -22,37 +26,37 @@ const small_group_routes_1 = __importDefault(require("@small_groups/small_group.
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 app.use(express_1.default.json());
-app.get('/', async (req, res) => {
-    try {
-        const userCount = await _models_1.default.User.count();
-        const familyCount = await _models_1.default.Family.count();
-        const memberCount = await _models_1.default.Member.count();
-        const eventCount = await _models_1.default.Event.count();
-        const announcementCount = await _models_1.default.Announcement.count();
-        const sermonCount = await _models_1.default.Sermon.count();
-        const contributionCount = await _models_1.default.Contribution.count();
-        const attendanceCount = await _models_1.default.Attendance.count();
-        const ministryCount = await _models_1.default.Ministry.count();
-        const smallGroupCount = await _models_1.default.SmallGroup.count();
-        res.status(200).json({
-            message: `Welcome to Church CMS Backend! MySQL Database connected.`,
-            usersInDb: userCount,
-            familiesInDb: familyCount,
-            membersInDb: memberCount,
-            eventsInDb: eventCount,
-            announcementsInDb: announcementCount,
-            sermonsInDb: sermonCount,
-            contributionsInDb: contributionCount,
-            attendanceInDb: attendanceCount,
-            ministriesInDb: ministryCount,
-            smallGroupsInDb: smallGroupCount,
-        });
-    }
-    catch (error) {
-        console.error('Error fetching counts:', error);
-        res.status(500).json({ message: 'Internal server error' });
-    }
+app.use((0, helmet_1.default)());
+app.use((0, cors_1.default)({
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true
+}));
+const apiLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 15 * 60 * 1000,
+    max: 100
 });
+app.use(apiLimiter);
+app.get('/', async (req, res) => {
+    const counts = {
+        usersInDb: await _models_1.default.User.count(),
+        familiesInDb: await _models_1.default.Family.count(),
+        membersInDb: await _models_1.default.Member.count(),
+        eventsInDb: await _models_1.default.Event.count(),
+        announcementsInDb: await _models_1.default.Announcement.count(),
+        sermonsInDb: await _models_1.default.Sermon.count(),
+        contributionsInDb: await _models_1.default.Contribution.count(),
+        attendanceInDb: await _models_1.default.Attendance.count(),
+        ministriesInDb: await _models_1.default.Ministry.count(),
+        smallGroupsInDb: await _models_1.default.SmallGroup.count(),
+    };
+    res.status(200).json({
+        message: 'Welcome to Church CMS Backend! Database connected.',
+        ...counts
+    });
+});
+app.use('/auth', auth_routes_1.default);
 app.use('/users', user_routes_1.default);
 app.use('/families', family_routes_1.default);
 app.use('/members', member_routes_1.default);
@@ -65,22 +69,23 @@ app.use('/ministries', ministry_routes_1.default);
 app.use('/small-groups', small_group_routes_1.default);
 app.use((err, req, res, next) => {
     console.error(err.stack);
-    res.status(500).send('Something broke!');
+    if (err instanceof errors_1.ApiError) {
+        return res.status(err.statusCode).json({ message: err.message });
+    }
+    res.status(500).json({ message: 'Internal Server Error' });
 });
 async function startServer() {
     try {
-        console.log(`DEBUG: Attempting to connect to DB host: ${_models_1.default.sequelize.config.host}`);
         await _models_1.default.sequelize.authenticate();
-        console.log('Database connection has been established successfully.');
+        console.log('Database connection established.');
         await _models_1.default.sequelize.sync({ alter: true });
-        console.log('Database tables synchronized successfully.');
+        console.log('Database synchronized.');
         app.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT}`);
-            console.log(`Access the server at http://localhost:${PORT}`);
+            console.log(`Server running on port ${PORT}`);
         });
     }
     catch (error) {
-        console.error('Unable to connect to the database or start server:', error);
+        console.error('Failed to start server:', error);
         process.exit(1);
     }
 }

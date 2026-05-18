@@ -7,7 +7,7 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER.UNSIGNED
+        type: Sequelize.INTEGER
       },
       family_name: {
         type: Sequelize.STRING(100),
@@ -15,7 +15,7 @@ module.exports = {
         unique: true
       },
       head_of_family_member_id: {
-        type: Sequelize.INTEGER.UNSIGNED,
+        type: Sequelize.INTEGER,
         allowNull: true,
       },
       address: { 
@@ -56,12 +56,9 @@ module.exports = {
       updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ')
       }
-    }, {
-        charset: 'utf8mb4',
-        collate: 'utf8mb4_unicode_ci'
-    });
+    }, );
   },
 
   async down(queryInterface, Sequelize) {

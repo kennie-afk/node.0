@@ -1,18 +1,21 @@
-import { Router } from 'express';                  
+import { Router } from 'express';
 import {
   createMember,
   getAllMembers,
   getMemberById,
   updateMember,
   deleteMember,
-} from './member.controller'; 
+} from './member.controller';
+import { validate } from '../middleware/validation.middleware';
+import { createMemberSchema, updateMemberSchema } from './member.schemas';
+import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.post('/', createMember);         
-router.get('/', getAllMembers);          
-router.get('/:id', getMemberById);      
-router.put('/:id', updateMember);       
-router.delete('/:id', deleteMember);     
+router.post('/', authenticateToken, authorizeAdmin, validate(createMemberSchema), createMember);
+router.get('/', authenticateToken, getAllMembers);
+router.get('/:id', authenticateToken, getMemberById);
+router.put('/:id', authenticateToken, authorizeAdmin, validate(updateMemberSchema), updateMember);
+router.delete('/:id', authenticateToken, authorizeAdmin, deleteMember);
 
-export default router; 
+export default router;

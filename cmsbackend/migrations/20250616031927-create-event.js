@@ -7,7 +7,7 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER.UNSIGNED
+        type: Sequelize.INTEGER
       },
       name: {
         type: Sequelize.STRING(255),
@@ -35,7 +35,7 @@ module.exports = {
         allowNull: true,
       },
       organizer_user_id: { 
-        type: Sequelize.INTEGER.UNSIGNED,
+        type: Sequelize.INTEGER,
         allowNull: true, 
         references: {
           model: 'users', 
@@ -61,11 +61,8 @@ module.exports = {
       updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ')
       }
-    }, {
-        charset: 'utf8mb4',
-        collate: 'utf8mb4_unicode_ci'
     });
   },
 

@@ -1,18 +1,21 @@
-import { Router } from 'express';                   
+import { Router } from 'express';
 import {
   createFamily,
   getAllFamilies,
   getFamilyById,
   updateFamily,
   deleteFamily,
-} from './family.controller'; 
+} from './family.controller';
+import { validate } from '../middleware/validation.middleware';
+import { createFamilySchema, updateFamilySchema } from './family.schemas';
+import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware';
 
-const router = Router(); 
+const router = Router();
 
-router.post('/', createFamily);         
-router.get('/', getAllFamilies);          
-router.get('/:id', getFamilyById);     
-router.put('/:id', updateFamily);       
-router.delete('/:id', deleteFamily);     
+router.post('/', authenticateToken, authorizeAdmin, validate(createFamilySchema), createFamily);
+router.get('/', authenticateToken, getAllFamilies);
+router.get('/:id', authenticateToken, getFamilyById);
+router.put('/:id', authenticateToken, authorizeAdmin, validate(updateFamilySchema), updateFamily);
+router.delete('/:id', authenticateToken, authorizeAdmin, deleteFamily);
 
-export default router; 
+export default router;

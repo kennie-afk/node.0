@@ -2,10 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const announcement_controller_1 = require("./announcement.controller");
+const validation_middleware_1 = require("../middleware/validation.middleware");
+const announcement_schemas_1 = require("./announcement.schemas");
+const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
-router.post('/', announcement_controller_1.createAnnouncement);
+router.post('/', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, (0, validation_middleware_1.validate)(announcement_schemas_1.createAnnouncementSchema), announcement_controller_1.createAnnouncement);
 router.get('/', announcement_controller_1.getAllAnnouncements);
 router.get('/:id', announcement_controller_1.getAnnouncementById);
-router.put('/:id', announcement_controller_1.updateAnnouncement);
-router.delete('/:id', announcement_controller_1.deleteAnnouncement);
+router.put('/:id', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, (0, validation_middleware_1.validate)(announcement_schemas_1.updateAnnouncementSchema), announcement_controller_1.updateAnnouncement);
+router.delete('/:id', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, announcement_controller_1.deleteAnnouncement);
 exports.default = router;

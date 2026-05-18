@@ -39,6 +39,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteSermon = exports.updateSermon = exports.getSermonById = exports.getAllSermons = exports.createSermon = void 0;
 const _models_1 = __importDefault(require("@models"));
 const eventService = __importStar(require("@events/event.service"));
+const errors_1 = require("../utils/errors");
 const SermonDbModel = _models_1.default.Sermon;
 const MemberDbModel = _models_1.default.Member;
 const EventDbModel = _models_1.default.Event;
@@ -46,13 +47,13 @@ const createSermon = async (sermonData) => {
     try {
         const { title, datePreached, speakerMemberId, ...rest } = sermonData;
         if (!title || !datePreached) {
-            throw new Error('Sermon title and date preached are required.');
+            throw new errors_1.BadRequestError('Sermon title and date preached are required.');
         }
         let speakerName = 'Unknown Speaker';
         if (speakerMemberId) {
             const memberExists = await MemberDbModel.findByPk(speakerMemberId);
             if (!memberExists) {
-                throw new Error(`Speaker Member with ID ${speakerMemberId} not found.`);
+                throw new errors_1.NotFoundError(`Speaker Member with ID ${speakerMemberId} not found.`);
             }
             speakerName = `${memberExists.firstName} ${memberExists.lastName}`;
         }
@@ -87,7 +88,7 @@ const createSermon = async (sermonData) => {
         return newSermon;
     }
     catch (error) {
-        throw new Error(`Service error creating sermon: ${error.message}`);
+        throw error;
     }
 };
 exports.createSermon = createSermon;
@@ -105,7 +106,7 @@ const getAllSermons = async (limit, offset) => {
         return { sermons: rows, totalCount: count };
     }
     catch (error) {
-        throw new Error(`Service error fetching all sermons: ${error.message}`);
+        throw error;
     }
 };
 exports.getAllSermons = getAllSermons;
@@ -120,7 +121,7 @@ const getSermonById = async (id) => {
         return sermon;
     }
     catch (error) {
-        throw new Error(`Service error fetching sermon by ID ${id}: ${error.message}`);
+        throw error;
     }
 };
 exports.getSermonById = getSermonById;
@@ -130,13 +131,13 @@ const updateSermon = async (id, sermonData) => {
         if (speakerMemberId !== undefined && speakerMemberId !== null) {
             const memberExists = await MemberDbModel.findByPk(speakerMemberId);
             if (!memberExists) {
-                throw new Error(`Speaker Member with ID ${speakerMemberId} not found for update.`);
+                throw new errors_1.NotFoundError(`Speaker Member with ID ${speakerMemberId} not found for update.`);
             }
         }
         if (eventId !== undefined && eventId !== null) {
             const eventExists = await EventDbModel.findByPk(eventId);
             if (!eventExists) {
-                throw new Error(`Event with ID ${eventId} not found for update.`);
+                throw new errors_1.NotFoundError(`Event with ID ${eventId} not found for update.`);
             }
         }
         const [updatedRowsCount] = await SermonDbModel.update({ speakerMemberId, eventId, ...rest }, {
@@ -154,7 +155,7 @@ const updateSermon = async (id, sermonData) => {
         return updatedSermon;
     }
     catch (error) {
-        throw new Error(`Service error updating sermon with ID ${id}: ${error.message}`);
+        throw error;
     }
 };
 exports.updateSermon = updateSermon;
@@ -166,7 +167,7 @@ const deleteSermon = async (id) => {
         return deletedRowCount;
     }
     catch (error) {
-        throw new Error(`Service error deleting sermon with ID ${id}: ${error.message}`);
+        throw error;
     }
 };
 exports.deleteSermon = deleteSermon;

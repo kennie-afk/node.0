@@ -35,99 +35,63 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteFamily = exports.updateFamily = exports.getFamilyById = exports.getAllFamilies = exports.createFamily = void 0;
 const familyService = __importStar(require("./family.service"));
+const errors_1 = require("../utils/errors");
 const createFamily = async (req, res) => {
     try {
-        const familyData = req.body;
-        const newFamily = await familyService.createFamily(familyData);
+        const newFamily = await familyService.createFamily(req.body);
         return res.status(201).json(newFamily);
     }
     catch (error) {
-        console.error('Error creating family:', error);
-        if (error.message.includes('required.')) {
-            return res.status(400).json({ message: error.message });
-        }
-        if (error.message.includes('not found.')) {
-            return res.status(400).json({ message: error.message });
-        }
-        if (error.message.includes('Unique constraint error')) {
-            return res.status(409).json({ message: error.message });
-        }
-        return res.status(500).json({ message: 'Failed to create family.' });
+        throw error;
     }
 };
 exports.createFamily = createFamily;
 const getAllFamilies = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const offset = (page - 1) * limit;
-        const filters = req.query;
-        const { families, totalCount } = await familyService.getAllFamilies(filters, limit, offset);
-        return res.status(200).json({
-            data: families,
-            meta: {
-                totalCount,
-                page,
-                limit,
-                totalPages: Math.ceil(totalCount / limit),
-            },
-        });
+        const families = await familyService.getAllFamilies();
+        return res.status(200).json(families);
     }
     catch (error) {
-        console.error('Error fetching families:', error);
-        return res.status(500).json({ message: 'Failed to retrieve families.' });
+        throw error;
     }
 };
 exports.getAllFamilies = getAllFamilies;
 const getFamilyById = async (req, res) => {
     try {
-        const { id } = req.params;
-        const family = await familyService.getFamilyById(Number(id));
+        const family = await familyService.getFamilyById(Number(req.params.id));
         if (!family) {
-            return res.status(404).json({ message: 'Family not found.' });
+            throw new errors_1.NotFoundError('Family not found.');
         }
         return res.status(200).json(family);
     }
     catch (error) {
-        console.error('Error fetching family by ID:', error);
-        return res.status(500).json({ message: 'Failed to retrieve family.' });
+        throw error;
     }
 };
 exports.getFamilyById = getFamilyById;
 const updateFamily = async (req, res) => {
     try {
-        const { id } = req.params;
-        const familyData = req.body;
-        const updatedFamily = await familyService.updateFamily(Number(id), familyData);
+        const updatedFamily = await familyService.updateFamily(Number(req.params.id), req.body);
         if (!updatedFamily) {
-            return res.status(404).json({ message: 'Family not found or no changes made.' });
+            throw new errors_1.NotFoundError('Family not found or no changes made.');
         }
         return res.status(200).json(updatedFamily);
     }
     catch (error) {
-        if (error.message.includes('not found for update.')) {
-            return res.status(400).json({ message: error.message });
-        }
-        if (error.message.includes('Unique constraint error')) {
-            return res.status(409).json({ message: error.message });
-        }
-        console.error('Error updating family:', error);
-        return res.status(500).json({ message: 'Failed to update family.' });
+        throw error;
     }
 };
 exports.updateFamily = updateFamily;
 const deleteFamily = async (req, res) => {
     try {
-        const { id } = req.params;
-        const deletedRowCount = await familyService.deleteFamily(Number(id));
+        const deletedRowCount = await familyService.deleteFamily(Number(req.params.id));
         if (deletedRowCount === 0) {
-            return res.status(404).json({ message: 'Family not found.' });
+            throw new errors_1.NotFoundError('Family not found.');
         }
         return res.status(204).send();
     }
     catch (error) {
-        console.error('Error deleting family:', error);
-        return res.status(500).json({ message: 'Failed to delete family.' });
+        throw error;
     }
 };
 exports.deleteFamily = deleteFamily;

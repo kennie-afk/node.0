@@ -2,10 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const sermon_controller_1 = require("./sermon.controller");
+const validation_middleware_1 = require("../middleware/validation.middleware");
+const sermon_schemas_1 = require("./sermon.schemas");
+const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
-router.post('/', sermon_controller_1.createSermon);
-router.get('/', sermon_controller_1.getAllSermons);
-router.get('/:id', sermon_controller_1.getSermonById);
-router.put('/:id', sermon_controller_1.updateSermon);
-router.delete('/:id', sermon_controller_1.deleteSermon);
+router.post('/', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, (0, validation_middleware_1.validate)(sermon_schemas_1.createSermonSchema), sermon_controller_1.createSermon);
+router.get('/', auth_middleware_1.authenticateToken, sermon_controller_1.getAllSermons);
+router.get('/:id', auth_middleware_1.authenticateToken, sermon_controller_1.getSermonById);
+router.put('/:id', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, (0, validation_middleware_1.validate)(sermon_schemas_1.updateSermonSchema), sermon_controller_1.updateSermon);
+router.delete('/:id', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, sermon_controller_1.deleteSermon);
 exports.default = router;

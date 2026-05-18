@@ -35,28 +35,22 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.updateUser = exports.getUserById = exports.getAllUsers = exports.createUser = void 0;
 const userService = __importStar(require("./user.service"));
+const errors_1 = require("../utils/errors");
 const createUser = async (req, res) => {
     try {
         const { username, email, password, isAdmin } = req.body;
         const newUser = await userService.createUser({ username, email, password, isAdmin });
-        return res.status(201).json({
+        const userResponse = {
             id: newUser.id,
             username: newUser.username,
             email: newUser.email,
             isAdmin: newUser.isAdmin,
             createdAt: newUser.createdAt,
-        });
+        };
+        return res.status(201).json(userResponse);
     }
     catch (error) {
-        console.error('Error in createUser controller:', error.message);
-        if (error.message.includes('Unique constraint error')) {
-            const field = error.message.split(': ')[1].replace(' already exists.', '');
-            return res.status(409).json({ message: `${field} already exists.` });
-        }
-        if (error.message.includes('required.')) {
-            return res.status(400).json({ message: error.message });
-        }
-        return res.status(500).json({ message: 'Failed to create user.' });
+        throw error;
     }
 };
 exports.createUser = createUser;
@@ -77,8 +71,7 @@ const getAllUsers = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Error in getAllUsers controller:', error.message);
-        return res.status(500).json({ message: 'Failed to retrieve users.' });
+        throw error;
     }
 };
 exports.getAllUsers = getAllUsers;
@@ -87,13 +80,12 @@ const getUserById = async (req, res) => {
         const { id } = req.params;
         const user = await userService.getUserById(Number(id));
         if (!user) {
-            return res.status(404).json({ message: 'User not found.' });
+            throw new errors_1.NotFoundError('User not found.');
         }
         return res.status(200).json(user);
     }
     catch (error) {
-        console.error('Error in getUserById controller:', error.message);
-        return res.status(500).json({ message: 'Failed to retrieve user.' });
+        throw error;
     }
 };
 exports.getUserById = getUserById;
@@ -101,19 +93,25 @@ const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
         const userData = req.body;
+        if (!userData.password || userData.password.trim() === '') {
+            delete userData.password;
+        }
         const updatedUser = await userService.updateUser(Number(id), userData);
         if (!updatedUser) {
-            return res.status(404).json({ message: 'User not found or no changes made.' });
+            const userExists = await userService.getUserById(Number(id));
+            if (!userExists) {
+                throw new errors_1.NotFoundError('User not found.');
+            }
+            return res.status(200).json(userExists);
         }
         return res.status(200).json(updatedUser);
     }
     catch (error) {
-        console.error('Error in updateUser controller:', error.message);
-        if (error.message.includes('Unique constraint error')) {
-            const field = error.message.split(': ')[1].replace(' already exists.', '');
-            return res.status(409).json({ message: `${field} already exists.` });
+        if (error instanceof errors_1.NotFoundError) {
+            return res.status(404).json({ message: error.message });
         }
-        return res.status(500).json({ message: 'Failed to update user.' });
+        console.error('Update user error:', error);
+        return res.status(500).json({ message: 'Failed to update user' });
     }
 };
 exports.updateUser = updateUser;
@@ -122,13 +120,12 @@ const deleteUser = async (req, res) => {
         const { id } = req.params;
         const deletedRowCount = await userService.deleteUser(Number(id));
         if (deletedRowCount === 0) {
-            return res.status(404).json({ message: 'User not found.' });
+            throw new errors_1.NotFoundError('User not found.');
         }
         return res.status(204).send();
     }
     catch (error) {
-        console.error('Error in deleteUser controller:', error.message);
-        return res.status(500).json({ message: 'Failed to delete user.' });
+        throw error;
     }
 };
 exports.deleteUser = deleteUser;

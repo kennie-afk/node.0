@@ -2,10 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const family_controller_1 = require("./family.controller");
+const validation_middleware_1 = require("../middleware/validation.middleware");
+const family_schemas_1 = require("./family.schemas");
+const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
-router.post('/', family_controller_1.createFamily);
-router.get('/', family_controller_1.getAllFamilies);
-router.get('/:id', family_controller_1.getFamilyById);
-router.put('/:id', family_controller_1.updateFamily);
-router.delete('/:id', family_controller_1.deleteFamily);
+router.post('/', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, (0, validation_middleware_1.validate)(family_schemas_1.createFamilySchema), family_controller_1.createFamily);
+router.get('/', auth_middleware_1.authenticateToken, family_controller_1.getAllFamilies);
+router.get('/:id', auth_middleware_1.authenticateToken, family_controller_1.getFamilyById);
+router.put('/:id', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, (0, validation_middleware_1.validate)(family_schemas_1.updateFamilySchema), family_controller_1.updateFamily);
+router.delete('/:id', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, family_controller_1.deleteFamily);
 exports.default = router;

@@ -1,4 +1,3 @@
-// Variables
 const cartBtn = document.querySelector(".cart-btn");
 const closeCartBtn = document.querySelector(".close-cart");
 const clearCartBtn = document.querySelector(".clear-cart");
@@ -9,18 +8,12 @@ const cartTotal = document.querySelector(".cart-total");
 const cartContent = document.querySelector(".cart-content");
 const productsDOM = document.querySelector(".products-center");
 
-// Cart
 let cart = [];
 let buttonsDOM = [];
 
-// Contentful API Configuration
 const CONTENTFUL_SPACE_ID = "mcv7hmhlas6q";
 const CONTENTFUL_ACCESS_TOKEN = "REDACTED_ROTATED_CREDENTIAL";
 
-/*const CONTENTFUL_SPACE_ID = process.env.CONTENTFUL_SPACE_ID;
-const CONTENTFUL_ACCESS_TOKEN = process.env.CONTENTFUL_ACCESS_TOKEN;*/
-
-// Getting the products
 class Products {
     async getProducts() {
         try {

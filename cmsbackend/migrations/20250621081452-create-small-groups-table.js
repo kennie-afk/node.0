@@ -8,7 +8,7 @@ module.exports = {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
-        type: Sequelize.INTEGER.UNSIGNED
+        type: Sequelize.INTEGER
       },
       name: {
         type: Sequelize.STRING(255),
@@ -19,7 +19,7 @@ module.exports = {
         allowNull: true,
       },
       ministry_id: {
-        type: Sequelize.INTEGER.UNSIGNED,
+        type: Sequelize.INTEGER,
         allowNull: false,
         references: {
           model: 'ministries',
@@ -29,7 +29,7 @@ module.exports = {
         onDelete: 'CASCADE',
       },
       leader_id: {
-        type: Sequelize.INTEGER.UNSIGNED,
+        type: Sequelize.INTEGER,
         allowNull: true,
         references: {
           model: 'members',
@@ -63,11 +63,10 @@ module.exports = {
       updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ')
       }
     }, {
-      charset: 'utf8mb4',
-      collate: 'utf8mb4_unicode_ci',
+      
       uniqueKeys: {
         unique_small_group_name_per_ministry: {
           fields: ['name', 'ministry_id']

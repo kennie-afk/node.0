@@ -2,10 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const event_controller_1 = require("./event.controller");
+const validation_middleware_1 = require("../middleware/validation.middleware");
+const event_schemas_1 = require("./event.schemas");
+const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
-router.post('/', event_controller_1.createEvent);
+router.post('/', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, (0, validation_middleware_1.validate)(event_schemas_1.createEventSchema), event_controller_1.createEvent);
 router.get('/', event_controller_1.getAllEvents);
 router.get('/:id', event_controller_1.getEventById);
-router.put('/:id', event_controller_1.updateEvent);
-router.delete('/:id', event_controller_1.deleteEvent);
+router.put('/:id', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, (0, validation_middleware_1.validate)(event_schemas_1.updateEventSchema), event_controller_1.updateEvent);
+router.delete('/:id', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, event_controller_1.deleteEvent);
 exports.default = router;

@@ -2,12 +2,15 @@ import 'module-alias/register';
 import dotenv from 'dotenv';
 dotenv.config();
 
-'use strict';
-
-import express, { Request, Response, NextFunction } from 'express';
-import db from '@models'; 
+import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import rateLimit from 'express-rate-limit';
+import db from '@models';
+import { ApiError } from './utils/errors';
 
 import userRoutes from '@users/user.routes';
+import authRoutes from './auth/auth.routes';
 import familyRoutes from '@families/family.routes';
 import memberRoutes from '@members/member.routes';
 import eventRoutes from '@events/event.routes';
@@ -18,45 +21,44 @@ import attendanceRoutes from '@attendance/attendance.routes';
 import ministryRoutes from '@ministries/ministry.routes';
 import smallGroupRoutes from '@small_groups/small_group.routes';
 
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+app.use(helmet());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100
+});
+app.use(apiLimiter);
 
 app.get('/', async (req, res) => {
-  try {
-    const userCount = await db.User.count();
-    const familyCount = await db.Family.count();
-    const memberCount = await db.Member.count();
-    const eventCount = await db.Event.count();
-    const announcementCount = await db.Announcement.count();
-    const sermonCount = await db.Sermon.count();
-    const contributionCount = await db.Contribution.count();
-    const attendanceCount = await db.Attendance.count();
-    const ministryCount = await db.Ministry.count();
-    const smallGroupCount = await db.SmallGroup.count();
-
-    res.status(200).json({
-      message: `Welcome to Church CMS Backend! MySQL Database connected.`,
-      usersInDb: userCount,
-      familiesInDb: familyCount,
-      membersInDb: memberCount,
-      eventsInDb: eventCount,
-      announcementsInDb: announcementCount,
-      sermonsInDb: sermonCount,
-      contributionsInDb: contributionCount,
-      attendanceInDb: attendanceCount,
-      ministriesInDb: ministryCount,
-      smallGroupsInDb: smallGroupCount,
-    });
-  } catch (error) {
-    console.error('Error fetching counts:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
+  const counts = {
+    usersInDb: await db.User.count(),
+    familiesInDb: await db.Family.count(),
+    membersInDb: await db.Member.count(),
+    eventsInDb: await db.Event.count(),
+    announcementsInDb: await db.Announcement.count(),
+    sermonsInDb: await db.Sermon.count(),
+    contributionsInDb: await db.Contribution.count(),
+    attendanceInDb: await db.Attendance.count(),
+    ministriesInDb: await db.Ministry.count(),
+    smallGroupsInDb: await db.SmallGroup.count(),
+  };
+  res.status(200).json({
+    message: 'Welcome to Church CMS Backend! Database connected.',
+    ...counts
+  });
 });
 
+app.use('/auth', authRoutes);
 app.use('/users', userRoutes);
 app.use('/families', familyRoutes);
 app.use('/members', memberRoutes);
@@ -68,28 +70,26 @@ app.use('/attendance', attendanceRoutes);
 app.use('/ministries', ministryRoutes);
 app.use('/small-groups', smallGroupRoutes);
 
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+app.use((err: any, req: any, res: any, next: any) => {
   console.error(err.stack);
-  res.status(500).send('Something broke!');
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({ message: err.message });
+  }
+  res.status(500).json({ message: 'Internal Server Error' });
 });
-
 
 async function startServer() {
   try {
-    console.log(`DEBUG: Attempting to connect to DB host: ${db.sequelize.config.host}`);
-
     await db.sequelize.authenticate();
-    console.log('Database connection has been established successfully.');
-
-    await db.sequelize.sync({ alter: true }); 
-    console.log('Database tables synchronized successfully.');
+    console.log('Database connection established.');
+    await db.sequelize.sync({ alter: true });
+    console.log('Database synchronized.');
 
     app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Access the server at http://localhost:${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
-    console.error('Unable to connect to the database or start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 }

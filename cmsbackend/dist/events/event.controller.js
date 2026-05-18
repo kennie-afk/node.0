@@ -35,90 +35,63 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteEvent = exports.updateEvent = exports.getEventById = exports.getAllEvents = exports.createEvent = void 0;
 const eventService = __importStar(require("./event.service"));
+const errors_1 = require("../utils/errors");
 const createEvent = async (req, res) => {
     try {
         const newEvent = await eventService.createEvent(req.body);
         return res.status(201).json(newEvent);
     }
     catch (error) {
-        console.error('Error in createEvent controller:', error.message);
-        if (error.message.includes('required.')) {
-            return res.status(400).json({ message: error.message });
-        }
-        if (error.message.includes('not found.')) {
-            return res.status(400).json({ message: error.message });
-        }
-        return res.status(500).json({ message: 'Failed to create event.' });
+        throw error;
     }
 };
 exports.createEvent = createEvent;
 const getAllEvents = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const offset = (page - 1) * limit;
-        const { events, totalCount } = await eventService.getAllEvents(limit, offset);
-        return res.status(200).json({
-            data: events,
-            meta: {
-                totalCount,
-                page,
-                limit,
-                totalPages: Math.ceil(totalCount / limit),
-            },
-        });
+        const events = await eventService.getAllEvents();
+        return res.status(200).json(events);
     }
     catch (error) {
-        console.error('Error in getAllEvents controller:', error.message);
-        return res.status(500).json({ message: 'Failed to retrieve events.' });
+        throw error;
     }
 };
 exports.getAllEvents = getAllEvents;
 const getEventById = async (req, res) => {
     try {
-        const { id } = req.params;
-        const event = await eventService.getEventById(Number(id));
+        const event = await eventService.getEventById(Number(req.params.id));
         if (!event) {
-            return res.status(404).json({ message: 'Event not found.' });
+            throw new errors_1.NotFoundError('Event not found.');
         }
         return res.status(200).json(event);
     }
     catch (error) {
-        console.error('Error in getEventById controller:', error.message);
-        return res.status(500).json({ message: 'Failed to retrieve event.' });
+        throw error;
     }
 };
 exports.getEventById = getEventById;
 const updateEvent = async (req, res) => {
     try {
-        const { id } = req.params;
-        const updatedEvent = await eventService.updateEvent(Number(id), req.body);
+        const updatedEvent = await eventService.updateEvent(Number(req.params.id), req.body);
         if (!updatedEvent) {
-            return res.status(404).json({ message: 'Event not found or no changes made.' });
+            throw new errors_1.NotFoundError('Event not found or no changes made.');
         }
         return res.status(200).json(updatedEvent);
     }
     catch (error) {
-        console.error('Error in updateEvent controller:', error.message);
-        if (error.message.includes('not found for update.')) {
-            return res.status(400).json({ message: error.message });
-        }
-        return res.status(500).json({ message: 'Failed to update event.' });
+        throw error;
     }
 };
 exports.updateEvent = updateEvent;
 const deleteEvent = async (req, res) => {
     try {
-        const { id } = req.params;
-        const deletedRowCount = await eventService.deleteEvent(Number(id));
+        const deletedRowCount = await eventService.deleteEvent(Number(req.params.id));
         if (deletedRowCount === 0) {
-            return res.status(404).json({ message: 'Event not found.' });
+            throw new errors_1.NotFoundError('Event not found.');
         }
         return res.status(204).send();
     }
     catch (error) {
-        console.error('Error in deleteEvent controller:', error.message);
-        return res.status(500).json({ message: 'Failed to delete event.' });
+        throw error;
     }
 };
 exports.deleteEvent = deleteEvent;

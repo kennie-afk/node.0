@@ -1,19 +1,13 @@
 import { Request, Response } from 'express';
 import * as sermonService from './sermon.service';
+import { NotFoundError, BadRequestError } from '../utils/errors';
 
 export const createSermon = async (req: Request, res: Response): Promise<Response> => {
   try {
     const newSermon = await sermonService.createSermon(req.body);
     return res.status(201).json(newSermon);
   } catch (error: any) {
-    console.error('Error in createSermon controller:', error.message);
-    if (error.message.includes('required.')) {
-      return res.status(400).json({ message: error.message });
-    }
-    if (error.message.includes('not found.')) {
-      return res.status(400).json({ message: error.message });
-    }
-    return res.status(500).json({ message: 'Failed to create sermon.' });
+    throw error;
   }
 };
 
@@ -35,8 +29,7 @@ export const getAllSermons = async (req: Request, res: Response): Promise<Respon
       },
     });
   } catch (error: any) {
-    console.error('Error in getAllSermons controller:', error.message);
-    return res.status(500).json({ message: 'Failed to retrieve sermons.' });
+    throw error;
   }
 };
 
@@ -45,12 +38,11 @@ export const getSermonById = async (req: Request, res: Response): Promise<Respon
     const { id } = req.params;
     const sermon = await sermonService.getSermonById(Number(id));
     if (!sermon) {
-      return res.status(404).json({ message: 'Sermon not found.' });
+      throw new NotFoundError('Sermon not found.');
     }
     return res.status(200).json(sermon);
   } catch (error: any) {
-    console.error('Error in getSermonById controller:', error.message);
-    return res.status(500).json({ message: 'Failed to retrieve sermon.' });
+    throw error;
   }
 };
 
@@ -59,15 +51,11 @@ export const updateSermon = async (req: Request, res: Response): Promise<Respons
     const { id } = req.params;
     const updatedSermon = await sermonService.updateSermon(Number(id), req.body);
     if (!updatedSermon) {
-      return res.status(404).json({ message: 'Sermon not found or no changes made.' });
+      throw new NotFoundError('Sermon not found or no changes made.');
     }
     return res.status(200).json(updatedSermon);
   } catch (error: any) {
-    console.error('Error in updateSermon controller:', error.message);
-    if (error.message.includes('not found for update.')) {
-      return res.status(400).json({ message: error.message });
-    }
-    return res.status(500).json({ message: 'Failed to update sermon.' });
+    throw error;
   }
 };
 
@@ -76,11 +64,10 @@ export const deleteSermon = async (req: Request, res: Response): Promise<Respons
     const { id } = req.params;
     const deletedRowCount = await sermonService.deleteSermon(Number(id));
     if (deletedRowCount === 0) {
-      return res.status(404).json({ message: 'Sermon not found.' });
+      throw new NotFoundError('Sermon not found.');
     }
     return res.status(204).send();
   } catch (error: any) {
-    console.error('Error in deleteSermon controller:', error.message);
-    return res.status(500).json({ message: 'Failed to delete sermon.' });
+    throw error;
   }
 };

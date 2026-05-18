@@ -1,6 +1,6 @@
 import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 
-interface MinistryMemberAttributes {
+export interface MinistryMemberAttributes {
   ministryId: number;
   memberId: number;
   role?: string | null;
@@ -8,7 +8,7 @@ interface MinistryMemberAttributes {
   endDate?: Date | null;
 }
 
-interface MinistryMemberCreationAttributes extends Optional<MinistryMemberAttributes, 'role' | 'startDate' | 'endDate'> {}
+export interface MinistryMemberCreationAttributes extends Optional<MinistryMemberAttributes, 'role' | 'startDate' | 'endDate'> {}
 
 export class MinistryMember extends Model<MinistryMemberAttributes, MinistryMemberCreationAttributes> implements MinistryMemberAttributes {
   public ministryId!: number;
@@ -23,7 +23,7 @@ export class MinistryMember extends Model<MinistryMemberAttributes, MinistryMemb
   static associate(models: any) {}
 }
 
-export function initMinistryMember(sequelize: Sequelize) {
+export default (sequelize: Sequelize, DataTypes: any) => {
   MinistryMember.init({
     ministryId: {
       type: DataTypes.INTEGER.UNSIGNED,
@@ -68,4 +68,5 @@ export function initMinistryMember(sequelize: Sequelize) {
     underscored: true,
     modelName: 'MinistryMember',
   });
-}
+  return MinistryMember;
+};

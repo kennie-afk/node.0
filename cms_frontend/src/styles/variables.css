@@ -1,0 +1,27 @@
+:root {
+  --primary: #ec4899;           /* Pink */
+  --primary-hover: #db2777;
+  --aqua: #22d3ee;              /* Aqua accent */
+  --aqua-glow: rgba(34, 211, 238, 0.35);
+
+  --background: #0a0a0f;
+  --card-bg: rgba(26, 26, 36, 0.85);   /* Semi-transparent */
+  --sidebar-bg: rgba(17, 17, 24, 0.95);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+
+  --border: rgba(148, 163, 184, 0.2);
+  --success: #4ade80;
+  --error: #f87171;
+
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 20px;
+  --radius-xl: 24px;
+
+  --shadow-sm: 0 4px 20px rgba(236, 72, 153, 0.15);
+  --shadow-md: 0 10px 30px rgba(236, 72, 153, 0.25);
+  --shadow-glow: 0 0 30px rgba(236, 72, 153, 0.4);
+}     

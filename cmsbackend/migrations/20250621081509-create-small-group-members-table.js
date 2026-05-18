@@ -5,7 +5,7 @@ module.exports = {
   async up(queryInterface, Sequelize) {
     await queryInterface.createTable('small_group_members', {
       small_group_id: {
-        type: Sequelize.INTEGER.UNSIGNED,
+        type: Sequelize.INTEGER,
         allowNull: false,
         primaryKey: true,
         references: {
@@ -16,7 +16,7 @@ module.exports = {
         onDelete: 'CASCADE',
       },
       member_id: {
-        type: Sequelize.INTEGER.UNSIGNED,
+        type: Sequelize.INTEGER,
         allowNull: false,
         primaryKey: true,
         references: {
@@ -48,11 +48,10 @@ module.exports = {
       updated_at: {
         allowNull: false,
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP')
+        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ')
       }
     }, {
-      charset: 'utf8mb4',
-      collate: 'utf8mb4_unicode_ci',
+      
       uniqueKeys: {
         unique_small_group_member: {
           fields: ['small_group_id', 'member_id']

@@ -6,23 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteEvent = exports.updateEvent = exports.getEventById = exports.getAllEvents = exports.createEvent = void 0;
 const _models_1 = __importDefault(require("@models"));
 const EventDbModel = _models_1.default.Event;
-const UserDbModel = _models_1.default.User;
 const createEvent = async (eventData) => {
     try {
-        const { name, startTime, organizerUserId, ...rest } = eventData;
-        if (!name || !startTime) {
-            throw new Error('Event name and start time are required.');
-        }
-        if (organizerUserId) {
-            const userExists = await UserDbModel.findByPk(organizerUserId);
-            if (!userExists) {
-                throw new Error(`Organizer User with ID ${organizerUserId} not found.`);
-            }
-        }
-        const newEvent = await EventDbModel.create({
-            name, startTime, organizerUserId,
-            ...rest
-        });
+        const newEvent = await EventDbModel.create(eventData);
         return newEvent;
     }
     catch (error) {
@@ -30,15 +16,10 @@ const createEvent = async (eventData) => {
     }
 };
 exports.createEvent = createEvent;
-const getAllEvents = async (limit, offset) => {
+const getAllEvents = async () => {
     try {
-        const { count, rows } = await EventDbModel.findAndCountAll({
-            limit,
-            offset,
-            include: [{ model: _models_1.default.User, as: 'organizer' }],
-            order: [['startTime', 'DESC']],
-        });
-        return { events: rows, totalCount: count };
+        const events = await EventDbModel.findAll();
+        return events;
     }
     catch (error) {
         throw new Error(`Service error fetching all events: ${error.message}`);
@@ -47,9 +28,7 @@ const getAllEvents = async (limit, offset) => {
 exports.getAllEvents = getAllEvents;
 const getEventById = async (id) => {
     try {
-        const event = await EventDbModel.findByPk(id, {
-            include: [{ model: _models_1.default.User, as: 'organizer' }]
-        });
+        const event = await EventDbModel.findByPk(id);
         return event;
     }
     catch (error) {
@@ -59,22 +38,14 @@ const getEventById = async (id) => {
 exports.getEventById = getEventById;
 const updateEvent = async (id, eventData) => {
     try {
-        const { organizerUserId, ...rest } = eventData;
-        if (organizerUserId !== undefined && organizerUserId !== null) {
-            const userExists = await UserDbModel.findByPk(organizerUserId);
-            if (!userExists) {
-                throw new Error(`Organizer User with ID ${organizerUserId} not found for update.`);
-            }
-        }
-        const [updatedRowsCount] = await EventDbModel.update({ organizerUserId, ...rest }, {
+        const [updatedRowsCount] = await EventDbModel.update(eventData, {
             where: { id },
+            returning: true,
         });
         if (updatedRowsCount === 0) {
             return null;
         }
-        const updatedEvent = await EventDbModel.findByPk(id, {
-            include: [{ model: _models_1.default.User, as: 'organizer' }]
-        });
+        const updatedEvent = await EventDbModel.findByPk(id);
         return updatedEvent;
     }
     catch (error) {

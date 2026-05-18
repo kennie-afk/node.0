@@ -1,0 +1,97 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html, body, #root {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #0a0a0f;
+    color: #f1f5f9;
+  }
+}
+
+@layer components {
+  .card {
+    background-color: #18181b;
+    border-radius: 10px;
+    border: 1px solid #27272a;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  }
+
+  .input {
+    width: 100%;
+    padding: 12px 16px;
+    background-color: #27272a;
+    border: 1px solid #3f3f46;
+    border-radius: 6px;
+    color: #f1f5f9;
+    font-size: 14px;
+    transition: all 0.2s;
+  }
+
+  .input:focus {
+    border-color: #ec4899;
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2);
+  }
+
+  /* Button Styles - Consistent across all modules */
+  .button {
+    padding: 11px 24px;
+    font-size: 14.5px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    border: 1px solid transparent;
+  }
+
+  /* Primary (Edit) - Pink by default, pink border + transparent on hover */
+  .button.primary {
+    background: linear-gradient(135deg, #ec4899, #c026d3);
+    color: white;
+  }
+
+  .button.primary:hover {
+    background-color: rgba(236, 72, 153, 0.12) !important;
+    border-color: #ec4899 !important;
+    color: #ec4899 !important;
+  }
+
+  /* Danger (Delete) - Red by default, red border + transparent on hover */
+  .button.danger {
+    background-color: #f87171;
+    color: white;
+  }
+
+  .button.danger:hover {
+    background-color: transparent !important;
+    border-color: #f87171 !important;
+    color: #f87171 !important;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .table th, .table td {
+    padding: 14px 16px;
+    font-size: 14px;
+    text-align: left;
+  }
+
+  .table th {
+    background-color: #16161f;
+    color: #a1a1aa;
+    font-weight: 600;
+  }
+
+  .table tr:hover {
+    background-color: #27272a;
+  }
+}

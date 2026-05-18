@@ -2,10 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const member_controller_1 = require("./member.controller");
+const validation_middleware_1 = require("../middleware/validation.middleware");
+const member_schemas_1 = require("./member.schemas");
+const auth_middleware_1 = require("../middleware/auth.middleware");
 const router = (0, express_1.Router)();
-router.post('/', member_controller_1.createMember);
-router.get('/', member_controller_1.getAllMembers);
-router.get('/:id', member_controller_1.getMemberById);
-router.put('/:id', member_controller_1.updateMember);
-router.delete('/:id', member_controller_1.deleteMember);
+router.post('/', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, (0, validation_middleware_1.validate)(member_schemas_1.createMemberSchema), member_controller_1.createMember);
+router.get('/', auth_middleware_1.authenticateToken, member_controller_1.getAllMembers);
+router.get('/:id', auth_middleware_1.authenticateToken, member_controller_1.getMemberById);
+router.put('/:id', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, (0, validation_middleware_1.validate)(member_schemas_1.updateMemberSchema), member_controller_1.updateMember);
+router.delete('/:id', auth_middleware_1.authenticateToken, auth_middleware_1.authorizeAdmin, member_controller_1.deleteMember);
 exports.default = router;

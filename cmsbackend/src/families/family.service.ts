@@ -1,160 +1,53 @@
 import db from '@models';
 import { Family } from './family.model';
-import { Member } from '../members/member.model'; 
-import { Op } from 'sequelize';
+import { BadRequestError } from '../utils/errors';
 
 const FamilyDbModel = db.Family;
-const MemberDbModel = db.Member; 
 
-export const createFamily = async (familyData: {
-  familyName: string;
-  headOfFamilyMemberId?: number;
-  address?: string;
-  city?: string;
-  county?: string;
-  postalCode?: string;
-  phoneNumber?: string;
-  email?: string;
-  notes?: string;
-}): Promise<InstanceType<typeof Family>> => { 
+export const createFamily = async (familyData: Partial<Family>): Promise<Family> => {
   try {
-    const { familyName, headOfFamilyMemberId, ...rest } = familyData;
-
-    if (!familyName) {
-      throw new Error('Family name is required.');
-    }
-
-    if (headOfFamilyMemberId) {
-      const memberExists = await MemberDbModel.findByPk(headOfFamilyMemberId); 
-      if (!memberExists) {
-        throw new Error(`Head of family member with ID ${headOfFamilyMemberId} not found.`);
-      }
-    }
-
-    const newFamily = await FamilyDbModel.create({ 
-      familyName,
-      headOfFamilyMemberId,
-      ...rest,
-    });
-
+    const newFamily = await FamilyDbModel.create(familyData);
     return newFamily;
   } catch (error: any) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      const field = error.errors[0].path;
-      throw new Error(`Unique constraint error: Family with this ${field} already exists.`);
+        throw new BadRequestError('Family with this name already exists.');
     }
     throw new Error(`Service error creating family: ${error.message}`);
   }
 };
 
-export const getAllFamilies = async (filters: {
-  familyName?: string;
-  city?: string;
-  county?: string;
-  headOfFamilyMemberId?: number;
-  email?: string;
-  phoneNumber?: string;
-}, limit: number, offset: number): Promise<{ families: Array<InstanceType<typeof Family>>, totalCount: number }> => { 
+export const getAllFamilies = async (): Promise<Family[]> => {
   try {
-    const where: any = {};
-    const include: any[] = [];
-
-    if (filters.familyName) {
-      where.familyName = { [Op.like]: `%${filters.familyName}%` };
-    }
-    if (filters.city) {
-      where.city = { [Op.like]: `%${filters.city}%` };
-    }
-    if (filters.county) {
-      where.county = { [Op.like]: `%${filters.county}%` };
-    }
-    if (filters.headOfFamilyMemberId) {
-      where.headOfFamilyMemberId = filters.headOfFamilyMemberId;
-      include.push({
-        model: MemberDbModel,
-        as: 'headOfFamily',
-        attributes: ['id', 'firstName', 'lastName'],
-        required: false
-      });
-    }
-    if (filters.email) {
-      where.email = { [Op.like]: `%${filters.email}%` };
-    }
-    if (filters.phoneNumber) {
-      where.phoneNumber = { [Op.like]: `%${filters.phoneNumber}%` };
-    }
-
-    const { count, rows } = await FamilyDbModel.findAndCountAll({ 
-      where,
-      limit,
-      offset,
-      order: [['familyName', 'ASC']],
-      include: include,
-    });
-    return { families: rows, totalCount: count };
+    const families = await FamilyDbModel.findAll();
+    return families;
   } catch (error: any) {
     throw new Error(`Service error fetching all families: ${error.message}`);
   }
 };
 
-export const getFamilyById = async (id: number): Promise<InstanceType<typeof Family> | null> => { 
+export const getFamilyById = async (id: number): Promise<Family | null> => {
   try {
-    const family = await FamilyDbModel.findByPk(id, {
-      include: [{
-        model: MemberDbModel,
-        as: 'headOfFamily',
-        attributes: ['id', 'firstName', 'lastName'],
-        required: false
-      }]
-    }); 
+    const family = await FamilyDbModel.findByPk(id);
     return family;
   } catch (error: any) {
     throw new Error(`Service error fetching family by ID ${id}: ${error.message}`);
   }
 };
 
-export const updateFamily = async (id: number, familyData: {
-  familyName?: string;
-  headOfFamilyMemberId?: number | null;
-  address?: string;
-  city?: string;
-  county?: string;
-  postalCode?: string;
-  phoneNumber?: string;
-  email?: string;
-  notes?: string;
-}): Promise<InstanceType<typeof Family> | null> => { 
+export const updateFamily = async (id: number, familyData: Partial<Family>): Promise<Family | null> => {
   try {
-    const { headOfFamilyMemberId, ...rest } = familyData;
-
-    if (headOfFamilyMemberId !== undefined && headOfFamilyMemberId !== null) {
-      const memberExists = await MemberDbModel.findByPk(headOfFamilyMemberId); 
-      if (!memberExists) {
-        throw new Error(`Head of family member with ID ${headOfFamilyMemberId} not found for update.`);
-      }
-    }
-
-    const [updatedRowsCount] = await FamilyDbModel.update({ headOfFamilyMemberId, ...rest }, { 
+    const [updatedRowsCount] = await FamilyDbModel.update(familyData, {
       where: { id },
+      returning: true,
     });
-
     if (updatedRowsCount === 0) {
       return null;
     }
-
-    const updatedFamily = await FamilyDbModel.findByPk(id, {
-      include: [{
-        model: MemberDbModel,
-        as: 'headOfFamily',
-        attributes: ['id', 'firstName', 'lastName'],
-        required: false
-      }]
-    }); 
+    const updatedFamily = await FamilyDbModel.findByPk(id);
     return updatedFamily;
   } catch (error: any) {
     if (error.name === 'SequelizeUniqueConstraintError') {
-      const field = error.errors[0].path;
-      throw new Error(`Unique constraint error: Family with this ${field} already exists.`);
+        throw new BadRequestError('Family name already in use.');
     }
     throw new Error(`Service error updating family with ID ${id}: ${error.message}`);
   }
@@ -162,7 +55,7 @@ export const updateFamily = async (id: number, familyData: {
 
 export const deleteFamily = async (id: number): Promise<number> => {
   try {
-    const deletedRowCount = await FamilyDbModel.destroy({ 
+    const deletedRowCount = await FamilyDbModel.destroy({
       where: { id },
     });
     return deletedRowCount;

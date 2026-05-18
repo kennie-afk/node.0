@@ -1,16 +1,18 @@
 import bcrypt from 'bcrypt';
 import db from '@models';
 import { User, UserAttributes } from './user.model';
+import { BadRequestError, NotFoundError } from '../utils/errors';
 
 const UserDbModel = db.User;
 
-export const createUser = async (userData: { username: string; email: string; password: string; isAdmin?: boolean }): Promise<InstanceType<typeof User>> => {
+export const createUser = async (userData: { 
+  username: string; 
+  email: string; 
+  password: string; 
+  isAdmin?: boolean 
+}): Promise<InstanceType<typeof User>> => {
   try {
     const { username, email, password, isAdmin } = userData;
-
-    if (!username || !email || !password) {
-      throw new Error('Username, email, and password are required.');
-    }
 
     const password_hash = await bcrypt.hash(password, 10);
 
@@ -18,20 +20,23 @@ export const createUser = async (userData: { username: string; email: string; pa
       username,
       email,
       password_hash,
-      isAdmin: isAdmin !== undefined ? isAdmin : true
+      isAdmin: isAdmin !== undefined ? isAdmin : false
     });
 
     return newUser;
   } catch (error: any) {
     if (error.name === 'SequelizeUniqueConstraintError') {
       const field = error.errors[0].path;
-      throw new Error(`Unique constraint error: ${field} already exists.`);
+      throw new BadRequestError(`Unique constraint error: ${field} already exists.`);
     }
     throw new Error(`Service error creating user: ${error.message}`);
   }
 };
 
-export const getAllUsers = async (limit: number, offset: number): Promise<{ users: Array<InstanceType<typeof User>>, totalCount: number }> => {
+export const getAllUsers = async (limit: number, offset: number): Promise<{ 
+  users: Array<InstanceType<typeof User>>, 
+  totalCount: number 
+}> => {
   try {
     const { count, rows } = await UserDbModel.findAndCountAll({
       limit,
@@ -58,13 +63,14 @@ export const updateUser = async (id: number, userData: {
   email?: string;
   password?: string;
   isAdmin?: boolean;
-}): Promise<InstanceType<typeof User> | null> => {
+}): Promise<InstanceType<typeof User>> => {
   try {
     const { password, ...rest } = userData;
 
     let updateData: Partial<UserAttributes> = { ...rest };
 
-    if (password) {
+    // Only hash password if a new one was provided
+    if (password && password.trim() !== '') {
       updateData.password_hash = await bcrypt.hash(password, 10);
     }
 
@@ -73,16 +79,28 @@ export const updateUser = async (id: number, userData: {
       individualHooks: true
     });
 
+    // If no rows were updated, check if user exists and return it
     if (updatedRowsCount === 0) {
-      return null;
+      const existingUser = await UserDbModel.findByPk(id);
+      if (!existingUser) {
+        throw new NotFoundError('User not found');
+      }
+      return existingUser;   // Return current user instead of throwing
     }
 
     const updatedUser = await UserDbModel.findByPk(id);
+    if (!updatedUser) {
+      throw new NotFoundError('User not found');
+    }
+
     return updatedUser;
   } catch (error: any) {
     if (error.name === 'SequelizeUniqueConstraintError') {
       const field = error.errors[0].path;
-      throw new Error(`Unique constraint error: ${field} already exists.`);
+      throw new BadRequestError(`Unique constraint error: ${field} already exists.`);
+    }
+    if (error instanceof NotFoundError) {
+      throw error;
     }
     throw new Error(`Service error updating user with ID ${id}: ${error.message}`);
   }
@@ -93,8 +111,14 @@ export const deleteUser = async (id: number): Promise<number> => {
     const deletedRowCount = await UserDbModel.destroy({
       where: { id },
     });
+    if (deletedRowCount === 0) {
+      throw new NotFoundError('User not found');
+    }
     return deletedRowCount;
   } catch (error: any) {
+    if (error instanceof NotFoundError) {
+      throw error;
+    }
     throw new Error(`Service error deleting user with ID ${id}: ${error.message}`);
   }
 };

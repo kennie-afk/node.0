@@ -14,19 +14,22 @@
     "experimentalDecorators": true,
     "baseUrl": "./src",
     "paths": {
-      "@models": ["./models"], 
-      "@config/*": ["./config/*"],
-      "@users/*": ["./users/*"],
-      "@families/*": ["./families/*"],
-      "@members/*": ["./members/*"],
-      "@events/*": ["./events/*"],
-      "@announcements/*": ["./announcements/*"],
-      "@sermons/*": ["./sermons/*"],
-      "@contributions/*": ["./contributions/*"],
-      "@attendance/*": ["./attendance/*"],
-      "@ministries/*": ["./ministries/*"],
-      "@small_groups/*": ["./small_groups/*"]
-    }
+  "@models": ["./models/index"],
+  "@models/*": ["./models/*"],
+
+  "@config/*": ["./config/*"],
+  "@auth/*": ["./auth/*"],
+  "@users/*": ["./users/*"],
+  "@families/*": ["./families/*"],
+  "@members/*": ["./members/*"],
+  "@events/*": ["./events/*"],
+  "@announcements/*": ["./announcements/*"],
+  "@sermons/*": ["./sermons/*"],
+  "@contributions/*": ["./contributions/*"],
+  "@attendance/*": ["./attendance/*"],
+  "@ministries/*": ["./ministries/*"],
+  "@small_groups/*": ["./small_groups/*"]
+}
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

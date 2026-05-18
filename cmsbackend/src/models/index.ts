@@ -1,107 +1,94 @@
-'use strict';
-
-import fs from 'fs';
-import path from 'path';
 import { Sequelize, DataTypes } from 'sequelize';
-import process from 'process';
 import dotenv from 'dotenv';
+
+import announcementInit from '@announcements/announcement.model';
+import userInit from '@users/user.model';
+import familyInit from '@families/family.model';
+import memberInit from '@members/member.model';
+import eventInit from '@events/event.model';
+import sermonInit from '@sermons/sermon.model';
+import contributionInit from '@contributions/contribution.model';
+import attendanceInit from '@attendance/attendance.model';
+import ministryInit from '@ministries/ministry.model';
+import smallGroupInit from '@small_groups/small_group.model';
+import ministryMemberInit from '@ministries/ministry_member.model';
+import smallGroupMemberInit from '@small_groups/small_group_member.model';
 
 dotenv.config();
 
-const basename = path.basename(__filename);
-const env = process.env.NODE_ENV || 'development';
-const db: any = {};
-
-let sequelize: Sequelize;
-
-const productionConfig = {
-  username: process.env.DB_USER as string,
-  password: process.env.DB_PASSWORD as string,
-  database: process.env.DB_NAME as string,
-  host: process.env.DB_HOST as string,
-  dialect: 'mysql' as 'mysql'
-};
-
-const developmentConfig = {
-  username: process.env.DB_USER_DEV || 'root',
-  password: process.env.DB_PASSWORD_DEV || '',
-  database: process.env.DB_NAME_DEV || 'church_cms_db',
-  host: process.env.DB_HOST_DEV || 'localhost',
-  dialect: 'mysql' as 'mysql'
-};
-
-const testConfig = {
-  username: process.env.DB_USER_TEST || 'root',
-  password: process.env.DB_PASSWORD_TEST || '',
-  database: process.env.DB_NAME_TEST || 'church_cms_db_test',
-  host: process.env.DB_HOST_TEST || 'localhost',
-  dialect: 'mysql' as 'mysql'
-};
-
-
-if (env === 'production') {
-  sequelize = new Sequelize(
-    productionConfig.database,
-    productionConfig.username,
-    productionConfig.password,
-    {
-      host: productionConfig.host,
-      dialect: productionConfig.dialect,
-      logging: false,
-      dialectOptions: {
-        connectTimeout: 60000
-      }
-    }
-  );
-} else if (env === 'test') {
-  sequelize = new Sequelize(
-    testConfig.database,
-    testConfig.username,
-    testConfig.password,
-    {
-      host: testConfig.host,
-      dialect: testConfig.dialect,
-      logging: console.log
-    }
-  );
-} else {
-  sequelize = new Sequelize(
-    developmentConfig.database,
-    developmentConfig.username,
-    developmentConfig.password,
-    {
-      host: developmentConfig.host,
-      dialect: developmentConfig.dialect,
-      logging: console.log
-    }
-  );
-}
-
-const fileExtension = basename.endsWith('.js') ? '.js' : '.ts';
-
-fs.readdirSync(__dirname)
-  .filter(file => {
-    return (
-      file.indexOf('.') !== 0 &&
-      file !== basename &&
-      file.slice(-fileExtension.length) === fileExtension &&
-      file.indexOf('.test.ts') === -1 &&
-      file.indexOf('.test.js') === -1
-    );
-  })
-  .forEach(file => {
-    const modelDefinition = require(path.join(__dirname, file));
-    const model = (modelDefinition.default || modelDefinition)(sequelize, DataTypes);
-    db[model.name] = model;
-  });
-
-Object.keys(db).forEach(modelName => {
-  if (db[modelName].associate) {
-    db[modelName].associate(db);
+const sequelize = new Sequelize(
+  process.env.DB_NAME || 'church_cms_db',
+  process.env.DB_USER || 'church_admin',
+  process.env.DB_PASSWORD || '',
+  {
+    host: process.env.DB_HOST || 'localhost',
+    port: Number(process.env.DB_PORT) || 5432,
+    dialect: 'postgres',
+    logging: process.env.NODE_ENV !== 'production',
+    dialectOptions: {
+      ssl: false,
+    },
   }
-});
+);
 
-db.sequelize = sequelize;
-db.Sequelize = Sequelize;
+
+export const Announcement = announcementInit(sequelize) as any;
+export const User = userInit(sequelize) as any;
+export const Family = familyInit(sequelize) as any;
+export const Member = memberInit(sequelize) as any;
+export const Event = eventInit(sequelize) as any;
+export const Sermon = sermonInit(sequelize) as any;
+export const Contribution = contributionInit(sequelize) as any;
+export const Attendance = attendanceInit(sequelize) as any;
+export const Ministry = ministryInit(sequelize) as any;
+export const SmallGroup = smallGroupInit(sequelize) as any;
+export const MinistryMember = ministryMemberInit(sequelize, DataTypes) as any;
+export const SmallGroupMember = smallGroupMemberInit(sequelize, DataTypes) as any;
+
+const models = {
+  Announcement,
+  User,
+  Family,
+  Member,
+  Event,
+  Sermon,
+  Contribution,
+  Attendance,
+  Ministry,
+  SmallGroup,
+  MinistryMember,
+  SmallGroupMember
+};
+
+
+Announcement.associate?.(models);
+User.associate?.(models);
+Family.associate?.(models);
+Member.associate?.(models);
+Event.associate?.(models);
+Sermon.associate?.(models);
+Contribution.associate?.(models);
+Attendance.associate?.(models);   
+Ministry.associate?.(models);
+SmallGroup.associate?.(models);
+MinistryMember.associate?.(models);
+SmallGroupMember.associate?.(models);
+
+const db = {
+  sequelize,
+  Sequelize,
+  Announcement,
+  User,
+  Family,
+  Member,
+  Event,
+  Sermon,
+  Contribution,
+  Attendance,
+  Ministry,
+  SmallGroup,
+  MinistryMember,
+  SmallGroupMember
+};
 
 export default db;

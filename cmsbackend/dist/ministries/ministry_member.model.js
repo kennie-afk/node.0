@@ -1,16 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MinistryMember = void 0;
-exports.initMinistryMember = initMinistryMember;
 const sequelize_1 = require("sequelize");
 class MinistryMember extends sequelize_1.Model {
     static associate(models) { }
 }
 exports.MinistryMember = MinistryMember;
-function initMinistryMember(sequelize) {
+exports.default = (sequelize, DataTypes) => {
     MinistryMember.init({
         ministryId: {
-            type: sequelize_1.DataTypes.INTEGER.UNSIGNED,
+            type: DataTypes.INTEGER.UNSIGNED,
             allowNull: false,
             primaryKey: true,
             references: {
@@ -21,7 +20,7 @@ function initMinistryMember(sequelize) {
             onDelete: 'CASCADE',
         },
         memberId: {
-            type: sequelize_1.DataTypes.INTEGER.UNSIGNED,
+            type: DataTypes.INTEGER.UNSIGNED,
             allowNull: false,
             primaryKey: true,
             references: {
@@ -32,17 +31,17 @@ function initMinistryMember(sequelize) {
             onDelete: 'CASCADE',
         },
         role: {
-            type: sequelize_1.DataTypes.STRING(100),
+            type: DataTypes.STRING(100),
             allowNull: true,
             defaultValue: 'Member',
         },
         startDate: {
-            type: sequelize_1.DataTypes.DATEONLY,
+            type: DataTypes.DATEONLY,
             allowNull: true,
-            defaultValue: sequelize_1.DataTypes.NOW,
+            defaultValue: DataTypes.NOW,
         },
         endDate: {
-            type: sequelize_1.DataTypes.DATEONLY,
+            type: DataTypes.DATEONLY,
             allowNull: true,
         },
     }, {
@@ -52,4 +51,5 @@ function initMinistryMember(sequelize) {
         underscored: true,
         modelName: 'MinistryMember',
     });
-}
+    return MinistryMember;
+};

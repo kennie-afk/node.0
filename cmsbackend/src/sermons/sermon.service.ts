@@ -3,6 +3,7 @@ import * as eventService from '@events/event.service';
 import { Sermon } from './sermon.model';
 import { Member } from '../members/member.model';
 import { Event } from '../events/event.model';
+import { NotFoundError, BadRequestError } from '../utils/errors';
 
 const SermonDbModel = db.Sermon;
 const MemberDbModel = db.Member;
@@ -22,7 +23,7 @@ export const createSermon = async (sermonData: {
     const { title, datePreached, speakerMemberId, ...rest } = sermonData;
 
     if (!title || !datePreached) {
-      throw new Error('Sermon title and date preached are required.');
+      throw new BadRequestError('Sermon title and date preached are required.');
     }
 
     let speakerName = 'Unknown Speaker';
@@ -30,7 +31,7 @@ export const createSermon = async (sermonData: {
     if (speakerMemberId) {
       const memberExists = await MemberDbModel.findByPk(speakerMemberId);
       if (!memberExists) {
-        throw new Error(`Speaker Member with ID ${speakerMemberId} not found.`);
+        throw new NotFoundError(`Speaker Member with ID ${speakerMemberId} not found.`);
       }
       speakerName = `${memberExists.firstName} ${memberExists.lastName}`;
     }
@@ -67,7 +68,7 @@ export const createSermon = async (sermonData: {
 
     return newSermon;
   } catch (error: any) {
-    throw new Error(`Service error creating sermon: ${error.message}`);
+    throw error;
   }
 };
 
@@ -84,7 +85,7 @@ export const getAllSermons = async (limit: number, offset: number): Promise<{ se
     });
     return { sermons: rows, totalCount: count };
   } catch (error: any) {
-    throw new Error(`Service error fetching all sermons: ${error.message}`);
+    throw error;
   }
 };
 
@@ -98,7 +99,7 @@ export const getSermonById = async (id: number): Promise<InstanceType<typeof Ser
     });
     return sermon;
   } catch (error: any) {
-    throw new Error(`Service error fetching sermon by ID ${id}: ${error.message}`);
+    throw error;
   }
 };
 
@@ -119,14 +120,14 @@ export const updateSermon = async (id: number, sermonData: {
     if (speakerMemberId !== undefined && speakerMemberId !== null) {
       const memberExists = await MemberDbModel.findByPk(speakerMemberId);
       if (!memberExists) {
-        throw new Error(`Speaker Member with ID ${speakerMemberId} not found for update.`);
+        throw new NotFoundError(`Speaker Member with ID ${speakerMemberId} not found for update.`);
       }
     }
 
     if (eventId !== undefined && eventId !== null) {
       const eventExists = await EventDbModel.findByPk(eventId);
       if (!eventExists) {
-        throw new Error(`Event with ID ${eventId} not found for update.`);
+        throw new NotFoundError(`Event with ID ${eventId} not found for update.`);
       }
     }
 
@@ -146,7 +147,7 @@ export const updateSermon = async (id: number, sermonData: {
     });
     return updatedSermon;
   } catch (error: any) {
-    throw new Error(`Service error updating sermon with ID ${id}: ${error.message}`);
+    throw error;
   }
 };
 
@@ -157,6 +158,6 @@ export const deleteSermon = async (id: number): Promise<number> => {
     });
     return deletedRowCount;
   } catch (error: any) {
-    throw new Error(`Service error deleting sermon with ID ${id}: ${error.message}`);
+    throw error;
   }
 };

@@ -35,118 +35,63 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteMember = exports.updateMember = exports.getMemberById = exports.getAllMembers = exports.createMember = void 0;
 const memberService = __importStar(require("./member.service"));
+const errors_1 = require("../utils/errors");
 const createMember = async (req, res) => {
     try {
-        const memberData = req.body;
-        const newMember = await memberService.createMember(memberData);
+        const newMember = await memberService.createMember(req.body);
         return res.status(201).json(newMember);
     }
     catch (error) {
-        console.error('Error in createMember controller:', error.message);
-        if (error.message.includes('Unique constraint error')) {
-            const field = error.message.split(': ')[1].split(' ')[0];
-            return res.status(409).json({ message: `${field} already exists.` });
-        }
-        if (error.message.includes('required.')) {
-            return res.status(400).json({ message: error.message });
-        }
-        if (error.message.includes('not found.')) {
-            return res.status(400).json({ message: error.message });
-        }
-        return res.status(500).json({ message: 'Failed to create member.' });
+        throw error;
     }
 };
 exports.createMember = createMember;
 const getAllMembers = async (req, res) => {
     try {
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 10;
-        const offset = (page - 1) * limit;
-        const filters = req.query;
-        const includeFamily = filters.includeFamily === 'true';
-        const includeMinistries = filters.includeMinistries === 'true';
-        const includeSmallGroups = filters.includeSmallGroups === 'true';
-        const includeContributions = filters.includeContributions === 'true';
-        const includeLedMinistries = filters.includeLedMinistries === 'true';
-        const { members, totalCount } = await memberService.getAllMembers({
-            ...filters,
-            includeFamily,
-            includeMinistries,
-            includeSmallGroups,
-            includeContributions,
-            includeLedMinistries
-        }, limit, offset);
-        return res.status(200).json({
-            data: members,
-            meta: {
-                totalCount,
-                page,
-                limit,
-                totalPages: Math.ceil(totalCount / limit),
-            },
-        });
+        const members = await memberService.getAllMembers();
+        return res.status(200).json(members);
     }
     catch (error) {
-        console.error('Error in getAllMembers controller:', error.message);
-        return res.status(500).json({ message: 'Failed to retrieve members.' });
+        throw error;
     }
 };
 exports.getAllMembers = getAllMembers;
 const getMemberById = async (req, res) => {
     try {
-        const { id } = req.params;
-        const includeFamily = req.query.includeFamily === 'true';
-        const includeMinistries = req.query.includeMinistries === 'true';
-        const includeSmallGroups = req.query.includeSmallGroups === 'true';
-        const includeContributions = req.query.includeContributions === 'true';
-        const includeLedMinistries = req.query.includeLedMinistries === 'true';
-        const member = await memberService.getMemberById(Number(id), includeFamily, includeMinistries, includeSmallGroups, includeContributions, includeLedMinistries);
+        const member = await memberService.getMemberById(Number(req.params.id));
         if (!member) {
-            return res.status(404).json({ message: 'Member not found.' });
+            throw new errors_1.NotFoundError('Member not found.');
         }
         return res.status(200).json(member);
     }
     catch (error) {
-        console.error('Error in getMemberById controller:', error.message);
-        return res.status(500).json({ message: 'Failed to retrieve member.' });
+        throw error;
     }
 };
 exports.getMemberById = getMemberById;
 const updateMember = async (req, res) => {
     try {
-        const { id } = req.params;
-        const memberData = req.body;
-        const updatedMember = await memberService.updateMember(Number(id), memberData);
+        const updatedMember = await memberService.updateMember(Number(req.params.id), req.body);
         if (!updatedMember) {
-            return res.status(404).json({ message: 'Member not found or no changes made.' });
+            throw new errors_1.NotFoundError('Member not found or no changes made.');
         }
         return res.status(200).json(updatedMember);
     }
     catch (error) {
-        console.error('Error in updateMember controller:', error.message);
-        if (error.message.includes('Unique constraint error')) {
-            const field = error.message.split(': ')[1].split(' ')[0];
-            return res.status(409).json({ message: `${field} already exists.` });
-        }
-        if (error.message.includes('not found for update.')) {
-            return res.status(400).json({ message: error.message });
-        }
-        return res.status(500).json({ message: 'Failed to update member.' });
+        throw error;
     }
 };
 exports.updateMember = updateMember;
 const deleteMember = async (req, res) => {
     try {
-        const { id } = req.params;
-        const deletedRowCount = await memberService.deleteMember(Number(id));
+        const deletedRowCount = await memberService.deleteMember(Number(req.params.id));
         if (deletedRowCount === 0) {
-            return res.status(404).json({ message: 'Member not found.' });
+            throw new errors_1.NotFoundError('Member not found.');
         }
         return res.status(204).send();
     }
     catch (error) {
-        console.error('Error in deleteMember controller:', error.message);
-        return res.status(500).json({ message: 'Failed to delete member.' });
+        throw error;
     }
 };
 exports.deleteMember = deleteMember;

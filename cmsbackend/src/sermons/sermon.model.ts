@@ -1,99 +1,58 @@
-import { DataTypes, Model, Optional } from 'sequelize';
-import { Sequelize } from 'sequelize';
-import { Member } from '../members/member.model';
-import { Event } from '../events/event.model';
+import { DataTypes, Sequelize, Optional } from 'sequelize';
+import BaseModel from '../common/base.model';
 
-interface SermonAttributes {
+export interface SermonAttributes {
   id: number;
   title: string;
-  speakerMemberId?: number;
-  eventId?: number | null; 
+  speakerMemberId?: number | null;
+  eventId?: number | null;
   datePreached: Date;
-  passageReference?: string;
-  summary?: string;
-  audioUrl?: string;
-  videoUrl?: string;
-  notes?: string;
+  passageReference?: string | null;
+  summary?: string | null;
+  audioUrl?: string | null;
+  videoUrl?: string | null;
+  notes?: string | null;
 }
 
-interface SermonCreationAttributes extends Optional<SermonAttributes, 'id' | 'speakerMemberId' | 'eventId' | 'passageReference' | 'summary' | 'audioUrl' | 'videoUrl' | 'notes'> {}
+export interface SermonCreationAttributes extends Optional<SermonAttributes, 'id' | 'speakerMemberId' | 'eventId' | 'passageReference' | 'summary' | 'audioUrl' | 'videoUrl' | 'notes'> {}
 
-export class Sermon extends Model<SermonAttributes, SermonCreationAttributes> implements SermonAttributes {
+export class Sermon extends BaseModel<SermonAttributes, SermonCreationAttributes> implements SermonAttributes {
   public id!: number;
   public title!: string;
-  public speakerMemberId?: number;
-  public eventId?: number | null; 
+  public speakerMemberId!: number | null;
+  public eventId!: number | null;
   public datePreached!: Date;
-  public passageReference?: string;
-  public summary?: string;
-  public audioUrl?: string;
-  public videoUrl?: string;
-  public notes?: string;
+  public passageReference!: string | null;
+  public summary!: string | null;
+  public audioUrl!: string | null;
+  public videoUrl!: string | null;
+  public notes!: string | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
   static associate(models: any) {
-    models.Sermon.belongsTo(models.Member, {
-      foreignKey: 'speakerMemberId',
-      as: 'speaker'
-    });
-
-    models.Sermon.belongsTo(models.Event, {
-      foreignKey: 'eventId',
-      as: 'event'
-    });
+    Sermon.belongsTo(models.Member, { foreignKey: 'speakerMemberId', as: 'speaker' });
+    Sermon.belongsTo(models.Event, { foreignKey: 'eventId', as: 'event' });
   }
 }
 
-export function initSermon(sequelize: Sequelize) {
-  Sermon.init({
-    id: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      autoIncrement: true,
-      primaryKey: true,
-    },
-    title: {
-      type: DataTypes.STRING(255),
-      allowNull: false,
-    },
-    speakerMemberId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true,
-    },
-    eventId: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true, 
-    },
-    datePreached: {
-      type: DataTypes.DATEONLY,
-      allowNull: false,
-    },
-    passageReference: {
-      type: DataTypes.STRING(100),
-      allowNull: true,
-    },
-    summary: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
-    audioUrl: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-    },
-    videoUrl: {
-      type: DataTypes.STRING(255),
-      allowNull: true,
-    },
-    notes: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-    },
+export default (sequelize: Sequelize) => {
+  return Sermon.initModel({
+    id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
+    title: { type: DataTypes.STRING(255), allowNull: false },
+    speakerMemberId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
+    eventId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
+    datePreached: { type: DataTypes.DATEONLY, allowNull: false },
+    passageReference: { type: DataTypes.STRING(100), allowNull: true },
+    summary: { type: DataTypes.TEXT, allowNull: true },
+    audioUrl: { type: DataTypes.STRING(255), allowNull: true },
+    videoUrl: { type: DataTypes.STRING(255), allowNull: true },
+    notes: { type: DataTypes.TEXT, allowNull: true },
   }, {
-    sequelize,
     tableName: 'sermons',
     timestamps: true,
     underscored: true,
     modelName: 'Sermon',
-  });
-}
+  }, sequelize);
+};

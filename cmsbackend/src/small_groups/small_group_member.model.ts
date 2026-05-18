@@ -1,6 +1,6 @@
 import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 
-interface SmallGroupMemberAttributes {
+export interface SmallGroupMemberAttributes {
   smallGroupId: number;
   memberId: number;
   role?: string | null;
@@ -8,7 +8,7 @@ interface SmallGroupMemberAttributes {
   endDate?: Date | null;
 }
 
-interface SmallGroupMemberCreationAttributes extends Optional<SmallGroupMemberAttributes, 'role' | 'startDate' | 'endDate'> {}
+export interface SmallGroupMemberCreationAttributes extends Optional<SmallGroupMemberAttributes, 'role' | 'startDate' | 'endDate'> {}
 
 export class SmallGroupMember extends Model<SmallGroupMemberAttributes, SmallGroupMemberCreationAttributes> implements SmallGroupMemberAttributes {
   public smallGroupId!: number;
@@ -23,7 +23,7 @@ export class SmallGroupMember extends Model<SmallGroupMemberAttributes, SmallGro
   static associate(models: any) {}
 }
 
-export function initSmallGroupMember(sequelize: Sequelize) {
+export default (sequelize: Sequelize, DataTypes: any) => {
   SmallGroupMember.init({
     smallGroupId: {
       type: DataTypes.INTEGER.UNSIGNED,
@@ -68,4 +68,5 @@ export function initSmallGroupMember(sequelize: Sequelize) {
     underscored: true,
     modelName: 'SmallGroupMember',
   });
-}
+  return SmallGroupMember;
+};
