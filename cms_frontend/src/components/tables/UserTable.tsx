@@ -4,13 +4,15 @@ import { Button } from '../common/Button';
 interface Props {
   users: User[];
   onDelete: (id: number) => void;
-  onEdit: (user: User) => void;   // ← Added for Edit button
+  onEdit: (user: User) => void;
 }
 
 export const UserTable: React.FC<Props> = ({ users, onDelete, onEdit }) => {
   if (users.length === 0) {
-    return <p style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>No users found.</p>;
+    return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No users found.</p>;
   }
+
+  const sortedUsers = [...users].sort((a, b) => b.id - a.id);
 
   return (
     <table className="table">
@@ -25,7 +27,7 @@ export const UserTable: React.FC<Props> = ({ users, onDelete, onEdit }) => {
         </tr>
       </thead>
       <tbody>
-        {users.map((user) => (
+        {sortedUsers.map((user) => (
           <tr key={user.id}>
             <td>{user.id}</td>
             <td><strong>{user.username}</strong></td>

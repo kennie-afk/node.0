@@ -12,7 +12,7 @@ export interface Announcement {
   createdAt?: string;
   updatedAt?: string;
   author?: {
-    username: string;       
+    username: string;
     email?: string;
   };
 }
