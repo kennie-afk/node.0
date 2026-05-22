@@ -17,7 +17,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const result = await apiLogin(email, password);
 
-      // Handle all possible response formats safely
       let newToken: string | null = null;
 
       if (typeof result === 'string') {

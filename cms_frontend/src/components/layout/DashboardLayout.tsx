@@ -157,7 +157,7 @@ export default function DashboardLayout() {
             <Calendar size={21} /> Events
           </Link>
 
-          {/* === Attendance Dropdown === */}
+          
           <div>
             <div 
               onClick={() => setIsAttendanceOpen(!isAttendanceOpen)}
