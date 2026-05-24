@@ -55,18 +55,11 @@ const models = {
   SmallGroupMember
 };
 
-Announcement.associate?.(models);
-User.associate?.(models);
-Family.associate?.(models);
-Member.associate?.(models);
-Event.associate?.(models);
-Sermon.associate?.(models);
-Contribution.associate?.(models);
-Attendance.associate?.(models);
-Ministry.associate?.(models);
-SmallGroup.associate?.(models);
-MinistryMember.associate?.(models);
-SmallGroupMember.associate?.(models);
+Object.values(models).forEach((model: any) => {
+  if (model.associate) {
+    model.associate(models);
+  }
+});
 
 const db = {
   sequelize,
