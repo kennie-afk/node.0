@@ -31,6 +31,7 @@ const allowedOrigins = [
 
 app.use(express.json());
 app.use(helmet());
+
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -48,6 +49,7 @@ const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100
 });
+
 app.use(apiLimiter);
 
 app.get('/', async (req, res) => {
@@ -61,10 +63,11 @@ app.get('/', async (req, res) => {
     contributionsInDb: await db.Contribution.count(),
     attendanceInDb: await db.Attendance.count(),
     ministriesInDb: await db.Ministry.count(),
-    smallGroupsInDb: await db.SmallGroup.count(),
+    smallGroupsInDb: await db.SmallGroup.count()
   };
+
   res.status(200).json({
-    message: 'Welcome to Church CMS Backend! Database connected.',
+    message: 'Welcome to Church CMS Backend!',
     ...counts
   });
 });
@@ -83,18 +86,23 @@ app.use('/small-groups', smallGroupRoutes);
 
 app.use((err: any, req: any, res: any, next: any) => {
   console.error(err.stack);
+
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({ message: err.message });
   }
+
   res.status(500).json({ message: 'Internal Server Error' });
 });
 
 async function startServer() {
   try {
     await db.sequelize.authenticate();
-    console.log('Database connection established.');
-    await db.sequelize.sync({ alter: true });
-    console.log('Database synchronized.');
+    console.log('Database connected successfully');
+
+    if (process.env.NODE_ENV !== 'production') {
+      await db.sequelize.sync();
+      console.log('Database synced');
+    }
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

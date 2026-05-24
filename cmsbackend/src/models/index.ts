@@ -16,35 +16,16 @@ import smallGroupMemberInit from '@small_groups/small_group_member.model';
 
 dotenv.config();
 
-const isProduction = process.env.NODE_ENV === 'production';
-
-const sequelize = process.env.DATABASE_URL
-  ? new Sequelize(process.env.DATABASE_URL, {
-      dialect: 'postgres',
-      logging: !isProduction,
-      dialectOptions: {
-        ssl: isProduction
-          ? {
-              require: true,
-              rejectUnauthorized: false,
-            }
-          : false,
-      },
-    })
-  : new Sequelize(
-      process.env.DB_NAME || 'church_cms_db',
-      process.env.DB_USER || 'church_admin',
-      process.env.DB_PASSWORD || '',
-      {
-        host: process.env.DB_HOST || 'localhost',
-        port: Number(process.env.DB_PORT) || 5432,
-        dialect: 'postgres',
-        logging: !isProduction,
-        dialectOptions: {
-          ssl: false,
-        },
-      }
-    );
+const sequelize = new Sequelize(process.env.DATABASE_URL as string, {
+  dialect: 'postgres',
+  logging: false,
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
+  }
+});
 
 export const Announcement = announcementInit(sequelize) as any;
 export const User = userInit(sequelize) as any;
@@ -81,7 +62,7 @@ Member.associate?.(models);
 Event.associate?.(models);
 Sermon.associate?.(models);
 Contribution.associate?.(models);
-Attendance.associate?.(models);   
+Attendance.associate?.(models);
 Ministry.associate?.(models);
 SmallGroup.associate?.(models);
 MinistryMember.associate?.(models);
