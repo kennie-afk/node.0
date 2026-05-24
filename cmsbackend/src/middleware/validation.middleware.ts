@@ -7,16 +7,23 @@ export const validate = (schema: any) => (req: Request, res: Response, next: Nex
       query: req.query,
       params: req.params,
     });
+
     next();
   } catch (error: any) {
-    const issues = error.errors?.map((issue: any) => ({
-      field: issue.path.join('.'),
-      message: issue.message,
-    })) || [{ field: 'unknown', message: error.message || 'Validation failed' }];
+    const issues =
+      error?.errors?.map((issue: any) => ({
+        field: issue?.path?.join('.') || 'unknown',
+        message: issue?.message || 'Invalid input',
+      })) || [
+        {
+          field: 'unknown',
+          message: error?.message || 'Validation failed',
+        },
+      ];
 
-    return res.status(400).json({ 
+    return res.status(400).json({
       success: false,
-      errors: issues 
+      errors: issues,
     });
   }
 };

@@ -1,13 +1,11 @@
-import { Request } from 'express';
-import { User } from '@users/user.model';
-import { JwtPayload } from 'jsonwebtoken';
+import { CustomJwtPayload } from './auth.types';
 
-export interface CustomJwtPayload extends JwtPayload {
-  id: number;
-  email: string;
-  isAdmin: boolean;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: CustomJwtPayload;
+    }
+  }
 }
 
-export interface AuthenticatedRequest extends Request {
-  user?: User | CustomJwtPayload;
-}
+export {};

@@ -9,7 +9,11 @@ export interface User {
   createdAt: string;
 }
 
-export const fetchUsers = async (token: string, page = 1, limit = 10): Promise<{ users: User[]; totalPages: number }> => {
+export const fetchUsers = async (
+  token: string,
+  page = 1,
+  limit = 10
+): Promise<{ users: User[]; totalPages: number }> => {
   const res = await fetch(`${API_BASE}?page=${page}&limit=${limit}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -20,7 +24,11 @@ export const fetchUsers = async (token: string, page = 1, limit = 10): Promise<{
   }
 
   const data = await res.json();
-  return { users: data.data, totalPages: data.meta.totalPages };
+
+  return {
+    users: data.data ?? data.users ?? [],
+    totalPages: data.meta?.totalPages ?? data.totalPages ?? 1,
+  };
 };
 
 export const createUser = async (
@@ -29,7 +37,10 @@ export const createUser = async (
 ) => {
   const res = await fetch(API_BASE, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(user),
   });
 
@@ -48,7 +59,10 @@ export const updateUser = async (
 ) => {
   const res = await fetch(`${API_BASE}/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
     body: JSON.stringify(user),
   });
 
