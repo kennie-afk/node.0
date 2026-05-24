@@ -19,14 +19,15 @@ const small_group_model_1 = __importDefault(require("@small_groups/small_group.m
 const ministry_member_model_1 = __importDefault(require("@ministries/ministry_member.model"));
 const small_group_member_model_1 = __importDefault(require("@small_groups/small_group_member.model"));
 dotenv_1.default.config();
-const sequelize = new sequelize_1.Sequelize(process.env.DB_NAME || 'church_cms_db', process.env.DB_USER || 'church_admin', process.env.DB_PASSWORD || '', {
-    host: process.env.DB_HOST || 'localhost',
-    port: Number(process.env.DB_PORT) || 5432,
+const sequelize = new sequelize_1.Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
-    logging: process.env.NODE_ENV !== 'production',
+    logging: false,
     dialectOptions: {
-        ssl: false,
-    },
+        ssl: {
+            require: true,
+            rejectUnauthorized: false
+        }
+    }
 });
 exports.Announcement = (0, announcement_model_1.default)(sequelize);
 exports.User = (0, user_model_1.default)(sequelize);

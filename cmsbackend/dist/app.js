@@ -25,10 +25,21 @@ const ministry_routes_1 = __importDefault(require("@ministries/ministry.routes")
 const small_group_routes_1 = __importDefault(require("@small_groups/small_group.routes"));
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
+const allowedOrigins = [
+    'http://localhost:5173',
+    process.env.FRONTEND_URL
+].filter(Boolean);
 app.use(express_1.default.json());
 app.use((0, helmet_1.default)());
 app.use((0, cors_1.default)({
-    origin: 'http://localhost:5173',
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true
@@ -49,10 +60,10 @@ app.get('/', async (req, res) => {
         contributionsInDb: await _models_1.default.Contribution.count(),
         attendanceInDb: await _models_1.default.Attendance.count(),
         ministriesInDb: await _models_1.default.Ministry.count(),
-        smallGroupsInDb: await _models_1.default.SmallGroup.count(),
+        smallGroupsInDb: await _models_1.default.SmallGroup.count()
     };
     res.status(200).json({
-        message: 'Welcome to Church CMS Backend! Database connected.',
+        message: 'Welcome to Church CMS Backend!',
         ...counts
     });
 });
@@ -77,9 +88,11 @@ app.use((err, req, res, next) => {
 async function startServer() {
     try {
         await _models_1.default.sequelize.authenticate();
-        console.log('Database connection established.');
-        await _models_1.default.sequelize.sync({ alter: true });
-        console.log('Database synchronized.');
+        console.log('Database connected successfully');
+        if (process.env.NODE_ENV !== 'production') {
+            await _models_1.default.sequelize.sync();
+            console.log('Database synced');
+        }
         app.listen(PORT, () => {
             console.log(`Server running on port ${PORT}`);
         });
