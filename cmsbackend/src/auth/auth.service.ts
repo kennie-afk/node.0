@@ -30,3 +30,5 @@ export const getProfile = async (userId: number) => {
   if (!user) throw new UnauthorizedError('User not found');
   return user;
 };
+
+console.log("DB URL:", process.env.DATABASE_URL);
