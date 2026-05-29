@@ -19,12 +19,11 @@ export const fetchUsers = async (
   });
 
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Failed to fetch users');
   }
 
   const data = await res.json();
-
   return {
     users: data.data ?? data.users ?? [],
     totalPages: data.meta?.totalPages ?? data.totalPages ?? 1,
@@ -45,7 +44,7 @@ export const createUser = async (
   });
 
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Failed to create user');
   }
 
@@ -67,7 +66,7 @@ export const updateUser = async (
   });
 
   if (!res.ok) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Failed to update user');
   }
 
@@ -81,7 +80,7 @@ export const deleteUser = async (token: string, id: number) => {
   });
 
   if (!res.ok && res.status !== 204) {
-    const err = await res.json();
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Failed to delete user');
   }
 

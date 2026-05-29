@@ -26,6 +26,7 @@ const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = [
   'http://localhost:5173',
+  'https://church-cms-seven.vercel.app',
   process.env.FRONTEND_URL
 ].filter(Boolean) as string[];
 
