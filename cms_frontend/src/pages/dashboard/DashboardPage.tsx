@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 import { fetchMembers } from '../../api/memberApi';
 import { fetchMinistries } from '../../api/ministryApi';
 import { fetchSmallGroups } from '../../api/smallGroupApi';
@@ -111,7 +112,7 @@ export default function DashboardPage() {
           <div 
             style={{
               backgroundColor: '#18181b',
-              borderRadius: '8px',
+              borderRadius: '6px',
               padding: '10px 20px',
               display: 'inline-block',
               transition: 'all 0.2s ease',
@@ -142,7 +143,7 @@ export default function DashboardPage() {
                 backgroundColor: 'transparent',
                 border: 'none',
                 color: '#f1f5f9',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 fontWeight: '500',
                 fontSize: '14px',
                 cursor: 'pointer',
@@ -171,7 +172,7 @@ export default function DashboardPage() {
                 right: 0,
                 backgroundColor: '#18181b',
                 border: '1px solid #27272a',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 width: '180px',
                 boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
                 zIndex: 10,
@@ -221,7 +222,7 @@ export default function DashboardPage() {
             onClick={() => navigate(module.path)}
             style={{
               backgroundColor: '#18181b',
-              borderRadius: '12px',
+              borderRadius: '8px',
               border: '1px solid #27272a',
               padding: '24px',
               cursor: 'pointer',
@@ -253,7 +254,7 @@ export default function DashboardPage() {
                 padding: '3px 10px',
                 backgroundColor: '#f87171',
                 color: 'white',
-                borderRadius: '20px',
+                borderRadius: '4px',
                 fontSize: '12px',
                 fontWeight: '500'
               }}>
@@ -264,7 +265,9 @@ export default function DashboardPage() {
             <div 
               style={{
                 marginTop: '20px',
-                display: 'inline-block',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
                 color: '#ec4899',
                 fontSize: '13px',
                 fontWeight: '500',
@@ -280,7 +283,8 @@ export default function DashboardPage() {
               }}
               onClick={(e) => { e.stopPropagation(); navigate(module.path); }}
             >
-              View {module.title} →
+              View {module.title}
+              <ArrowRight size={14} />
             </div>
           </div>
         ))}
