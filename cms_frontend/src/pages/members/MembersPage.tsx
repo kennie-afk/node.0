@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Member } from '../../api/memberApi';
 import { fetchMembers, deleteMember } from '../../api/memberApi';
 import { fetchMemberContributions, type Contribution } from '../../api/contributionApi';
+import BackButton from '../../components/common/BackButton';
 import { AddMemberForm } from '../../components/forms/AddMemberForm';
 import { MemberTable } from '../../components/tables/MemberTable';
 
@@ -10,12 +11,9 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
   const [showAddForm, setShowAddForm] = useState(false);
-  
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
-
   const [showContributionsModal, setShowContributionsModal] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
   const [selectedMemberName, setSelectedMemberName] = useState('');
@@ -77,6 +75,7 @@ export default function MembersPage() {
   const handleEdit = (member: Member) => {
     setEditingMember(member);
     setShowEditForm(true);
+    setShowAddForm(false);
   };
 
   const handleViewContributions = async (memberId: number, memberName: string) => {
@@ -93,93 +92,84 @@ export default function MembersPage() {
     setMemberContributions([]);
   };
 
+  const handleCancelForm = () => {
+    setShowAddForm(false);
+    setShowEditForm(false);
+    setEditingMember(null);
+  };
+
   useEffect(() => {
     loadMembers();
   }, []);
 
   return (
     <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
+      <BackButton />
+
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '28px',
-        flexWrap: 'wrap',
-        gap: '16px'
+        marginBottom: '24px', 
+        flexWrap: 'wrap', 
+        gap: '16px' 
       }}>
         <div>
-          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700', margin: 0 }}>Members Management</h1>
-          <p style={{ color: '#a1a1aa' }}>Manage individual church members and their records</p>
+          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '700', margin: 0 }}>Members Management</h1>
+          <p style={{ color: '#a1a1aa', fontSize: 'clamp(13px, 3.5vw, 14px)' }}>Manage individual church members and their records</p>
         </div>
 
         <button 
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => {
+            setShowAddForm(!showAddForm);
+            setShowEditForm(false);
+            setEditingMember(null);
+          }}
           style={{
-            padding: '12px 24px',
-            background: 'linear-gradient(135deg, #ec4899, #c026d3)',
+            padding: '10px 20px',
+            background: '#ec4899',
             color: 'white',
             border: 'none',
-            borderRadius: '12px',
+            borderRadius: '8px',
             fontWeight: '600',
             cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '15px',
-            flexShrink: 0
+            flexShrink: 0,
+            fontSize: 'clamp(13px, 3.5vw, 14px)'
           }}
         >
           {showAddForm ? 'Cancel' : '+ Add New Member'}
         </button>
       </div>
 
-      {error && (
-        <div style={{ 
-          color: '#f87171', 
-          padding: '12px', 
-          background: '#3f1e1e', 
-          borderRadius: '12px', 
-          marginBottom: '20px' 
-        }}>
-          {error}
-        </div>
-      )}
+      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{error}</div>}
+      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{success}</div>}
 
-      {success && (
-        <div style={{ 
-          color: '#4ade80', 
-          padding: '12px', 
-          background: '#1f3a1f', 
-          borderRadius: '12px', 
-          marginBottom: '20px' 
-        }}>
-          {success}
-        </div>
-      )}
-
-      {showAddForm && <AddMemberForm onMemberAdded={handleMemberAdded} />}
+      {showAddForm && <AddMemberForm onMemberAdded={handleMemberAdded} onCancel={handleCancelForm} />}
 
       {showEditForm && editingMember && (
         <AddMemberForm 
           onMemberAdded={handleMemberUpdated} 
           initialData={editingMember} 
           isEdit={true} 
+          onCancel={handleCancelForm}
         />
       )}
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '80px', color: '#a1a1aa' }}>
-          Loading members...
-        </div>
-      ) : (
-        <div className="card">
-          <MemberTable 
-            members={members} 
-            onDelete={handleDelete} 
-            onEdit={handleEdit}
-            onViewContributions={handleViewContributions}
-          />
-        </div>
+      {!showAddForm && !showEditForm && (
+        <>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading members...</div>
+          ) : (
+            <div className="card" style={{ overflowX: 'auto' }}>
+              <MemberTable 
+                members={members} 
+                onDelete={handleDelete} 
+                onEdit={handleEdit}
+                onViewContributions={handleViewContributions}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {showContributionsModal && selectedMemberId && (
@@ -203,9 +193,11 @@ export default function MembersPage() {
               alignItems: 'center', 
               marginBottom: '24px',
               borderBottom: '1px solid #27272a',
-              paddingBottom: '16px'
+              paddingBottom: '16px',
+              flexWrap: 'wrap',
+              gap: '12px'
             }}>
-              <h3>Contributions for {selectedMemberName}</h3>
+              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Contributions for {selectedMemberName}</h3>
               <button 
                 onClick={closeContributionsModal}
                 style={{
@@ -229,28 +221,30 @@ export default function MembersPage() {
                 No contributions recorded for this member yet.
               </p>
             ) : (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Amount (KES)</th>
-                    <th>Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {memberContributions.map((contrib) => (
-                    <tr key={contrib.id}>
-                      <td>{new Date(contrib.date || '').toLocaleDateString()}</td>
-                      <td>{contrib.contributionType || 'General'}</td>
-                      <td style={{ fontWeight: '600', color: '#4ade80' }}>
-                        {Number(contrib.amount).toLocaleString()}
-                      </td>
-                      <td>{contrib.notes || '-'}</td>
+              <div style={{ overflowX: 'auto' }}>
+                <table className="table" style={{ minWidth: '400px' }}>
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th>Amount (KES)</th>
+                      <th>Notes</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {memberContributions.map((contrib) => (
+                      <tr key={contrib.id}>
+                        <td>{new Date(contrib.date || '').toLocaleDateString()}</td>
+                        <td>{contrib.contributionType || 'General'}</td>
+                        <td style={{ fontWeight: '600', color: '#4ade80' }}>
+                          {Number(contrib.amount).toLocaleString()}
+                        </td>
+                        <td>{contrib.notes || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
