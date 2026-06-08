@@ -12,7 +12,9 @@ import {
   CheckSquare, 
   Users2, 
   Users as GroupIcon,
-  ChevronDown 
+  ChevronDown,
+  Menu,
+  X
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -20,11 +22,14 @@ export default function DashboardLayout() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
 
   return (
     <div style={{ 
@@ -36,7 +41,29 @@ export default function DashboardLayout() {
       margin: 0,
       padding: 0
     }}>
-      {/* Sidebar */}
+      <button
+        onClick={toggleMobileMenu}
+        style={{
+          position: 'fixed',
+          top: '20px',
+          left: '20px',
+          zIndex: 1000,
+          background: '#18181b',
+          border: '1px solid #27272a',
+          color: 'white',
+          width: '48px',
+          height: '48px',
+          borderRadius: '8px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+        }}
+      >
+        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+      </button>
+
       <div style={{
         width: '280px',
         backgroundColor: '#18181b',
@@ -44,9 +71,14 @@ export default function DashboardLayout() {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        boxShadow: '2px 0 12px rgba(0, 0, 0, 0.25)'
+        boxShadow: '2px 0 12px rgba(0, 0, 0, 0.25)',
+        position: 'fixed',
+        left: isMobileMenuOpen ? '0' : '-280px',
+        top: 0,
+        transition: 'left 0.3s ease',
+        zIndex: 999,
+        overflowY: 'auto'
       }}>
-        {/* Logo */}
         <div style={{
           padding: '32px 24px',
           borderBottom: '1px solid #27272a'
@@ -64,13 +96,12 @@ export default function DashboardLayout() {
               <span style={{ fontSize: '28px', fontWeight: '900', color: 'white' }}>C</span>
             </div>
             <div>
-              <h1 style={{ fontSize: '27px', fontWeight: '700', letterSpacing: '-0.5px', color: '#f1f5f9' }}>Church CMS</h1>
+              <h1 style={{ fontSize: 'clamp(22px, 4vw, 27px)', fontWeight: '700', letterSpacing: '-0.5px', color: '#f1f5f9' }}>Church CMS</h1>
               <p style={{ fontSize: '13px', color: '#a1a1aa', marginTop: '-4px' }}>Management System</p>
             </div>
           </div>
         </div>
 
-        {/* Navigation */}
         <nav style={{ flex: 1, padding: '24px 12px', overflowY: 'auto' }}>
           <Link 
             to="/dashboard" 
@@ -157,7 +188,6 @@ export default function DashboardLayout() {
             <Calendar size={21} /> Events
           </Link>
 
-          
           <div>
             <div 
               onClick={() => setIsAttendanceOpen(!isAttendanceOpen)}
@@ -301,7 +331,6 @@ export default function DashboardLayout() {
           </Link>
         </nav>
 
-        {/* Logout */}
         <div style={{ padding: '24px', borderTop: '1px solid #27272a' }}>
           <button 
             onClick={handleLogout}
@@ -324,15 +353,28 @@ export default function DashboardLayout() {
         </div>
       </div>
 
-      {/* Main Content */}
       <div style={{ 
         flex: 1, 
+        marginLeft: '280px', 
         overflow: 'auto', 
         padding: '32px 40px',
-        backgroundColor: '#0a0a0f'
+        backgroundColor: '#0a0a0f',
+        transition: 'margin-left 0.3s ease'
       }}>
         <Outlet />
       </div>
+
+      {isMobileMenuOpen && (
+        <div 
+          onClick={toggleMobileMenu}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.7)',
+            zIndex: 998
+          }}
+        />
+      )}
     </div>
   );
 }

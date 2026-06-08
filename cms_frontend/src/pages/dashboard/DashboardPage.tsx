@@ -97,7 +97,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div style={{ padding: '16px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ padding: '20px 16px', maxWidth: '1400px', margin: '0 auto' }}>
       <div style={{ marginBottom: '40px' }}>
         <h1 style={{ 
           fontSize: 'clamp(26px, 6vw, 38px)', 
@@ -109,7 +109,6 @@ export default function DashboardPage() {
         </h1>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-          
           <div 
             style={{
               backgroundColor: '#18181b',
@@ -221,7 +220,7 @@ export default function DashboardPage() {
 
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', 
         gap: '20px' 
       }}>
         {modules.map((module, i) => (
