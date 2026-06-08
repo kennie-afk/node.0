@@ -2,7 +2,7 @@ const BASE_URL = 'https://church-cms-backend.onrender.com';
 const API_BASE = `${BASE_URL}/auth`;
 
 export const login = async (email: string, password: string) => {
-  console.log('Attempting login to:', `${API_BASE}/login`);   
+  console.log('Attempting login to:', `${API_BASE}/login`);   // For debugging
 
   const res = await fetch(`${API_BASE}/login`, {
     method: 'POST',
