@@ -8,7 +8,7 @@ interface Props {
   onFamilyAdded: (data?: any) => void;
   initialData?: any;
   isEdit?: boolean;
-  onCancel?: () => void;        // ← Added for Cancel button
+  onCancel?: () => void;        
 }
 
 export const AddFamilyForm: React.FC<Props> = ({ 
