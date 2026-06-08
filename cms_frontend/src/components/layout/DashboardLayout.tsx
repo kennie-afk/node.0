@@ -106,7 +106,7 @@ export default function DashboardLayout() {
         style={{
           position: 'fixed',
           top: '16px',
-          left: '16px',
+          right: '16px',
           zIndex: 1001,
           background: '#18181b',
           border: '1px solid #27272a',
@@ -160,7 +160,9 @@ export default function DashboardLayout() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: (isSidebarCollapsed && window.innerWidth > 768) ? 'center' : 'space-between',
-          position: 'relative'
+          position: 'relative',
+          background: '#18181b',
+          zIndex: 10
         }}>
           {(!isSidebarCollapsed || window.innerWidth <= 768) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -209,9 +211,7 @@ export default function DashboardLayout() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                transition: 'all 0.2s',
-                position: 'absolute',
-                right: '12px'
+                transition: 'all 0.2s'
               }}
               onMouseOver={(e) => { e.currentTarget.style.borderColor = '#ec4899'; e.currentTarget.style.color = '#ec4899'; }}
               onMouseOut={(e) => { e.currentTarget.style.borderColor = '#3f3f46'; e.currentTarget.style.color = '#a1a1aa'; }}
