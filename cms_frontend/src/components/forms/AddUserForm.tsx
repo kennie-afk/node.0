@@ -6,9 +6,10 @@ interface AddUserFormProps {
   onUserAdded: (data?: any) => void;
   initialData?: User | null;
   isEdit?: boolean;
+  onCancel?: () => void;
 }
 
-export default function AddUserForm({ onUserAdded, initialData, isEdit = false }: AddUserFormProps) {
+export default function AddUserForm({ onUserAdded, initialData, isEdit = false, onCancel }: AddUserFormProps) {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -63,11 +64,17 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false }
     }
   };
 
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
   return (
     <div style={{ 
       backgroundColor: '#18181b', 
-      padding: '24px', 
-      borderRadius: '10px', 
+      padding: 'clamp(16px, 4vw, 24px)', 
+      borderRadius: '8px', 
       marginBottom: '28px',
       border: '1px solid #27272a',
       maxWidth: '800px',
@@ -155,7 +162,7 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false }
 
           <button 
             type="button"
-            onClick={() => window.history.back()}
+            onClick={handleCancel}
             style={{
               marginTop: '8px',
               padding: '12px 24px',
