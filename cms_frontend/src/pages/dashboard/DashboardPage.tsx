@@ -33,7 +33,6 @@ export default function DashboardPage() {
   const loadDashboard = async () => {
     try {
       setLoading(true);
-
       const [membersRes, ministriesRes, groupsRes, sermonsRes, annRes, eventsRes] = await Promise.all([
         fetchMembers(),
         fetchMinistries(),
@@ -84,62 +83,52 @@ export default function DashboardPage() {
   ];
 
   const quickActions = [
-    { label: "+ New Sermon", path: "/sermons" },
-    { label: "+ New Ministry", path: "/ministries" },
-    { label: "+ New Small Group", path: "/small-groups" },
-    { label: "+ New Member", path: "/members" },
-    { label: "+ New Announcement", path: "/announcements" },
-    { label: "+ New Event", path: "/events" },
+    { label: "New Sermon", path: "/sermons" },
+    { label: "New Ministry", path: "/ministries" },
+    { label: "New Small Group", path: "/small-groups" },
+    { label: "New Member", path: "/members" },
+    { label: "New Announcement", path: "/announcements" },
+    { label: "New Event", path: "/events" },
   ];
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '120px', color: '#a1a1aa' }}>Loading dashboard...</div>;
+    return <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading dashboard...</div>;
   }
 
   return (
-    <div style={{ padding: '20px 16px', maxWidth: '1400px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '40px' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+      <div style={{ marginBottom: '32px' }}>
         <h1 style={{ 
-          fontSize: 'clamp(26px, 6vw, 38px)', 
+          fontSize: 'clamp(24px, 5vw, 32px)', 
           fontWeight: '700', 
           color: '#ffffff', 
-          marginBottom: '12px' 
+          marginBottom: '8px' 
         }}>
           Church Dashboard
         </h1>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div 
             style={{
               backgroundColor: '#18181b',
-              border: '1px solid transparent',
               borderRadius: '8px',
-              padding: '14px 26px',
+              padding: '10px 20px',
               display: 'inline-block',
-              transition: 'all 0.3s ease',
+              transition: 'all 0.2s ease',
+              cursor: 'default'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-3px)';
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.15)';
-              e.currentTarget.style.borderColor = '#ec4899';
-              const textElement = e.currentTarget.querySelector('p');
-              if (textElement) textElement.style.color = '#ffffff';
+              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)';
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
               e.currentTarget.style.backgroundColor = '#18181b';
-              e.currentTarget.style.borderColor = 'transparent';
-              const textElement = e.currentTarget.querySelector('p');
-              if (textElement) textElement.style.color = '#ec4899';
             }}
           >
             <p style={{
-              fontSize: 'clamp(16px, 4vw, 18px)',
-              fontWeight: '600',
+              fontSize: 'clamp(14px, 3.5vw, 15px)',
+              fontWeight: '500',
               color: '#ec4899',
-              margin: 0,
-              letterSpacing: '0.5px',
-              transition: 'color 0.3s ease'
+              margin: 0
             }}>
               {currentDate}
             </p>
@@ -149,42 +138,45 @@ export default function DashboardPage() {
             <button 
               onClick={() => setDropdownOpen(!dropdownOpen)}
               style={{
-                padding: '14px 24px',
+                padding: '10px 20px',
                 backgroundColor: 'transparent',
-                border: '1px solid #ec4899',
+                border: 'none',
                 color: '#f1f5f9',
                 borderRadius: '8px',
-                fontWeight: '600',
-                fontSize: '15px',
+                fontWeight: '500',
+                fontSize: '14px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px',
-                transition: 'all 0.3s ease'
+                gap: '6px',
+                transition: 'all 0.2s ease'
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundImage = 'linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(236, 72, 153, 0.05))';
+                e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)';
+                e.currentTarget.style.color = '#ec4899';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundImage = 'none';
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = '#f1f5f9';
               }}
             >
               Quick Actions
-              <span style={{ fontSize: '12px', transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+              <span style={{ fontSize: '10px', transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
             </button>
 
             {dropdownOpen && (
               <div style={{
                 position: 'absolute',
-                top: '120%',
+                top: '100%',
                 right: 0,
                 backgroundColor: '#18181b',
                 border: '1px solid #27272a',
                 borderRadius: '8px',
-                width: '220px',
+                width: '180px',
                 boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
                 zIndex: 10,
-                overflow: 'hidden'
+                overflow: 'hidden',
+                marginTop: '4px'
               }}>
                 {quickActions.map((action, idx) => (
                   <div
@@ -194,14 +186,14 @@ export default function DashboardPage() {
                       setDropdownOpen(false);
                     }}
                     style={{
-                      padding: '12px 18px',
+                      padding: '10px 16px',
                       color: '#a1a1aa',
-                      fontSize: '14.5px',
+                      fontSize: '13.5px',
                       cursor: 'pointer',
-                      transition: 'background-color 0.2s, color 0.2s'
+                      transition: 'all 0.2s'
                     }}
                     onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = '#27272a';
+                      e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)';
                       e.currentTarget.style.color = '#ec4899'; 
                     }}
                     onMouseOut={(e) => {
@@ -220,7 +212,7 @@ export default function DashboardPage() {
 
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
         gap: '20px' 
       }}>
         {modules.map((module, i) => (
@@ -233,37 +225,37 @@ export default function DashboardPage() {
               border: '1px solid #27272a',
               padding: '24px',
               cursor: 'pointer',
-              transition: 'all 0.3s ease',
+              transition: 'all 0.2s ease',
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.backgroundColor = `${module.color}26`; 
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.borderColor = module.color;
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.backgroundColor = '#18181b';
+              e.currentTarget.style.borderColor = '#27272a';
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
               <div>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '6px' }}>{module.title}</h3>
-                <p style={{ color: '#a1a1aa', fontSize: '14px' }}>{module.desc}</p>
+                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px', color: '#f1f5f9' }}>{module.title}</h3>
+                <p style={{ color: '#a1a1aa', fontSize: '13px' }}>{module.desc}</p>
               </div>
-              <div style={{ fontSize: '42px', fontWeight: '700', color: module.color }}>
+              <div style={{ fontSize: '36px', fontWeight: '700', color: module.color }}>
                 {module.count}
               </div>
             </div>
 
             {module.badge && module.badge > 0 && (
               <div style={{
-                marginTop: '12px',
+                marginTop: '8px',
                 display: 'inline-block',
-                padding: '4px 12px',
+                padding: '3px 10px',
                 backgroundColor: '#f87171',
                 color: 'white',
-                borderRadius: '9999px',
-                fontSize: '13px',
-                fontWeight: '600'
+                borderRadius: '20px',
+                fontSize: '12px',
+                fontWeight: '500'
               }}>
                 {module.badge} New
               </div>
@@ -271,29 +263,29 @@ export default function DashboardPage() {
 
             <button 
               style={{
-                marginTop: '24px',
+                marginTop: '20px',
                 width: '100%',
-                padding: '12px',
+                padding: '10px',
+                background: 'transparent',
                 border: `1px solid ${module.color}`, 
-                color: '#f1f5f9', 
+                color: module.color, 
                 borderRadius: '8px',
                 fontWeight: '500',
+                fontSize: '13px',
                 cursor: 'pointer',
-                transition: 'all 0.3s ease',
-                backgroundColor: `${module.color}1a`,
+                transition: 'all 0.2s ease',
               }}
               onMouseOver={(e) => {
                 e.currentTarget.style.backgroundColor = module.color;
                 e.currentTarget.style.color = '#ffffff';
-                e.currentTarget.style.border = `1px solid ${module.color}`;
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = `${module.color}1a`;
-                e.currentTarget.style.color = '#f1f5f9';
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = module.color;
               }}
               onClick={(e) => { e.stopPropagation(); navigate(module.path); }}
             >
-              Go to {module.title}
+              View {module.title}
             </button>
           </div>
         ))}

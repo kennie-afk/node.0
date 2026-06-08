@@ -33,7 +33,6 @@ export const AddFamilyForm: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Load members for dropdown
   useEffect(() => {
     const loadMembers = async () => {
       try {
@@ -46,7 +45,6 @@ export const AddFamilyForm: React.FC<Props> = ({
     loadMembers();
   }, []);
 
-  // Populate form when editing
   useEffect(() => {
     if (initialData && isEdit) {
       setFormData({
@@ -101,7 +99,6 @@ export const AddFamilyForm: React.FC<Props> = ({
     if (onCancel) {
       onCancel();
     } else {
-      // Reset form
       setFormData({
         familyName: '', address: '', city: '', county: '', postalCode: '',
         phoneNumber: '', email: '', notes: '', headOfFamilyMemberId: ''
@@ -115,8 +112,8 @@ export const AddFamilyForm: React.FC<Props> = ({
   };
 
   return (
-    <div className="card" style={{ marginBottom: '30px' }}>
-      <h3>{isEdit ? 'Edit Family' : 'Add New Family'}</h3>
+    <div className="card" style={{ marginBottom: '30px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <h3 style={{ fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>{isEdit ? 'Edit Family' : 'Add New Family'}</h3>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <Input 
@@ -142,7 +139,8 @@ export const AddFamilyForm: React.FC<Props> = ({
               border: '1px solid #3f3f46',
               borderRadius: '6px',
               color: '#f1f5f9',
-              fontSize: '14px'
+              fontSize: '14px',
+              boxSizing: 'border-box'
             }}
           >
             <option value="">Select Head of Family (optional)</option>
@@ -154,17 +152,24 @@ export const AddFamilyForm: React.FC<Props> = ({
           </select>
         </div>
 
-        <Input placeholder="Address" name="address" value={formData.address} onChange={handleChange} />
-        <Input placeholder="City" name="city" value={formData.city} onChange={handleChange} />
-        <Input placeholder="County" name="county" value={formData.county} onChange={handleChange} />
-        <Input placeholder="Postal Code" name="postalCode" value={formData.postalCode} onChange={handleChange} />
-        <Input placeholder="Phone Number" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} />
-        <Input type="email" placeholder="Email" name="email" value={formData.email} onChange={handleChange} />
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+          gap: '16px' 
+        }}>
+          <Input placeholder="Address" name="address" value={formData.address} onChange={handleChange} />
+          <Input placeholder="City" name="city" value={formData.city} onChange={handleChange} />
+          <Input placeholder="County" name="county" value={formData.county} onChange={handleChange} />
+          <Input placeholder="Postal Code" name="postalCode" value={formData.postalCode} onChange={handleChange} />
+          <Input placeholder="Phone Number" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} />
+          <Input type="email" placeholder="Email" name="email" value={formData.email} onChange={handleChange} />
+        </div>
+
         <Input placeholder="Notes (optional)" name="notes" value={formData.notes} onChange={handleChange} />
 
         {error && <p style={{ color: '#f87171' }}>{error}</p>}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}

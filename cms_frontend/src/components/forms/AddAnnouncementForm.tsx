@@ -1,4 +1,3 @@
-// src/components/forms/AddAnnouncementForm.tsx
 import React, { useState, useEffect } from 'react';
 import { createAnnouncement, updateAnnouncement } from '../../api/announcementApi';
 import { Input } from '../common/Input';
@@ -27,7 +26,6 @@ export default function AddAnnouncementForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Populate form when editing
   useEffect(() => {
     if (initialData && isEdit) {
       setFormData({
@@ -59,7 +57,6 @@ export default function AddAnnouncementForm({
     setError('');
 
     try {
-      // Convert datetime-local to full ISO datetime
       const payload = {
         title: formData.title,
         content: formData.content,
@@ -79,7 +76,6 @@ export default function AddAnnouncementForm({
         await createAnnouncement(payload);
       }
 
-      // Reset form after success
       setFormData({
         title: '',
         content: '',
@@ -98,8 +94,8 @@ export default function AddAnnouncementForm({
   };
 
   return (
-    <div className="card" style={{ marginBottom: '28px' }}>
-      <h3 style={{ marginBottom: '20px', fontSize: '20px', fontWeight: '600' }}>
+    <div className="card" style={{ marginBottom: '28px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <h3 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>
         {isEdit ? 'Edit Announcement' : 'Add New Announcement'}
       </h3>
 
@@ -127,11 +123,16 @@ export default function AddAnnouncementForm({
             color: '#f1f5f9',
             fontSize: '14px',
             minHeight: '120px',
-            resize: 'vertical'
+            resize: 'vertical',
+            boxSizing: 'border-box'
           }}
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+          gap: '16px' 
+        }}>
           <div>
             <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
               Publication Date
@@ -148,7 +149,8 @@ export default function AddAnnouncementForm({
                 border: '1px solid #3f3f46',
                 borderRadius: '6px',
                 color: '#f1f5f9',
-                fontSize: '14px'
+                fontSize: '14px',
+                boxSizing: 'border-box'
               }}
             />
           </div>
@@ -169,7 +171,8 @@ export default function AddAnnouncementForm({
                 border: '1px solid #3f3f46',
                 borderRadius: '6px',
                 color: '#f1f5f9',
-                fontSize: '14px'
+                fontSize: '14px',
+                boxSizing: 'border-box'
               }}
             />
           </div>
@@ -190,7 +193,8 @@ export default function AddAnnouncementForm({
               border: '1px solid #3f3f46',
               borderRadius: '6px',
               color: '#f1f5f9',
-              fontSize: '14px'
+              fontSize: '14px',
+              boxSizing: 'border-box'
             }}
           >
             <option value="All">All</option>
@@ -212,7 +216,7 @@ export default function AddAnnouncementForm({
 
         {error && <p style={{ color: '#f87171', fontSize: '14px' }}>{error}</p>}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button
             type="submit"
             disabled={loading}
@@ -230,7 +234,7 @@ export default function AddAnnouncementForm({
 
           <Button
             type="button"
-            onClick={() => window.history.back()} // or pass onCancel prop if preferred
+            onClick={() => window.history.back()}
             style={{
               background: 'transparent',
               border: '1px solid #f1f5f9',

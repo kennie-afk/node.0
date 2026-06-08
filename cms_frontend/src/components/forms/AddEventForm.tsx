@@ -20,7 +20,6 @@ export default function AddEventForm({ onEventAdded, initialData, isEdit = false
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Populate form when editing
   useEffect(() => {
     if (initialData && isEdit) {
       setFormData({
@@ -60,8 +59,8 @@ export default function AddEventForm({ onEventAdded, initialData, isEdit = false
   };
 
   return (
-    <div className="card" style={{ marginBottom: '30px' }}>
-      <h3>{isEdit ? 'Edit Event' : 'Add New Event'}</h3>
+    <div className="card" style={{ marginBottom: '30px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <h3 style={{ fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>{isEdit ? 'Edit Event' : 'Add New Event'}</h3>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <Input 
@@ -86,11 +85,16 @@ export default function AddEventForm({ onEventAdded, initialData, isEdit = false
             color: 'white',
             fontSize: '15px',
             minHeight: '80px',
-            resize: 'vertical'
+            resize: 'vertical',
+            boxSizing: 'border-box'
           }}
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+          gap: '16px' 
+        }}>
           <Input 
             type="datetime-local" 
             placeholder="Start Time *" 
@@ -117,7 +121,7 @@ export default function AddEventForm({ onEventAdded, initialData, isEdit = false
 
         {error && <p style={{ color: '#f87171' }}>{error}</p>}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}

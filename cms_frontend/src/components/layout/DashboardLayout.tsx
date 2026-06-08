@@ -14,15 +14,36 @@ import {
   Users as GroupIcon,
   ChevronDown,
   Menu,
-  X
+  X,
+  ChevronLeft,
+  ChevronRight,
+  LogOut
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 export default function DashboardLayout() {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const [isAttendanceOpen, setIsAttendanceOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    const saved = localStorage.getItem('sidebarCollapsed');
+    return saved === 'true';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('sidebarCollapsed', String(isSidebarCollapsed));
+  }, [isSidebarCollapsed]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 768 && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isMobileMenuOpen]);
 
   const handleLogout = () => {
     logout();
@@ -30,6 +51,42 @@ export default function DashboardLayout() {
   };
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
+  const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+
+  const sidebarWidth = isSidebarCollapsed ? '80px' : '280px';
+  
+  const navItemStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: isSidebarCollapsed ? 'center' : 'flex-start',
+    gap: isSidebarCollapsed ? '0' : '14px',
+    padding: isSidebarCollapsed ? '12px' : '12px 20px',
+    color: '#cbd5e1',
+    textDecoration: 'none',
+    fontSize: '14px',
+    borderRadius: '8px',
+    marginBottom: '4px',
+    transition: 'all 0.2s ease',
+    fontWeight: '500',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap'
+  } as const;
+
+  const subNavItemStyle = {
+    display: 'block',
+    padding: isSidebarCollapsed ? '10px' : '8px 20px',
+    paddingLeft: isSidebarCollapsed ? '10px' : '44px',
+    color: '#a1a1aa',
+    textDecoration: 'none',
+    fontSize: '13px',
+    borderRadius: '8px',
+    marginBottom: '2px',
+    transition: 'all 0.2s ease',
+    cursor: 'pointer',
+    textAlign: isSidebarCollapsed ? 'center' : 'left',
+    whiteSpace: isSidebarCollapsed ? 'normal' : 'nowrap',
+    wordBreak: isSidebarCollapsed ? 'break-word' : 'normal'
+  } as const;
 
   return (
     <div style={{ 
@@ -45,27 +102,28 @@ export default function DashboardLayout() {
         onClick={toggleMobileMenu}
         style={{
           position: 'fixed',
-          top: '20px',
-          left: '20px',
+          top: '16px',
+          left: '16px',
           zIndex: 1000,
           background: '#18181b',
           border: '1px solid #27272a',
           color: 'white',
-          width: '48px',
-          height: '48px',
+          width: '44px',
+          height: '44px',
           borderRadius: '8px',
-          display: 'flex',
+          display: 'none',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
           boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
         }}
+        className="mobile-menu-btn"
       >
-        {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
       </button>
 
       <div style={{
-        width: '280px',
+        width: sidebarWidth,
         backgroundColor: '#18181b',
         borderRight: '1px solid #27272a',
         display: 'flex',
@@ -73,170 +131,164 @@ export default function DashboardLayout() {
         height: '100%',
         boxShadow: '2px 0 12px rgba(0, 0, 0, 0.25)',
         position: 'fixed',
-        left: isMobileMenuOpen ? '0' : '-280px',
+        left: isMobileMenuOpen ? '0' : (window.innerWidth <= 768 ? `-${sidebarWidth}` : '0'),
         top: 0,
-        transition: 'left 0.3s ease',
+        transition: 'left 0.3s ease, width 0.2s ease',
         zIndex: 999,
-        overflowY: 'auto'
+        overflowY: 'auto',
+        overflowX: 'hidden'
       }}>
         <div style={{
-          padding: '32px 24px',
-          borderBottom: '1px solid #27272a'
+          padding: isSidebarCollapsed ? '20px 12px' : '24px 20px',
+          borderBottom: '1px solid #27272a',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: isSidebarCollapsed ? 'center' : 'space-between'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {!isSidebarCollapsed && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                background: 'linear-gradient(135deg, #ec4899, #a855f7)',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <span style={{ fontSize: '22px', fontWeight: '900', color: 'white' }}>C</span>
+              </div>
+              <div>
+                <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#f1f5f9', margin: 0 }}>Church CMS</h1>
+              </div>
+            </div>
+          )}
+          {isSidebarCollapsed && (
             <div style={{
-              width: '48px',
-              height: '48px',
+              width: '40px',
+              height: '40px',
               background: 'linear-gradient(135deg, #ec4899, #a855f7)',
               borderRadius: '10px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              margin: '0 auto'
             }}>
-              <span style={{ fontSize: '28px', fontWeight: '900', color: 'white' }}>C</span>
+              <span style={{ fontSize: '22px', fontWeight: '900', color: 'white' }}>C</span>
             </div>
-            <div>
-              <h1 style={{ fontSize: 'clamp(22px, 4vw, 27px)', fontWeight: '700', letterSpacing: '-0.5px', color: '#f1f5f9' }}>Church CMS</h1>
-              <p style={{ fontSize: '13px', color: '#a1a1aa', marginTop: '-4px' }}>Management System</p>
-            </div>
-          </div>
+          )}
+          
+          <button
+            onClick={toggleSidebar}
+            style={{
+              background: 'transparent',
+              border: '1px solid #3f3f46',
+              borderRadius: '6px',
+              color: '#a1a1aa',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.borderColor = '#ec4899'; e.currentTarget.style.color = '#ec4899'; }}
+            onMouseOut={(e) => { e.currentTarget.style.borderColor = '#3f3f46'; e.currentTarget.style.color = '#a1a1aa'; }}
+          >
+            {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
         </div>
 
-        <nav style={{ flex: 1, padding: '24px 12px', overflowY: 'auto' }}>
+        <nav style={{ flex: 1, padding: isSidebarCollapsed ? '16px 8px' : '20px 12px' }}>
           <Link 
             to="/dashboard" 
-            style={navLinkStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-              e.currentTarget.style.border = '1px solid #ec4899';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.border = '1px solid transparent';
-              e.currentTarget.style.color = '#cbd5e1';
-            }}
+            style={navItemStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
-            <LayoutDashboard size={21} /> Dashboard
+            <LayoutDashboard size={20} />
+            {!isSidebarCollapsed && <span>Dashboard</span>}
           </Link>
 
           <Link 
             to="/users" 
-            style={navLinkStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-              e.currentTarget.style.border = '1px solid #ec4899';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.border = '1px solid transparent';
-              e.currentTarget.style.color = '#cbd5e1';
-            }}
+            style={navItemStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
-            <Users size={21} /> Users
+            <Users size={20} />
+            {!isSidebarCollapsed && <span>Users</span>}
           </Link>
 
           <Link 
             to="/families" 
-            style={navLinkStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-              e.currentTarget.style.border = '1px solid #ec4899';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.border = '1px solid transparent';
-              e.currentTarget.style.color = '#cbd5e1';
-            }}
+            style={navItemStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
-            <Home size={21} /> Families
+            <Home size={20} />
+            {!isSidebarCollapsed && <span>Families</span>}
           </Link>
 
           <Link 
             to="/members" 
-            style={navLinkStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-              e.currentTarget.style.border = '1px solid #ec4899';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.border = '1px solid transparent';
-              e.currentTarget.style.color = '#cbd5e1';
-            }}
+            style={navItemStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
-            <User size={21} /> Members
+            <User size={20} />
+            {!isSidebarCollapsed && <span>Members</span>}
           </Link>
 
           <Link 
             to="/events" 
-            style={navLinkStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-              e.currentTarget.style.border = '1px solid #ec4899';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.border = '1px solid transparent';
-              e.currentTarget.style.color = '#cbd5e1';
-            }}
+            style={navItemStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
-            <Calendar size={21} /> Events
+            <Calendar size={20} />
+            {!isSidebarCollapsed && <span>Events</span>}
           </Link>
 
           <div>
             <div 
               onClick={() => setIsAttendanceOpen(!isAttendanceOpen)}
-              style={navLinkStyle}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-                e.currentTarget.style.border = '1px solid #ec4899';
-                e.currentTarget.style.color = '#ffffff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.border = '1px solid transparent';
-                e.currentTarget.style.color = '#cbd5e1';
-              }}
+              style={navItemStyle}
+              onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1 }}>
-                <CheckSquare size={21} /> Attendance
-              </div>
-              <ChevronDown 
-                size={18} 
-                style={{ 
-                  transition: 'transform 0.3s ease',
-                  transform: isAttendanceOpen ? 'rotate(180deg)' : 'rotate(0deg)'
-                }} 
-              />
+              <CheckSquare size={20} />
+              {!isSidebarCollapsed && (
+                <>
+                  <span style={{ flex: 1 }}>Attendance</span>
+                  <ChevronDown size={16} style={{ transition: 'transform 0.2s ease', transform: isAttendanceOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                </>
+              )}
             </div>
 
-            {isAttendanceOpen && (
-              <div style={{ paddingLeft: '40px', marginTop: '6px' }}>
+            {isAttendanceOpen && !isSidebarCollapsed && (
+              <div style={{ marginTop: '4px' }}>
                 <Link 
                   to="/attendance" 
-                  style={subNavLinkStyle}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = '#ec4899'; e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.08)'; }}
+                  style={subNavItemStyle}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#ec4899'; e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.05)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#a1a1aa'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   General Attendance
                 </Link>
                 <Link 
                   to="/attendance/event" 
-                  style={subNavLinkStyle}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = '#ec4899'; e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.08)'; }}
+                  style={subNavItemStyle}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#ec4899'; e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.05)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#a1a1aa'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   Event Attendance
                 </Link>
                 <Link 
                   to="/attendance/sermon" 
-                  style={subNavLinkStyle}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = '#ec4899'; e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.08)'; }}
+                  style={subNavItemStyle}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = '#ec4899'; e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.05)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#a1a1aa'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
                   Sermon Attendance
@@ -247,117 +299,87 @@ export default function DashboardLayout() {
 
           <Link 
             to="/announcements" 
-            style={navLinkStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-              e.currentTarget.style.border = '1px solid #ec4899';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.border = '1px solid transparent';
-              e.currentTarget.style.color = '#cbd5e1';
-            }}
+            style={navItemStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
-            <Bell size={21} /> Announcements
+            <Bell size={20} />
+            {!isSidebarCollapsed && <span>Announcements</span>}
           </Link>
 
           <Link 
             to="/sermons" 
-            style={navLinkStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-              e.currentTarget.style.border = '1px solid #ec4899';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.border = '1px solid transparent';
-              e.currentTarget.style.color = '#cbd5e1';
-            }}
+            style={navItemStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
-            <BookOpen size={21} /> Sermons
+            <BookOpen size={20} />
+            {!isSidebarCollapsed && <span>Sermons</span>}
           </Link>
 
           <Link 
             to="/contributions" 
-            style={navLinkStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-              e.currentTarget.style.border = '1px solid #ec4899';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.border = '1px solid transparent';
-              e.currentTarget.style.color = '#cbd5e1';
-            }}
+            style={navItemStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
-            <DollarSign size={21} /> Contributions
+            <DollarSign size={20} />
+            {!isSidebarCollapsed && <span>Contributions</span>}
           </Link>
 
           <Link 
             to="/ministries" 
-            style={navLinkStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-              e.currentTarget.style.border = '1px solid #ec4899';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.border = '1px solid transparent';
-              e.currentTarget.style.color = '#cbd5e1';
-            }}
+            style={navItemStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
-            <Users2 size={21} /> Ministries
+            <Users2 size={20} />
+            {!isSidebarCollapsed && <span>Ministries</span>}
           </Link>
 
           <Link 
             to="/small-groups" 
-            style={navLinkStyle}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.12)';
-              e.currentTarget.style.border = '1px solid #ec4899';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.border = '1px solid transparent';
-              e.currentTarget.style.color = '#cbd5e1';
-            }}
+            style={navItemStyle}
+            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
-            <GroupIcon size={21} /> Small Groups
+            <GroupIcon size={20} />
+            {!isSidebarCollapsed && <span>Small Groups</span>}
           </Link>
         </nav>
 
-        <div style={{ padding: '24px', borderTop: '1px solid #27272a' }}>
+        <div style={{ padding: isSidebarCollapsed ? '20px 12px' : '24px', borderTop: '1px solid #27272a' }}>
           <button 
             onClick={handleLogout}
             style={{
               width: '100%',
-              padding: '13px',
+              padding: isSidebarCollapsed ? '12px' : '12px',
               backgroundColor: 'transparent',
               border: '1px solid #f87171',
               color: '#f87171',
               borderRadius: '8px',
               fontWeight: '500',
               cursor: 'pointer',
-              transition: 'all 0.2s'
+              transition: 'all 0.2s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: isSidebarCollapsed ? '0' : '8px'
             }}
-            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#3f3f46'; }}
+            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)'; }}
             onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
-            Logout
+            <LogOut size={18} />
+            {!isSidebarCollapsed && <span>Logout</span>}
           </button>
         </div>
       </div>
 
       <div style={{ 
         flex: 1, 
-        marginLeft: '280px', 
+        marginLeft: isMobileMenuOpen ? sidebarWidth : (window.innerWidth <= 768 ? '0' : sidebarWidth),
         overflow: 'auto', 
-        padding: '32px 40px',
+        padding: window.innerWidth <= 768 ? '70px 16px 16px' : '32px 40px',
         backgroundColor: '#0a0a0f',
         transition: 'margin-left 0.3s ease'
       }}>
@@ -378,31 +400,3 @@ export default function DashboardLayout() {
     </div>
   );
 }
-
-const navLinkStyle = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '14px',
-  padding: '13px 22px',
-  color: '#cbd5e1',
-  textDecoration: 'none',
-  fontSize: '14.8px',
-  borderRadius: '8px',
-  marginBottom: '4px',
-  transition: 'all 0.3s ease',
-  fontWeight: '500',
-  border: '1px solid transparent',
-  cursor: 'pointer'
-} as const;
-
-const subNavLinkStyle = {
-  display: 'block',
-  padding: '10px 22px',
-  color: '#a1a1aa',
-  textDecoration: 'none',
-  fontSize: '14px',
-  borderRadius: '8px',
-  marginBottom: '2px',
-  transition: 'all 0.2s ease',
-  cursor: 'pointer'
-} as const;

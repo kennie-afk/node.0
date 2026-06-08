@@ -74,7 +74,6 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
     setLoading(true);
     setError('');
 
-    // Client-side validation
     if (formData.name.trim().length < 3) {
       setError("Small group name must be at least 3 characters long.");
       setLoading(false);
@@ -119,8 +118,8 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
   };
 
   return (
-    <div className="card" style={{ marginBottom: '28px' }}>
-      <h3 style={{ marginBottom: '20px', fontSize: '20px', fontWeight: '600' }}>
+    <div className="card" style={{ marginBottom: '28px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <h3 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>
         {isEdit ? 'Edit Small Group' : 'Add New Small Group'}
       </h3>
 
@@ -133,7 +132,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
             name="ministryId" 
             value={formData.ministryId} 
             onChange={handleChange} 
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', boxSizing: 'border-box' }} 
             required
           >
             <option value="">Select Ministry</option>
@@ -149,7 +148,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
             name="leaderId" 
             value={formData.leaderId} 
             onChange={handleChange} 
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9' }}
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', boxSizing: 'border-box' }}
           >
             <option value="">Select Leader (optional)</option>
             {members.map((m: any) => (
@@ -158,30 +157,36 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
           </select>
         </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Meeting Day</label>
-          <select 
-            name="meetingDay" 
-            value={formData.meetingDay} 
-            onChange={handleChange} 
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9' }}
-          >
-            <option value="">Select Day</option>
-            {DAYS_OF_WEEK.map(day => (
-              <option key={day} value={day}>{day}</option>
-            ))}
-          </select>
-        </div>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '16px' 
+        }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Meeting Day</label>
+            <select 
+              name="meetingDay" 
+              value={formData.meetingDay} 
+              onChange={handleChange} 
+              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', boxSizing: 'border-box' }}
+            >
+              <option value="">Select Day</option>
+              {DAYS_OF_WEEK.map(day => (
+                <option key={day} value={day}>{day}</option>
+              ))}
+            </select>
+          </div>
 
-        <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Meeting Time</label>
-          <input 
-            type="time" 
-            name="meetingTime" 
-            value={formData.meetingTime} 
-            onChange={handleChange}
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9' }}
-          />
+          <div>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Meeting Time</label>
+            <input 
+              type="time" 
+              name="meetingTime" 
+              value={formData.meetingTime} 
+              onChange={handleChange}
+              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', boxSizing: 'border-box' }}
+            />
+          </div>
         </div>
 
         <Input placeholder="Meeting Location" name="meetingLocation" value={formData.meetingLocation} onChange={handleChange} />
@@ -191,7 +196,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
           value={formData.description}
           onChange={handleChange}
           placeholder="Description (optional)"
-          style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', minHeight: '80px' }}
+          style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box' }}
         />
 
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#d1d5db' }}>
@@ -203,7 +208,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
 
         {error && <p style={{ color: '#f87171', marginTop: '4px' }}>{error}</p>}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}

@@ -22,7 +22,6 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Load members
   useEffect(() => {
     const loadMembers = async () => {
       try {
@@ -35,7 +34,6 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
     loadMembers();
   }, []);
 
-  // Populate form when editing
   useEffect(() => {
     if (initialData && isEdit) {
       setFormData({
@@ -96,8 +94,8 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
   };
 
   return (
-    <div className="card" style={{ marginBottom: '30px' }}>
-      <h3>{isEdit ? 'Edit Contribution' : 'Record New Contribution'}</h3>
+    <div className="card" style={{ marginBottom: '30px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <h3 style={{ fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>{isEdit ? 'Edit Contribution' : 'Record New Contribution'}</h3>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <select 
@@ -112,7 +110,8 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
             border: '1px solid #3f3f46',
             borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px'
+            fontSize: '14px',
+            boxSizing: 'border-box'
           }}
         >
           <option value="">Select Member *</option>
@@ -152,7 +151,8 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
             border: '1px solid #3f3f46',
             borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px'
+            fontSize: '14px',
+            boxSizing: 'border-box'
           }}
         >
           <option value="Tithe">Tithe</option>
@@ -170,7 +170,7 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
 
         {error && <p style={{ color: '#f87171' }}>{error}</p>}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}

@@ -1,4 +1,3 @@
-// src/components/forms/AddAttendanceForm.tsx
 import React, { useState, useEffect } from 'react';
 import { createAttendance, updateAttendance } from '../../api/attendanceApi';
 import { fetchMembers } from '../../api/memberApi';
@@ -37,7 +36,6 @@ export default function AddAttendanceForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Load dropdown data
   useEffect(() => {
     const loadDropdowns = async () => {
       try {
@@ -56,7 +54,6 @@ export default function AddAttendanceForm({
     loadDropdowns();
   }, []);
 
-  // Populate form when editing
   useEffect(() => {
     if (initialData && isEdit) {
       setFormData({
@@ -108,13 +105,12 @@ export default function AddAttendanceForm({
   };
 
   return (
-    <div className="card" style={{ marginBottom: '28px' }}>
-      <h3 style={{ marginBottom: '20px', fontSize: '20px', fontWeight: '600' }}>
+    <div className="card" style={{ marginBottom: '28px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <h3 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>
         {isEdit ? 'Edit Attendance Record' : `Record ${activeTab === 'event' ? 'Event' : activeTab === 'sermon' ? 'Sermon' : 'General'} Attendance`}
       </h3>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        
         <div>
           <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
             Member (optional)
@@ -123,7 +119,7 @@ export default function AddAttendanceForm({
             name="memberId"
             value={formData.memberId}
             onChange={handleChange}
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px' }}
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }}
           >
             <option value="">Select Member</option>
             {members.map((m: any) => (
@@ -150,7 +146,6 @@ export default function AddAttendanceForm({
           required 
         />
 
-        {/* Show Event dropdown only for General or Event tab */}
         {(activeTab === 'general' || activeTab === 'event') && (
           <div>
             <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
@@ -160,7 +155,7 @@ export default function AddAttendanceForm({
               name="eventId"
               value={formData.eventId}
               onChange={handleChange}
-              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px' }}
+              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }}
             >
               <option value="">Select Event</option>
               {events.map((e: any) => (
@@ -172,7 +167,6 @@ export default function AddAttendanceForm({
           </div>
         )}
 
-        {/* Show Sermon dropdown only for General or Sermon tab */}
         {(activeTab === 'general' || activeTab === 'sermon') && (
           <div>
             <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
@@ -182,7 +176,7 @@ export default function AddAttendanceForm({
               name="sermonId"
               value={formData.sermonId}
               onChange={handleChange}
-              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px' }}
+              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }}
             >
               <option value="">Select Sermon</option>
               {sermons.map((s: any) => (
@@ -198,7 +192,7 @@ export default function AddAttendanceForm({
           name="attendanceType"
           value={formData.attendanceType}
           onChange={handleChange}
-          style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px' }}
+          style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }}
         >
           <option value="In-person">In-person</option>
           <option value="Online">Online</option>
@@ -214,7 +208,7 @@ export default function AddAttendanceForm({
 
         {error && <p style={{ color: '#f87171' }}>{error}</p>}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}

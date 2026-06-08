@@ -77,8 +77,8 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
   };
 
   return (
-    <div className="card" style={{ marginBottom: '28px' }}>
-      <h3 style={{ marginBottom: '20px', fontSize: '20px', fontWeight: '600' }}>
+    <div className="card" style={{ marginBottom: '28px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <h3 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>
         {isEdit ? 'Edit Ministry' : 'Add New Ministry'}
       </h3>
 
@@ -98,7 +98,9 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
             borderRadius: '6px',
             color: '#f1f5f9',
             fontSize: '14px',
-            minHeight: '100px'
+            minHeight: '100px',
+            resize: 'vertical',
+            boxSizing: 'border-box'
           }}
         />
 
@@ -110,7 +112,7 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
             name="leaderId"
             value={formData.leaderId}
             onChange={handleChange}
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px' }}
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }}
             required
           >
             <option value="">Select Leader</option>
@@ -124,7 +126,7 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
 
         {error && <p style={{ color: '#f87171' }}>{error}</p>}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}

@@ -119,8 +119,8 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
   };
 
   return (
-    <div className="card" style={{ marginBottom: '28px' }}>
-      <h3 style={{ marginBottom: '20px', fontSize: '20px', fontWeight: '600' }}>
+    <div className="card" style={{ marginBottom: '28px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <h3 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>
         {isEdit ? 'Edit Sermon' : 'Add New Sermon'}
       </h3>
 
@@ -141,28 +141,35 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
             color: '#f1f5f9',
             fontSize: '14px',
             minHeight: '160px',
-            resize: 'vertical'
+            resize: 'vertical',
+            boxSizing: 'border-box'
           }}
         />
 
-        <Input 
-          placeholder="Date Preached *" 
-          name="datePreached" 
-          value={formData.datePreached} 
-          onChange={handleChange} 
-          type="date" 
-          required 
-        />
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <input 
-            type="checkbox" 
-            name="isGuestSpeaker" 
-            checked={formData.isGuestSpeaker} 
-            onChange={handleChange}
-            style={{ accentColor: '#ec4899' }}
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+          gap: '16px' 
+        }}>
+          <Input 
+            placeholder="Date Preached *" 
+            name="datePreached" 
+            value={formData.datePreached} 
+            onChange={handleChange} 
+            type="date" 
+            required 
           />
-          <label style={{ color: '#d1d5db', fontSize: '14px' }}>This is a Guest Speaker (not a church member)</label>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input 
+              type="checkbox" 
+              name="isGuestSpeaker" 
+              checked={formData.isGuestSpeaker} 
+              onChange={handleChange}
+              style={{ accentColor: '#ec4899' }}
+            />
+            <label style={{ color: '#d1d5db', fontSize: '14px' }}>Guest Speaker</label>
+          </div>
         </div>
 
         {!formData.isGuestSpeaker ? (
@@ -174,7 +181,7 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
               name="speakerMemberId"
               value={formData.speakerMemberId}
               onChange={handleChange}
-              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px' }}
+              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }}
             >
               <option value="">Select Speaker</option>
               {members.map((m: any) => (
@@ -209,17 +216,26 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
             borderRadius: '6px',
             color: '#f1f5f9',
             fontSize: '14px',
-            minHeight: '100px'
+            minHeight: '100px',
+            resize: 'vertical',
+            boxSizing: 'border-box'
           }}
         />
 
-        <Input placeholder="Audio URL (optional)" name="audioUrl" value={formData.audioUrl} onChange={handleChange} type="url" />
-        <Input placeholder="Video URL (optional)" name="videoUrl" value={formData.videoUrl} onChange={handleChange} type="url" />
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+          gap: '16px' 
+        }}>
+          <Input placeholder="Audio URL (optional)" name="audioUrl" value={formData.audioUrl} onChange={handleChange} type="url" />
+          <Input placeholder="Video URL (optional)" name="videoUrl" value={formData.videoUrl} onChange={handleChange} type="url" />
+        </div>
+
         <Input placeholder="Notes (optional)" name="notes" value={formData.notes} onChange={handleChange} />
 
         {error && <p style={{ color: '#f87171' }}>{error}</p>}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}

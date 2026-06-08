@@ -3,7 +3,7 @@ import type { User } from '../../api/userApi';
 import { createUser, updateUser } from '../../api/userApi';
 
 interface AddUserFormProps {
-  onUserAdded: (data?: any) => void;   // Works for both create and update
+  onUserAdded: (data?: any) => void;
   initialData?: User | null;
   isEdit?: boolean;
 }
@@ -18,13 +18,12 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Populate form when editing
   useEffect(() => {
     if (initialData && isEdit) {
       setFormData({
         username: initialData.username || '',
         email: initialData.email || '',
-        password: '',                    // Never prefill password
+        password: '',
         isAdmin: initialData.isAdmin || false,
       });
     }
@@ -45,16 +44,13 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false }
 
     try {
       if (isEdit && initialData) {
-        // For edit, don't send password unless user typed something
         const dataToSend: any = { ...formData };
         if (!dataToSend.password) delete dataToSend.password;
-
         await updateUser(initialData.id, dataToSend);
       } else {
         await createUser(formData);
       }
 
-      // Reset form only on create
       if (!isEdit) {
         setFormData({ username: '', email: '', password: '', isAdmin: false });
       }
@@ -73,9 +69,12 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false }
       padding: '24px', 
       borderRadius: '10px', 
       marginBottom: '28px',
-      border: '1px solid #27272a'
+      border: '1px solid #27272a',
+      maxWidth: '800px',
+      marginLeft: 'auto',
+      marginRight: 'auto'
     }}>
-      <h2 style={{ marginBottom: '20px', fontSize: '20px', fontWeight: '600', color: '#f1f5f9' }}>
+      <h2 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600', color: '#f1f5f9' }}>
         {isEdit ? 'Edit User' : 'Add New User'}
       </h2>
 
@@ -88,7 +87,7 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false }
             value={formData.username} 
             onChange={handleChange} 
             required 
-            style={{ width: '100%', padding: '11px 14px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '14px' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '14px', boxSizing: 'border-box' }} 
           />
         </div>
 
@@ -100,7 +99,7 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false }
             value={formData.email} 
             onChange={handleChange} 
             required 
-            style={{ width: '100%', padding: '11px 14px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '14px' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '14px', boxSizing: 'border-box' }} 
           />
         </div>
 
@@ -114,7 +113,7 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false }
             value={formData.password} 
             onChange={handleChange} 
             required={!isEdit}
-            style={{ width: '100%', padding: '11px 14px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '14px' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '14px', boxSizing: 'border-box' }} 
           />
         </div>
 
@@ -131,26 +130,48 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false }
 
         {error && <p style={{ color: '#f87171', fontSize: '14px' }}>{error}</p>}
 
-        <button 
-          type="submit"
-          disabled={loading}
-          style={{
-            marginTop: '8px',
-            padding: '11px 24px',
-            background: 'linear-gradient(135deg, #ec4899, #c026d3)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontWeight: '600',
-            fontSize: '14.5px',
-            cursor: loading ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {loading 
-            ? (isEdit ? 'Updating...' : 'Creating...') 
-            : (isEdit ? 'Update User' : 'Create User')
-          }
-        </button>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
+          <button 
+            type="submit"
+            disabled={loading}
+            style={{
+              marginTop: '8px',
+              padding: '12px 24px',
+              background: 'linear-gradient(135deg, #ec4899, #c026d3)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              fontWeight: '600',
+              fontSize: '14.5px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              flex: 1
+            }}
+          >
+            {loading 
+              ? (isEdit ? 'Updating...' : 'Creating...') 
+              : (isEdit ? 'Update User' : 'Create User')
+            }
+          </button>
+
+          <button 
+            type="button"
+            onClick={() => window.history.back()}
+            style={{
+              marginTop: '8px',
+              padding: '12px 24px',
+              background: 'transparent',
+              border: '1px solid #f1f5f9',
+              color: '#f1f5f9',
+              borderRadius: '6px',
+              fontWeight: '600',
+              fontSize: '14.5px',
+              cursor: 'pointer',
+              flex: 1
+            }}
+          >
+            Cancel
+          </button>
+        </div>
       </form>
     </div>
   );

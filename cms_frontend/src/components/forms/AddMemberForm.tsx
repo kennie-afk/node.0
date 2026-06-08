@@ -6,7 +6,7 @@ import { Button } from '../common/Button';
 
 interface Props {
   onMemberAdded: () => void;
-  initialData?: any;     // For edit mode
+  initialData?: any;
   isEdit?: boolean;
   onCancel?: () => void;
 }
@@ -30,7 +30,6 @@ export const AddMemberForm: React.FC<Props> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Load families for dropdown
   useEffect(() => {
     const loadFamilies = async () => {
       try {
@@ -43,7 +42,6 @@ export const AddMemberForm: React.FC<Props> = ({
     loadFamilies();
   }, []);
 
-  // Populate form when editing
   useEffect(() => {
     if (initialData && isEdit) {
       setFormData({
@@ -70,14 +68,11 @@ export const AddMemberForm: React.FC<Props> = ({
       };
 
       if (isEdit && initialData) {
-        // Note: You'll need updateMember in memberApi for full edit support
-        // For now we just call onMemberAdded to close form
         console.log('Update payload would be:', payload);
       } else {
         await createMember(payload);
       }
 
-      // Reset form
       setFormData({
         firstName: '', lastName: '', email: '', phoneNumber: '', 
         dateOfBirth: '', gender: 'Male', familyId: ''
@@ -96,57 +91,77 @@ export const AddMemberForm: React.FC<Props> = ({
   };
 
   return (
-    <div className="card" style={{ marginBottom: '30px' }}>
-      <h3>{isEdit ? 'Edit Member' : 'Add New Member'}</h3>
+    <div className="card" style={{ marginBottom: '30px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
+      <h3 style={{ fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>{isEdit ? 'Edit Member' : 'Add New Member'}</h3>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <Input 
-          placeholder="First Name *" 
-          value={formData.firstName} 
-          onChange={e => setFormData({...formData, firstName: e.target.value})} 
-          required 
-        />
-        <Input 
-          placeholder="Last Name *" 
-          value={formData.lastName} 
-          onChange={e => setFormData({...formData, lastName: e.target.value})} 
-          required 
-        />
-        <Input 
-          type="email" 
-          placeholder="Email" 
-          value={formData.email} 
-          onChange={e => setFormData({...formData, email: e.target.value})} 
-        />
-        <Input 
-          placeholder="Phone Number" 
-          value={formData.phoneNumber} 
-          onChange={e => setFormData({...formData, phoneNumber: e.target.value})} 
-        />
-        <Input 
-          type="date" 
-          placeholder="Date of Birth" 
-          value={formData.dateOfBirth} 
-          onChange={e => setFormData({...formData, dateOfBirth: e.target.value})} 
-        />
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '16px' 
+        }}>
+          <Input 
+            placeholder="First Name *" 
+            value={formData.firstName} 
+            onChange={e => setFormData({...formData, firstName: e.target.value})} 
+            required 
+          />
+          <Input 
+            placeholder="Last Name *" 
+            value={formData.lastName} 
+            onChange={e => setFormData({...formData, lastName: e.target.value})} 
+            required 
+          />
+        </div>
 
-        <select 
-          value={formData.gender} 
-          onChange={e => setFormData({...formData, gender: e.target.value})}
-          style={{
-            width: '100%',
-            padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
-            borderRadius: '6px',
-            color: '#f1f5f9',
-            fontSize: '14px'
-          }}
-        >
-          <option value="Male">Male</option>
-          <option value="Female">Female</option>
-          <option value="Other">Other</option>
-        </select>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '16px' 
+        }}>
+          <Input 
+            type="email" 
+            placeholder="Email" 
+            value={formData.email} 
+            onChange={e => setFormData({...formData, email: e.target.value})} 
+          />
+          <Input 
+            placeholder="Phone Number" 
+            value={formData.phoneNumber} 
+            onChange={e => setFormData({...formData, phoneNumber: e.target.value})} 
+          />
+        </div>
+
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+          gap: '16px' 
+        }}>
+          <Input 
+            type="date" 
+            placeholder="Date of Birth" 
+            value={formData.dateOfBirth} 
+            onChange={e => setFormData({...formData, dateOfBirth: e.target.value})} 
+          />
+          <select 
+            value={formData.gender} 
+            onChange={e => setFormData({...formData, gender: e.target.value})}
+            style={{
+              width: '100%',
+              padding: '12px 16px',
+              backgroundColor: '#27272a',
+              border: '1px solid #3f3f46',
+              borderRadius: '6px',
+              color: '#f1f5f9',
+              fontSize: '14px',
+              boxSizing: 'border-box'
+            }}
+          >
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
 
         <select 
           value={formData.familyId} 
@@ -158,7 +173,8 @@ export const AddMemberForm: React.FC<Props> = ({
             border: '1px solid #3f3f46',
             borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px'
+            fontSize: '14px',
+            boxSizing: 'border-box'
           }}
         >
           <option value="">Select Family (optional)</option>
@@ -169,7 +185,7 @@ export const AddMemberForm: React.FC<Props> = ({
 
         {error && <p style={{ color: '#f87171' }}>{error}</p>}
 
-        <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+        <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}
