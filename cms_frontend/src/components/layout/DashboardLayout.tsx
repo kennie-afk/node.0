@@ -122,22 +122,25 @@ export default function DashboardLayout() {
         {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
       </button>
 
-      <div style={{
-        width: sidebarWidth,
-        backgroundColor: '#18181b',
-        borderRight: '1px solid #27272a',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        boxShadow: '2px 0 12px rgba(0, 0, 0, 0.25)',
-        position: 'fixed',
-        left: isMobileMenuOpen ? '0' : (window.innerWidth <= 768 ? `-${sidebarWidth}` : '0'),
-        top: 0,
-        transition: 'left 0.3s ease, width 0.2s ease',
-        zIndex: 999,
-        overflowY: 'auto',
-        overflowX: 'hidden'
-      }}>
+      <div
+        className="sidebar-scroll"
+        style={{
+          width: sidebarWidth,
+          backgroundColor: '#18181b',
+          borderRight: '1px solid #27272a',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          boxShadow: '2px 0 12px rgba(0, 0, 0, 0.25)',
+          position: 'fixed',
+          left: isMobileMenuOpen ? '0' : (window.innerWidth <= 768 ? `-${sidebarWidth}` : '0'),
+          top: 0,
+          transition: 'left 0.3s ease, width 0.2s ease',
+          zIndex: 999,
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}
+      >
         <div style={{
           padding: isSidebarCollapsed ? '20px 12px' : '24px 20px',
           borderBottom: '1px solid #27272a',
