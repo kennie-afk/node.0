@@ -33,41 +33,41 @@ export default function LoginPage() {
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: '#0a0a0f',
-      padding: '20px 16px'
+      padding: '16px'
     }}>
       <div style={{
         width: '100%',
-        maxWidth: '400px',
+        maxWidth: '360px',
         backgroundColor: '#18181b',
-        padding: '40px 28px',
-        borderRadius: '12px',
+        padding: 'clamp(24px, 5vw, 32px)',
+        borderRadius: '10px',
         border: '1px solid #27272a'
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{
-            width: '64px',
-            height: '64px',
+            width: '48px',
+            height: '48px',
             background: 'linear-gradient(135deg, #ec4899, #a855f7)',
-            borderRadius: '12px',
-            margin: '0 auto 16px',
+            borderRadius: '10px',
+            margin: '0 auto 12px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '32px',
+            fontSize: '24px',
             fontWeight: '900',
             color: 'white'
           }}>
             C
           </div>
-          <h1 style={{ fontSize: 'clamp(24px, 5.5vw, 28px)', fontWeight: '700', color: '#f1f5f9' }}>
+          <h1 style={{ fontSize: 'clamp(20px, 5vw, 24px)', fontWeight: '700', color: '#f1f5f9', marginBottom: '4px' }}>
             Church CMS
           </h1>
-          <p style={{ color: '#a1a1aa', marginTop: '6px' }}>Sign in to manage the Church</p>
+          <p style={{ color: '#a1a1aa', fontSize: '13px' }}>Sign in to manage the Church</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#a1a1aa', fontSize: '14px' }}>Email Address</label>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px', fontWeight: '500' }}>Email Address</label>
             <input
               type="email"
               value={email}
@@ -75,18 +75,19 @@ export default function LoginPage() {
               required
               style={{
                 width: '100%',
-                padding: '14px 16px',
+                padding: '10px 14px',
                 backgroundColor: '#27272a',
                 border: '1px solid #3f3f46',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 color: 'white',
-                fontSize: '15px'
+                fontSize: '14px',
+                boxSizing: 'border-box'
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '8px', color: '#a1a1aa', fontSize: '14px' }}>Password</label>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px', fontWeight: '500' }}>Password</label>
             <input
               type="password"
               value={password}
@@ -94,30 +95,31 @@ export default function LoginPage() {
               required
               style={{
                 width: '100%',
-                padding: '14px 16px',
+                padding: '10px 14px',
                 backgroundColor: '#27272a',
                 border: '1px solid #3f3f46',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 color: 'white',
-                fontSize: '15px'
+                fontSize: '14px',
+                boxSizing: 'border-box'
               }}
             />
           </div>
 
-          {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: '14px' }}>{error}</p>}
+          {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: '12px' }}>{error}</p>}
 
           <button
             type="submit"
             disabled={loading}
             style={{
-              marginTop: '8px',
-              padding: '14px',
+              marginTop: '4px',
+              padding: '10px',
               background: 'linear-gradient(135deg, #ec4899, #c026d3)',
               color: 'white',
               border: 'none',
-              borderRadius: '8px',
+              borderRadius: '6px',
               fontWeight: '600',
-              fontSize: '15px',
+              fontSize: '14px',
               cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >

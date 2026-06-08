@@ -56,7 +56,7 @@ export default function DashboardLayout() {
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const sidebarWidth = isSidebarCollapsed ? '80px' : '280px';
-  const mobileSidebarWidth = '280px';
+  const mobileSidebarWidth = '50vw';
   
   const navItemStyle = {
     display: 'flex',
@@ -155,11 +155,12 @@ export default function DashboardLayout() {
         }}
       >
         <div style={{
-          padding: isSidebarCollapsed && window.innerWidth > 768 ? '20px 12px' : '24px 20px',
+          padding: (isSidebarCollapsed && window.innerWidth > 768) ? '20px 12px' : '24px 20px',
           borderBottom: '1px solid #27272a',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: (isSidebarCollapsed && window.innerWidth > 768) ? 'center' : 'space-between'
+          justifyContent: (isSidebarCollapsed && window.innerWidth > 768) ? 'center' : 'space-between',
+          position: 'relative'
         }}>
           {(!isSidebarCollapsed || window.innerWidth <= 768) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -208,7 +209,9 @@ export default function DashboardLayout() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                transition: 'all 0.2s'
+                transition: 'all 0.2s',
+                position: 'absolute',
+                right: '12px'
               }}
               onMouseOver={(e) => { e.currentTarget.style.borderColor = '#ec4899'; e.currentTarget.style.color = '#ec4899'; }}
               onMouseOut={(e) => { e.currentTarget.style.borderColor = '#3f3f46'; e.currentTarget.style.color = '#a1a1aa'; }}
