@@ -87,12 +87,12 @@ export default function UsersPage() {
   };
 
   return (
-    <div>
+    <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
       <BackButton />
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
-          <h1 style={{ fontSize: '32px', fontWeight: '700' }}>Users Management</h1>
+          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700' }}>Users Management</h1>
           <p style={{ color: '#a1a1aa' }}>Manage church administrators and staff</p>
         </div>
 
@@ -105,14 +105,15 @@ export default function UsersPage() {
             border: 'none',
             borderRadius: '12px',
             fontWeight: '600',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            flexShrink: 0
           }}
         >
           {showAddForm ? 'Cancel' : '+ Add New User'}
         </button>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '28px' }}>
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '28px', flexWrap: 'wrap' }}>
         <input
           type="text"
           placeholder="Search by username or email..."
@@ -120,6 +121,7 @@ export default function UsersPage() {
           onChange={(e) => setSearchTerm(e.target.value)}
           style={{
             flex: 1,
+            minWidth: '240px',
             padding: '14px 20px',
             backgroundColor: '#27272a',
             border: '1px solid #3f3f46',
@@ -136,7 +138,8 @@ export default function UsersPage() {
             border: 'none',
             borderRadius: '10px',
             fontWeight: '600',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            flexShrink: 0
           }}
         >
           Search

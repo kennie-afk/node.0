@@ -1,4 +1,3 @@
-// src/pages/attendance/SermonAttendancePage.tsx
 import { useState, useEffect } from 'react';
 import { fetchAttendance, deleteAttendance } from '../../api/attendanceApi';
 import AddAttendanceForm from '../../components/forms/AddAttendanceForm';
@@ -13,7 +12,6 @@ export default function SermonAttendancePage() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
 
-  // Modals
   const [showSermonModal, setShowSermonModal] = useState(false);
   const [selectedSermon, setSelectedSermon] = useState<any>(null);
 
@@ -73,10 +71,17 @@ export default function SermonAttendancePage() {
   }, []);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+    <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '28px',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
         <div>
-          <h1 style={{ fontSize: '32px', fontWeight: '700' }}>Sermon Attendance</h1>
+          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700', margin: 0 }}>Sermon Attendance</h1>
           <p style={{ color: '#a1a1aa' }}>Record and manage attendance for specific sermons</p>
         </div>
         <button 
@@ -88,7 +93,8 @@ export default function SermonAttendancePage() {
             border: 'none',
             borderRadius: '8px',
             fontWeight: '600',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            flexShrink: 0
           }}
         >
           {showAddForm ? 'Cancel' : '+ Record Sermon Attendance'}
@@ -108,24 +114,23 @@ export default function SermonAttendancePage() {
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#a1a1aa' }}>Loading sermon attendance...</div>
+        <div style={{ textAlign: 'center', padding: '80px', color: '#a1a1aa' }}>Loading sermon attendance...</div>
       ) : (
         <div className="card">
           <AttendanceTable 
             attendance={attendance} 
             onDelete={handleDelete} 
             onEdit={handleEdit}
-            onViewEvent={() => {}}     // Not needed here
+            onViewEvent={() => {}}
             onViewSermon={handleViewSermon}
             activeTab="sermon"
           />
         </div>
       )}
 
-      {/* Sermon Modal */}
       {showSermonModal && selectedSermon && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="card" style={{ width: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #27272a', paddingBottom: '16px' }}>
               <h3>{selectedSermon.title}</h3>
               <button 

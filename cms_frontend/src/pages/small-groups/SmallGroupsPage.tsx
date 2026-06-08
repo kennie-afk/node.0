@@ -65,15 +65,17 @@ export default function SmallGroupsPage() {
   }, []);
 
   return (
-    <div style={{ padding: '32px 40px', backgroundColor: '#0a0a0f', minHeight: '100vh' }}>
+    <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '32px' 
+        marginBottom: '32px',
+        flexWrap: 'wrap',
+        gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: '32px', fontWeight: '700', color: '#f1f5f9' }}>Small Groups</h1>
+          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700', color: '#f1f5f9' }}>Small Groups</h1>
           <p style={{ color: '#a1a1aa' }}>Manage cell groups and fellowships</p>
         </div>
 
@@ -90,7 +92,8 @@ export default function SmallGroupsPage() {
             borderRadius: '8px',
             fontWeight: '600',
             cursor: 'pointer',
-            fontSize: '14.5px'
+            fontSize: '14.5px',
+            flexShrink: 0
           }}
         >
           {showAddForm ? 'Cancel' : '+ Add New Small Group'}
@@ -138,9 +141,10 @@ export default function SmallGroupsPage() {
           zIndex: 2000, 
           display: 'flex', 
           alignItems: 'center', 
-          justifyContent: 'center' 
+          justifyContent: 'center',
+          padding: '16px'
         }}>
-          <div className="card" style={{ width: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 

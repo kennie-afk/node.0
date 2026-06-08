@@ -97,9 +97,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <div>
+    <div style={{ padding: '16px', maxWidth: '1400px', margin: '0 auto' }}>
       <div style={{ marginBottom: '40px' }}>
-        <h1 style={{ fontSize: '38px', fontWeight: '700', color: '#ffffff', marginBottom: '12px' }}>
+        <h1 style={{ 
+          fontSize: 'clamp(26px, 6vw, 38px)', 
+          fontWeight: '700', 
+          color: '#ffffff', 
+          marginBottom: '12px' 
+        }}>
           Church Dashboard
         </h1>
 
@@ -130,7 +135,7 @@ export default function DashboardPage() {
             }}
           >
             <p style={{
-              fontSize: '18px',
+              fontSize: 'clamp(16px, 4vw, 18px)',
               fontWeight: '600',
               color: '#ec4899',
               margin: 0,
@@ -216,8 +221,8 @@ export default function DashboardPage() {
 
       <div style={{ 
         display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', 
-        gap: '24px' 
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+        gap: '20px' 
       }}>
         {modules.map((module, i) => (
           <div 
@@ -227,7 +232,7 @@ export default function DashboardPage() {
               backgroundColor: '#18181b',
               borderRadius: '12px',
               border: '1px solid #27272a',
-              padding: '28px',
+              padding: '24px',
               cursor: 'pointer',
               transition: 'all 0.3s ease',
             }}
@@ -242,10 +247,10 @@ export default function DashboardPage() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '6px' }}>{module.title}</h3>
-                <p style={{ color: '#a1a1aa', fontSize: '14.5px' }}>{module.desc}</p>
+                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '6px' }}>{module.title}</h3>
+                <p style={{ color: '#a1a1aa', fontSize: '14px' }}>{module.desc}</p>
               </div>
-              <div style={{ fontSize: '46px', fontWeight: '700', color: module.color }}>
+              <div style={{ fontSize: '42px', fontWeight: '700', color: module.color }}>
                 {module.count}
               </div>
             </div>

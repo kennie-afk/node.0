@@ -69,10 +69,17 @@ export default function FamiliesPage() {
   }, []);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+    <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '28px',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
         <div>
-          <h1 style={{ fontSize: '32px', fontWeight: '700' }}>Families Management</h1>
+          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700', margin: 0 }}>Families Management</h1>
           <p style={{ color: '#a1a1aa' }}>Manage church families</p>
         </div>
 
@@ -88,7 +95,9 @@ export default function FamiliesPage() {
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '8px',
+            fontSize: '15px',
+            flexShrink: 0
           }}
         >
           {showAddForm ? 'Cancel' : '+ Add New Family'}
@@ -109,7 +118,7 @@ export default function FamiliesPage() {
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#a1a1aa' }}>Loading families...</div>
+        <div style={{ textAlign: 'center', padding: '80px', color: '#a1a1aa' }}>Loading families...</div>
       ) : (
         <div className="card">
           <FamilyTable 

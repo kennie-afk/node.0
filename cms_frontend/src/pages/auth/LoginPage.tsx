@@ -20,7 +20,7 @@ export default function LoginPage() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err?.response?.data?.message || err?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -28,44 +28,46 @@ export default function LoginPage() {
 
   return (
     <div style={{
-      width: '100vw',
-      height: '100vh',
+      minHeight: '100vh',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       backgroundColor: '#0a0a0f',
-      margin: 0,
-      padding: 0,
-      overflow: 'hidden'
+      padding: '20px 16px'
     }}>
       <div style={{
         width: '100%',
-        maxWidth: '380px',
+        maxWidth: '400px',
         backgroundColor: '#18181b',
-        padding: '36px 32px',
-        borderRadius: '10px',
+        padding: '40px 28px',
+        borderRadius: '12px',
         border: '1px solid #27272a'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{
-            width: '56px',
-            height: '56px',
+            width: '64px',
+            height: '64px',
             background: 'linear-gradient(135deg, #ec4899, #a855f7)',
-            borderRadius: '10px',
+            borderRadius: '12px',
             margin: '0 auto 16px',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            fontSize: '32px',
+            fontWeight: '900',
+            color: 'white'
           }}>
-            <span style={{ fontSize: '28px', fontWeight: '900', color: 'white' }}>C</span>
+            C
           </div>
-          <h1 style={{ fontSize: '26px', fontWeight: '700', color: '#f1f5f9' }}>Church CMS</h1>
-          <p style={{ color: '#a1a1aa', marginTop: '6px', fontSize: '14.5px' }}>Sign in to manage the Church</p>
+          <h1 style={{ fontSize: 'clamp(24px, 5.5vw, 28px)', fontWeight: '700', color: '#f1f5f9' }}>
+            Church CMS
+          </h1>
+          <p style={{ color: '#a1a1aa', marginTop: '6px' }}>Sign in to manage the Church</p>
         </div>
 
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Email Address</label>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#a1a1aa', fontSize: '14px' }}>Email Address</label>
             <input
               type="email"
               value={email}
@@ -73,18 +75,18 @@ export default function LoginPage() {
               required
               style={{
                 width: '100%',
-                padding: '11px 14px',
+                padding: '14px 16px',
                 backgroundColor: '#27272a',
                 border: '1px solid #3f3f46',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 color: 'white',
-                fontSize: '14px'
+                fontSize: '15px'
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Password</label>
+            <label style={{ display: 'block', marginBottom: '8px', color: '#a1a1aa', fontSize: '14px' }}>Password</label>
             <input
               type="password"
               value={password}
@@ -92,12 +94,12 @@ export default function LoginPage() {
               required
               style={{
                 width: '100%',
-                padding: '11px 14px',
+                padding: '14px 16px',
                 backgroundColor: '#27272a',
                 border: '1px solid #3f3f46',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 color: 'white',
-                fontSize: '14px'
+                fontSize: '15px'
               }}
             />
           </div>
@@ -109,13 +111,13 @@ export default function LoginPage() {
             disabled={loading}
             style={{
               marginTop: '8px',
-              padding: '11px',
+              padding: '14px',
               background: 'linear-gradient(135deg, #ec4899, #c026d3)',
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
+              borderRadius: '8px',
               fontWeight: '600',
-              fontSize: '14.5px',
+              fontSize: '15px',
               cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >

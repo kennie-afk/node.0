@@ -11,7 +11,6 @@ export default function AnnouncementsPage() {
   const [success, setSuccess] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
 
-  
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
 
@@ -64,15 +63,17 @@ export default function AnnouncementsPage() {
   }, []);
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '28px' 
+        marginBottom: '28px',
+        flexWrap: 'wrap',
+        gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: '32px', fontWeight: '700', margin: 0 }}>Announcements Management</h1>
+          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700', margin: 0 }}>Announcements Management</h1>
           <p style={{ color: '#a1a1aa', margin: '4px 0 0 0' }}>Manage church announcements and notices</p>
         </div>
 
@@ -89,7 +90,8 @@ export default function AnnouncementsPage() {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            fontSize: '15px'
+            fontSize: '15px',
+            flexShrink: 0
           }}
         >
           {showAddForm ? 'Cancel' : '+ Add New Announcement'}
@@ -120,10 +122,8 @@ export default function AnnouncementsPage() {
         </div>
       )}
 
-      {/* Add Form */}
       {showAddForm && <AddAnnouncementForm onAnnouncementAdded={handleAnnouncementAdded} />}
 
-      {/* Edit Form */}
       {showEditForm && editingAnnouncement && (
         <AddAnnouncementForm 
           onAnnouncementAdded={handleAnnouncementUpdated} 

@@ -1,4 +1,3 @@
-// src/pages/attendance/AttendancePage.tsx
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { fetchAttendance, deleteAttendance } from '../../api/attendanceApi';
@@ -15,7 +14,6 @@ export default function AttendancePage() {
 
   const [editingRecord, setEditingRecord] = useState<any>(null);
 
-  // Determine active tab from URL
   const getActiveTab = () => {
     if (location.pathname.includes('/attendance/event')) return 'event';
     if (location.pathname.includes('/attendance/sermon')) return 'sermon';
@@ -24,7 +22,6 @@ export default function AttendancePage() {
 
   const [activeTab, setActiveTab] = useState<'general' | 'event' | 'sermon'>(getActiveTab());
 
-  // Modals
   const [showEventModal, setShowEventModal] = useState(false);
   const [showSermonModal, setShowSermonModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
@@ -88,7 +85,6 @@ export default function AttendancePage() {
     setSelectedSermon(null);
   };
 
-  // Update active tab when URL changes
   useEffect(() => {
     setActiveTab(getActiveTab());
   }, [location.pathname]);
@@ -98,22 +94,29 @@ export default function AttendancePage() {
   }, []);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }}>
+    <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '28px',
+        flexWrap: 'wrap',
+        gap: '16px'
+      }}>
         <div>
-          <h1 style={{ fontSize: '32px', fontWeight: '700' }}>Attendance</h1>
-          <p style={{ color: '#a1a1aa' }}>Record and manage church attendance</p>
+          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700', margin: 0 }}>Attendance</h1>
+          <p style={{ color: '#a1a1aa', margin: '4px 0 0 0' }}>Record and manage church attendance</p>
         </div>
       </div>
 
-      {/* Tab Selector */}
       <div style={{ 
         display: 'flex', 
         background: '#18181b', 
         borderRadius: '12px', 
         padding: '6px', 
         marginBottom: '28px',
-        width: 'fit-content'
+        width: 'fit-content',
+        flexWrap: 'wrap'
       }}>
         <button 
           onClick={() => window.history.pushState(null, '', '/attendance')}
@@ -127,7 +130,7 @@ export default function AttendancePage() {
             cursor: 'pointer'
           }}
         >
-          General Attendance
+          General
         </button>
         <button 
           onClick={() => window.history.pushState(null, '', '/attendance/event')}
@@ -141,7 +144,7 @@ export default function AttendancePage() {
             cursor: 'pointer'
           }}
         >
-          Event Attendance
+          Events
         </button>
         <button 
           onClick={() => window.history.pushState(null, '', '/attendance/sermon')}
@@ -155,24 +158,22 @@ export default function AttendancePage() {
             cursor: 'pointer'
           }}
         >
-          Sermon Attendance
+          Sermons
         </button>
       </div>
 
-      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px' }}>{error}</div>}
-      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px' }}>{success}</div>}
+      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '12px', marginBottom: '20px' }}>{error}</div>}
+      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '12px', marginBottom: '20px' }}>{success}</div>}
 
-      {/* Form - Will be filtered based on activeTab in future if needed */}
       <AddAttendanceForm 
         onAttendanceAdded={handleAttendanceAdded} 
         initialData={editingRecord} 
         isEdit={!!editingRecord} 
-        activeTab={activeTab}   // Pass activeTab to form
+        activeTab={activeTab}
       />
 
-      {/* Table */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '60px', color: '#a1a1aa' }}>Loading attendance records...</div>
+        <div style={{ textAlign: 'center', padding: '80px', color: '#a1a1aa' }}>Loading attendance records...</div>
       ) : (
         <div className="card">
           <AttendanceTable 
@@ -186,10 +187,9 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {/* Event Modal */}
       {showEventModal && selectedEvent && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="card" style={{ width: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #27272a', paddingBottom: '16px' }}>
               <h3>{selectedEvent.name}</h3>
               <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
@@ -206,10 +206,9 @@ export default function AttendancePage() {
         </div>
       )}
 
-      {/* Sermon Modal */}
       {showSermonModal && selectedSermon && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="card" style={{ width: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #27272a', paddingBottom: '16px' }}>
               <h3>{selectedSermon.title}</h3>
               <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>

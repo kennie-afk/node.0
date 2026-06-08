@@ -13,11 +13,9 @@ export default function MembersPage() {
   
   const [showAddForm, setShowAddForm] = useState(false);
   
-  // Edit mode
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
 
-  // Contributions modal
   const [showContributionsModal, setShowContributionsModal] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<number | null>(null);
   const [selectedMemberName, setSelectedMemberName] = useState('');
@@ -85,7 +83,7 @@ export default function MembersPage() {
     setSelectedMemberId(memberId);
     setSelectedMemberName(memberName);
     setShowContributionsModal(true);
-    await loadMemberContributions(memberId);   // This already filters by memberId
+    await loadMemberContributions(memberId);
   };
 
   const closeContributionsModal = () => {
@@ -100,16 +98,18 @@ export default function MembersPage() {
   }, []);
 
   return (
-    <div style={{ padding: '20px' }}>
+    <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '28px' 
+        marginBottom: '28px',
+        flexWrap: 'wrap',
+        gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: '32px', fontWeight: '700', margin: 0 }}>Members Management</h1>
-          <p style={{ color: '#a1a1aa', margin: '4px 0 0 0' }}>Manage individual church members and their records</p>
+          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700', margin: 0 }}>Members Management</h1>
+          <p style={{ color: '#a1a1aa' }}>Manage individual church members and their records</p>
         </div>
 
         <button 
@@ -125,7 +125,8 @@ export default function MembersPage() {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            fontSize: '15px'
+            fontSize: '15px',
+            flexShrink: 0
           }}
         >
           {showAddForm ? 'Cancel' : '+ Add New Member'}
@@ -156,10 +157,8 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Add Form */}
       {showAddForm && <AddMemberForm onMemberAdded={handleMemberAdded} />}
 
-      {/* Edit Form */}
       {showEditForm && editingMember && (
         <AddMemberForm 
           onMemberAdded={handleMemberUpdated} 
@@ -183,7 +182,6 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Contributions Modal - Shows ONLY this member's contributions */}
       {showContributionsModal && selectedMemberId && (
         <div style={{
           position: 'fixed',
@@ -195,9 +193,10 @@ export default function MembersPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 1000
+          zIndex: 1000,
+          padding: '16px'
         }}>
-          <div className="card" style={{ width: '720px', maxHeight: '85vh', overflow: 'auto' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '720px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
