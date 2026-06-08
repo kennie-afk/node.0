@@ -56,6 +56,7 @@ export default function DashboardLayout() {
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const sidebarWidth = isSidebarCollapsed ? '80px' : '280px';
+  const mobileSidebarWidth = '280px';
   
   const navItemStyle = {
     display: 'flex',
@@ -117,7 +118,18 @@ export default function DashboardLayout() {
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          transition: 'all 0.2s ease'
+        }}
+        onMouseOver={(e) => {
+          e.currentTarget.style.borderColor = '#ec4899';
+          e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)';
+          e.currentTarget.style.color = '#ec4899';
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.style.borderColor = '#27272a';
+          e.currentTarget.style.backgroundColor = '#18181b';
+          e.currentTarget.style.color = 'white';
         }}
       >
         {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
@@ -126,7 +138,7 @@ export default function DashboardLayout() {
       <div
         className="sidebar-scroll"
         style={{
-          width: sidebarWidth,
+          width: window.innerWidth <= 768 ? mobileSidebarWidth : sidebarWidth,
           backgroundColor: '#18181b',
           borderRight: '1px solid #27272a',
           display: 'flex',
@@ -134,7 +146,7 @@ export default function DashboardLayout() {
           height: '100%',
           boxShadow: '2px 0 12px rgba(0, 0, 0, 0.25)',
           position: 'fixed',
-          left: isMobileMenuOpen ? '0' : (window.innerWidth <= 768 ? `-${sidebarWidth}` : '0'),
+          left: isMobileMenuOpen ? '0' : (window.innerWidth <= 768 ? `-${mobileSidebarWidth}` : '0'),
           top: 0,
           transition: 'left 0.3s ease, width 0.2s ease',
           zIndex: 1000,
@@ -143,13 +155,13 @@ export default function DashboardLayout() {
         }}
       >
         <div style={{
-          padding: isSidebarCollapsed ? '20px 12px' : '24px 20px',
+          padding: isSidebarCollapsed && window.innerWidth > 768 ? '20px 12px' : '24px 20px',
           borderBottom: '1px solid #27272a',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: isSidebarCollapsed ? 'center' : 'space-between'
+          justifyContent: (isSidebarCollapsed && window.innerWidth > 768) ? 'center' : 'space-between'
         }}>
-          {!isSidebarCollapsed && (
+          {(!isSidebarCollapsed || window.innerWidth <= 768) && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div style={{
                 width: '40px',
@@ -167,7 +179,7 @@ export default function DashboardLayout() {
               </div>
             </div>
           )}
-          {isSidebarCollapsed && (
+          {(isSidebarCollapsed && window.innerWidth > 768) && (
             <div style={{
               width: '40px',
               height: '40px',
@@ -182,29 +194,31 @@ export default function DashboardLayout() {
             </div>
           )}
           
-          <button
-            onClick={toggleSidebar}
-            style={{
-              background: 'transparent',
-              border: '1px solid #3f3f46',
-              borderRadius: '6px',
-              color: '#a1a1aa',
-              width: '32px',
-              height: '32px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseOver={(e) => { e.currentTarget.style.borderColor = '#ec4899'; e.currentTarget.style.color = '#ec4899'; }}
-            onMouseOut={(e) => { e.currentTarget.style.borderColor = '#3f3f46'; e.currentTarget.style.color = '#a1a1aa'; }}
-          >
-            {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-          </button>
+          {window.innerWidth > 768 && (
+            <button
+              onClick={toggleSidebar}
+              style={{
+                background: 'transparent',
+                border: '1px solid #3f3f46',
+                borderRadius: '6px',
+                color: '#a1a1aa',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.borderColor = '#ec4899'; e.currentTarget.style.color = '#ec4899'; }}
+              onMouseOut={(e) => { e.currentTarget.style.borderColor = '#3f3f46'; e.currentTarget.style.color = '#a1a1aa'; }}
+            >
+              {isSidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+            </button>
+          )}
         </div>
 
-        <nav style={{ flex: 1, padding: isSidebarCollapsed ? '16px 8px' : '20px 12px' }}>
+        <nav style={{ flex: 1, padding: (isSidebarCollapsed && window.innerWidth > 768) ? '16px 8px' : '20px 12px' }}>
           <Link 
             to="/dashboard" 
             style={navItemStyle}
@@ -213,7 +227,7 @@ export default function DashboardLayout() {
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
             <LayoutDashboard size={20} />
-            {!isSidebarCollapsed && <span>Dashboard</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Dashboard</span>}
           </Link>
 
           <Link 
@@ -224,7 +238,7 @@ export default function DashboardLayout() {
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
             <Users size={20} />
-            {!isSidebarCollapsed && <span>Users</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Users</span>}
           </Link>
 
           <Link 
@@ -235,7 +249,7 @@ export default function DashboardLayout() {
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
             <Home size={20} />
-            {!isSidebarCollapsed && <span>Families</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Families</span>}
           </Link>
 
           <Link 
@@ -246,7 +260,7 @@ export default function DashboardLayout() {
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
             <User size={20} />
-            {!isSidebarCollapsed && <span>Members</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Members</span>}
           </Link>
 
           <Link 
@@ -257,7 +271,7 @@ export default function DashboardLayout() {
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
             <Calendar size={20} />
-            {!isSidebarCollapsed && <span>Events</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Events</span>}
           </Link>
 
           <div>
@@ -268,7 +282,7 @@ export default function DashboardLayout() {
               onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
             >
               <CheckSquare size={20} />
-              {!isSidebarCollapsed && (
+              {(!isSidebarCollapsed || window.innerWidth <= 768) && (
                 <>
                   <span style={{ flex: 1 }}>Attendance</span>
                   <ChevronDown size={16} style={{ transition: 'transform 0.2s ease', transform: isAttendanceOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
@@ -276,7 +290,7 @@ export default function DashboardLayout() {
               )}
             </div>
 
-            {isAttendanceOpen && !isSidebarCollapsed && (
+            {isAttendanceOpen && (!isSidebarCollapsed || window.innerWidth <= 768) && (
               <div style={{ marginTop: '4px' }}>
                 <Link 
                   to="/attendance" 
@@ -317,7 +331,7 @@ export default function DashboardLayout() {
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
             <Bell size={20} />
-            {!isSidebarCollapsed && <span>Announcements</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Announcements</span>}
           </Link>
 
           <Link 
@@ -328,7 +342,7 @@ export default function DashboardLayout() {
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
             <BookOpen size={20} />
-            {!isSidebarCollapsed && <span>Sermons</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Sermons</span>}
           </Link>
 
           <Link 
@@ -339,7 +353,7 @@ export default function DashboardLayout() {
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
             <DollarSign size={20} />
-            {!isSidebarCollapsed && <span>Contributions</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Contributions</span>}
           </Link>
 
           <Link 
@@ -350,7 +364,7 @@ export default function DashboardLayout() {
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
             <Users2 size={20} />
-            {!isSidebarCollapsed && <span>Ministries</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Ministries</span>}
           </Link>
 
           <Link 
@@ -361,11 +375,11 @@ export default function DashboardLayout() {
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
             <GroupIcon size={20} />
-            {!isSidebarCollapsed && <span>Small Groups</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Small Groups</span>}
           </Link>
         </nav>
 
-        <div style={{ padding: isSidebarCollapsed ? '20px 12px' : '24px', borderTop: '1px solid #27272a' }}>
+        <div style={{ padding: (isSidebarCollapsed && window.innerWidth > 768) ? '20px 12px' : '24px', borderTop: '1px solid #27272a' }}>
           <button 
             onClick={() => {
               handleLogout();
@@ -373,7 +387,7 @@ export default function DashboardLayout() {
             }}
             style={{
               width: '100%',
-              padding: isSidebarCollapsed ? '12px' : '12px',
+              padding: (isSidebarCollapsed && window.innerWidth > 768) ? '12px' : '12px',
               backgroundColor: 'transparent',
               border: '1px solid #f87171',
               color: '#f87171',
@@ -384,20 +398,20 @@ export default function DashboardLayout() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: isSidebarCollapsed ? '0' : '8px'
+              gap: (isSidebarCollapsed && window.innerWidth > 768) ? '0' : '8px'
             }}
             onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)'; }}
             onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; }}
           >
             <LogOut size={18} />
-            {!isSidebarCollapsed && <span>Logout</span>}
+            {(!isSidebarCollapsed || window.innerWidth <= 768) && <span>Logout</span>}
           </button>
         </div>
       </div>
 
       <div style={{ 
         flex: 1, 
-        marginLeft: isMobileMenuOpen ? sidebarWidth : (window.innerWidth <= 768 ? '0' : sidebarWidth),
+        marginLeft: isMobileMenuOpen ? (window.innerWidth <= 768 ? mobileSidebarWidth : sidebarWidth) : (window.innerWidth <= 768 ? '0' : sidebarWidth),
         overflow: 'auto', 
         padding: window.innerWidth <= 768 ? '70px 16px 16px' : '32px 40px',
         backgroundColor: '#0a0a0f',
