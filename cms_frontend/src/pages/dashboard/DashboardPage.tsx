@@ -74,12 +74,12 @@ export default function DashboardPage() {
   }, []);
 
   const modules = [
-    { title: "Members", count: stats.members, color: "#22d3ee", path: "/members", desc: "Manage church members" },
-    { title: "Ministries", count: stats.ministries, color: "#a855f7", path: "/ministries", desc: "Departments & ministries" },
-    { title: "Small Groups", count: stats.smallGroups, color: "#ec4899", path: "/small-groups", desc: "Cell groups" },
-    { title: "Sermons", count: stats.sermons, color: "#eab308", path: "/sermons", desc: "Teachings & sermons" },
-    { title: "Announcements", count: stats.announcements, color: "#f87171", path: "/announcements", desc: "Church notices", badge: newAnnCount },
-    { title: "Events", count: stats.events, color: "#06b6d4", path: "/events", desc: "Upcoming events" },
+    { title: "Members", count: stats.members, path: "/members", desc: "Manage church members" },
+    { title: "Ministries", count: stats.ministries, path: "/ministries", desc: "Departments & ministries" },
+    { title: "Small Groups", count: stats.smallGroups, path: "/small-groups", desc: "Cell groups" },
+    { title: "Sermons", count: stats.sermons, path: "/sermons", desc: "Teachings & sermons" },
+    { title: "Announcements", count: stats.announcements, path: "/announcements", desc: "Church notices", badge: newAnnCount },
+    { title: "Events", count: stats.events, path: "/events", desc: "Upcoming events" },
   ];
 
   const quickActions = [
@@ -229,7 +229,7 @@ export default function DashboardPage() {
             }}
             onMouseOver={(e) => {
               e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = module.color;
+              e.currentTarget.style.borderColor = '#ec4899';
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
@@ -241,7 +241,7 @@ export default function DashboardPage() {
                 <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px', color: '#f1f5f9' }}>{module.title}</h3>
                 <p style={{ color: '#a1a1aa', fontSize: '13px' }}>{module.desc}</p>
               </div>
-              <div style={{ fontSize: '36px', fontWeight: '700', color: module.color }}>
+              <div style={{ fontSize: '36px', fontWeight: '700', color: '#ec4899' }}>
                 {module.count}
               </div>
             </div>
@@ -261,32 +261,27 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <button 
+            <div 
               style={{
                 marginTop: '20px',
-                width: '100%',
-                padding: '10px',
-                background: 'transparent',
-                border: `1px solid ${module.color}`, 
-                color: module.color, 
-                borderRadius: '8px',
-                fontWeight: '500',
+                display: 'inline-block',
+                color: '#ec4899',
                 fontSize: '13px',
+                fontWeight: '500',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
+                textDecoration: 'none'
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = module.color;
                 e.currentTarget.style.color = '#ffffff';
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = module.color;
+                e.currentTarget.style.color = '#ec4899';
               }}
               onClick={(e) => { e.stopPropagation(); navigate(module.path); }}
             >
-              View {module.title}
-            </button>
+              View {module.title} →
+            </div>
           </div>
         ))}
       </div>
