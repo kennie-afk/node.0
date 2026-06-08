@@ -88,7 +88,7 @@ export default function DashboardPage() {
     { title: "Ministries", count: stats.ministries, path: "/ministries", desc: "Departments & ministries", icon: Users2, color: "#a855f7" },
     { title: "Small Groups", count: stats.smallGroups, path: "/small-groups", desc: "Cell groups", icon: UserCircle, color: "#06b6d4" },
     { title: "Sermons", count: stats.sermons, path: "/sermons", desc: "Teachings & sermons", icon: BookOpen, color: "#eab308" },
-    { title: "Announcements", count: stats.announcements, path: "/announcements", desc: "Church notices", icon: Megaphone, color: "#f87171", badge: newAnnCount },
+    { title: "Announcements", count: stats.announcements, path: "/announcements", desc: "Church notices", icon: Megaphone, color: "#f87171", badge: newAnnCount > 0 ? newAnnCount : null },
     { title: "Events", count: stats.events, path: "/events", desc: "Upcoming events", icon: Calendar, color: "#22d3ee" },
   ];
 
