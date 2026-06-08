@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { fetchAttendance, deleteAttendance } from '../../api/attendanceApi';
+import BackButton from '../../components/common/BackButton';
 import AddAttendanceForm from '../../components/forms/AddAttendanceForm';
 import { AttendanceTable } from '../../components/tables/AttendanceTable';
 
@@ -8,10 +9,8 @@ export default function EventAttendancePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
-
   const [showEventModal, setShowEventModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
 
@@ -66,43 +65,55 @@ export default function EventAttendancePage() {
     setSelectedEvent(null);
   };
 
+  const handleCancelForm = () => {
+    setShowAddForm(false);
+    setEditingRecord(null);
+  };
+
   useEffect(() => {
     loadAttendance();
   }, []);
 
   return (
     <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
+      <BackButton />
+
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '28px',
+        marginBottom: '24px',
         flexWrap: 'wrap',
         gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700', margin: 0 }}>Event Attendance</h1>
-          <p style={{ color: '#a1a1aa' }}>Record and manage attendance for specific events</p>
+          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '700', margin: 0 }}>Event Attendance</h1>
+          <p style={{ color: '#a1a1aa', fontSize: 'clamp(13px, 3.5vw, 14px)' }}>Record and manage attendance for specific events</p>
         </div>
+
         <button 
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => {
+            setShowAddForm(!showAddForm);
+            setEditingRecord(null);
+          }}
           style={{
-            padding: '12px 24px',
+            padding: '10px 20px',
             background: '#ec4899',
             color: 'white',
             border: 'none',
             borderRadius: '8px',
             fontWeight: '600',
             cursor: 'pointer',
-            flexShrink: 0
+            flexShrink: 0,
+            fontSize: 'clamp(13px, 3.5vw, 14px)'
           }}
         >
           {showAddForm ? 'Cancel' : '+ Record Event Attendance'}
         </button>
       </div>
 
-      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px' }}>{error}</div>}
-      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px' }}>{success}</div>}
+      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{error}</div>}
+      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{success}</div>}
 
       {showAddForm && (
         <AddAttendanceForm 
@@ -110,41 +121,35 @@ export default function EventAttendancePage() {
           initialData={editingRecord} 
           isEdit={!!editingRecord}
           activeTab="event"
+          onCancel={handleCancelForm}
         />
       )}
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '80px', color: '#a1a1aa' }}>Loading event attendance...</div>
-      ) : (
-        <div className="card">
-          <AttendanceTable 
-            attendance={attendance} 
-            onDelete={handleDelete} 
-            onEdit={handleEdit}
-            onViewEvent={handleViewEvent}
-            onViewSermon={() => {}}
-            activeTab="event"
-          />
-        </div>
+      {!showAddForm && (
+        <>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading event attendance...</div>
+          ) : (
+            <div className="card" style={{ overflowX: 'auto' }}>
+              <AttendanceTable 
+                attendance={attendance} 
+                onDelete={handleDelete} 
+                onEdit={handleEdit}
+                onViewEvent={handleViewEvent}
+                onViewSermon={() => {}}
+                activeTab="event"
+              />
+            </div>
+          )}
+        </>
       )}
 
       {showEventModal && selectedEvent && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #27272a', paddingBottom: '16px' }}>
-              <h3>{selectedEvent.name}</h3>
-              <button 
-                onClick={closeModals}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid #f87171',
-                  color: '#f87171',
-                  padding: '8px 18px',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontSize: '14px'
-                }}
-              >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #27272a', paddingBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>{selectedEvent.name}</h3>
+              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
                 Close
               </button>
             </div>

@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
+import { 
+  ArrowRight, 
+  Users, 
+  Users2, 
+  UserCircle, 
+  BookOpen, 
+  Megaphone, 
+  Calendar,
+  ChevronDown
+} from 'lucide-react';
 import { fetchMembers } from '../../api/memberApi';
 import { fetchMinistries } from '../../api/ministryApi';
 import { fetchSmallGroups } from '../../api/smallGroupApi';
@@ -75,12 +84,12 @@ export default function DashboardPage() {
   }, []);
 
   const modules = [
-    { title: "Members", count: stats.members, path: "/members", desc: "Manage church members" },
-    { title: "Ministries", count: stats.ministries, path: "/ministries", desc: "Departments & ministries" },
-    { title: "Small Groups", count: stats.smallGroups, path: "/small-groups", desc: "Cell groups" },
-    { title: "Sermons", count: stats.sermons, path: "/sermons", desc: "Teachings & sermons" },
-    { title: "Announcements", count: stats.announcements, path: "/announcements", desc: "Church notices", badge: newAnnCount },
-    { title: "Events", count: stats.events, path: "/events", desc: "Upcoming events" },
+    { title: "Members", count: stats.members, path: "/members", desc: "Manage church members", icon: Users, color: "#ec4899" },
+    { title: "Ministries", count: stats.ministries, path: "/ministries", desc: "Departments & ministries", icon: Users2, color: "#a855f7" },
+    { title: "Small Groups", count: stats.smallGroups, path: "/small-groups", desc: "Cell groups", icon: UserCircle, color: "#06b6d4" },
+    { title: "Sermons", count: stats.sermons, path: "/sermons", desc: "Teachings & sermons", icon: BookOpen, color: "#eab308" },
+    { title: "Announcements", count: stats.announcements, path: "/announcements", desc: "Church notices", icon: Megaphone, color: "#f87171", badge: newAnnCount },
+    { title: "Events", count: stats.events, path: "/events", desc: "Upcoming events", icon: Calendar, color: "#22d3ee" },
   ];
 
   const quickActions = [
@@ -97,7 +106,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0' }}>
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ 
           fontSize: 'clamp(24px, 5vw, 32px)', 
@@ -112,7 +121,7 @@ export default function DashboardPage() {
           <div 
             style={{
               backgroundColor: '#18181b',
-              borderRadius: '6px',
+              borderRadius: '8px',
               padding: '10px 20px',
               display: 'inline-block',
               transition: 'all 0.2s ease',
@@ -143,7 +152,7 @@ export default function DashboardPage() {
                 backgroundColor: 'transparent',
                 border: 'none',
                 color: '#f1f5f9',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 fontWeight: '500',
                 fontSize: '14px',
                 cursor: 'pointer',
@@ -162,7 +171,7 @@ export default function DashboardPage() {
               }}
             >
               Quick Actions
-              <span style={{ fontSize: '10px', transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>▼</span>
+              <ChevronDown size={14} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
             </button>
 
             {dropdownOpen && (
@@ -172,8 +181,10 @@ export default function DashboardPage() {
                 right: 0,
                 backgroundColor: '#18181b',
                 border: '1px solid #27272a',
-                borderRadius: '6px',
-                width: '180px',
+                borderRadius: '8px',
+                minWidth: '160px',
+                width: 'max-content',
+                maxWidth: 'calc(100vw - 32px)',
                 boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
                 zIndex: 10,
                 overflow: 'hidden',
@@ -191,7 +202,8 @@ export default function DashboardPage() {
                       color: '#a1a1aa',
                       fontSize: '13.5px',
                       cursor: 'pointer',
-                      transition: 'all 0.2s'
+                      transition: 'all 0.2s',
+                      whiteSpace: 'nowrap'
                     }}
                     onMouseOver={(e) => {
                       e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)';
@@ -216,78 +228,94 @@ export default function DashboardPage() {
         gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
         gap: '20px' 
       }}>
-        {modules.map((module, i) => (
-          <div 
-            key={i}
-            onClick={() => navigate(module.path)}
-            style={{
-              backgroundColor: '#18181b',
-              borderRadius: '8px',
-              border: '1px solid #27272a',
-              padding: '24px',
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-2px)';
-              e.currentTarget.style.borderColor = '#ec4899';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.borderColor = '#27272a';
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-              <div>
-                <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '4px', color: '#f1f5f9' }}>{module.title}</h3>
-                <p style={{ color: '#a1a1aa', fontSize: '13px' }}>{module.desc}</p>
-              </div>
-              <div style={{ fontSize: '36px', fontWeight: '700', color: '#ec4899' }}>
-                {module.count}
-              </div>
-            </div>
-
-            {module.badge && module.badge > 0 && (
-              <div style={{
-                marginTop: '8px',
-                display: 'inline-block',
-                padding: '3px 10px',
-                backgroundColor: '#f87171',
-                color: 'white',
-                borderRadius: '4px',
-                fontSize: '12px',
-                fontWeight: '500'
-              }}>
-                {module.badge} New
-              </div>
-            )}
-
+        {modules.map((module, i) => {
+          const Icon = module.icon;
+          return (
             <div 
+              key={i}
+              onClick={() => navigate(module.path)}
               style={{
-                marginTop: '20px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                color: '#ec4899',
-                fontSize: '13px',
-                fontWeight: '500',
+                backgroundColor: '#18181b',
+                borderRadius: '12px',
+                border: '1px solid #27272a',
+                padding: '32px 24px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
-                textDecoration: 'none'
+                textAlign: 'center'
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.color = '#ffffff';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.borderColor = module.color;
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.color = '#ec4899';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.borderColor = '#27272a';
               }}
-              onClick={(e) => { e.stopPropagation(); navigate(module.path); }}
             >
-              View {module.title}
-              <ArrowRight size={14} />
+              <div style={{
+                width: '64px',
+                height: '64px',
+                borderRadius: '16px',
+                background: `${module.color}15`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px auto'
+              }}>
+                <Icon size={32} color={module.color} strokeWidth={1.5} />
+              </div>
+              
+              <div>
+                <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '6px', color: '#f1f5f9' }}>{module.title}</h3>
+                <p style={{ color: '#a1a1aa', fontSize: '13px' }}>{module.desc}</p>
+              </div>
+
+              <div style={{ fontSize: '48px', fontWeight: '700', color: module.color, margin: '16px 0' }}>
+                {module.count}
+              </div>
+
+              {module.badge && module.badge > 0 && (
+                <div style={{
+                  marginTop: '8px',
+                  display: 'inline-block',
+                  padding: '3px 10px',
+                  backgroundColor: '#f87171',
+                  color: 'white',
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  fontWeight: '500'
+                }}>
+                  {module.badge} New
+                </div>
+              )}
+
+              <div 
+                style={{
+                  marginTop: '20px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  color: module.color,
+                  fontSize: '13px',
+                  fontWeight: '500',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  textDecoration: 'none'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.color = '#ffffff';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.color = module.color;
+                }}
+                onClick={(e) => { e.stopPropagation(); navigate(module.path); }}
+              >
+                View {module.title}
+                <ArrowRight size={14} />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

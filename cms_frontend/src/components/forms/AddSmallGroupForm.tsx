@@ -9,11 +9,12 @@ interface Props {
   onSmallGroupAdded: () => void;
   initialData?: any;
   isEdit?: boolean;
+  onCancel?: () => void;
 }
 
 const DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEdit = false }: Props) {
+export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEdit = false, onCancel }: Props) {
   const [ministries, setMinistries] = useState<any[]>([]);
   const [members, setMembers] = useState<any[]>([]);
 
@@ -114,6 +115,12 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
       setError(err.response?.data?.message || 'Failed to save small group');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
     }
   };
 
@@ -219,7 +226,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
 
           <Button 
             type="button"
-            onClick={() => window.history.back()}
+            onClick={handleCancel}
             style={{ background: 'transparent', border: '1px solid #f1f5f9', color: '#f1f5f9', flex: 1 }}
           >
             Cancel

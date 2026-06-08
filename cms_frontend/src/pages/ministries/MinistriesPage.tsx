@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Ministry } from '../../api/ministryApi';
 import { fetchMinistries, deleteMinistry } from '../../api/ministryApi';
+import BackButton from '../../components/common/BackButton';
 import AddMinistryForm from '../../components/forms/AddMinistryForm';
 import { MinistryTable } from '../../components/tables/MinistryTable';
 
@@ -9,7 +10,6 @@ export default function MinistriesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMinistry, setEditingMinistry] = useState<Ministry | null>(null);
   const [viewingMinistry, setViewingMinistry] = useState<Ministry | null>(null);
@@ -49,7 +49,6 @@ export default function MinistriesPage() {
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this ministry?')) return;
-
     try {
       await deleteMinistry(id);
       setSuccess('Ministry deleted successfully');
@@ -60,23 +59,30 @@ export default function MinistriesPage() {
     }
   };
 
+  const handleCancelForm = () => {
+    setShowAddForm(false);
+    setEditingMinistry(null);
+  };
+
   useEffect(() => {
     loadMinistries();
   }, []);
 
   return (
     <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
+      <BackButton />
+
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '32px',
+        marginBottom: '24px',
         flexWrap: 'wrap',
         gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700', color: '#f1f5f9' }}>Ministries</h1>
-          <p style={{ color: '#a1a1aa' }}>Manage church ministries and departments</p>
+          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '700', color: '#f1f5f9', margin: 0 }}>Ministries</h1>
+          <p style={{ color: '#a1a1aa', fontSize: 'clamp(13px, 3.5vw, 14px)' }}>Manage church ministries and departments</p>
         </div>
 
         <button 
@@ -85,14 +91,14 @@ export default function MinistriesPage() {
             setShowAddForm(!showAddForm);
           }}
           style={{
-            padding: '12px 24px',
-            background: 'linear-gradient(135deg, #ec4899, #c026d3)',
+            padding: '10px 20px',
+            background: '#ec4899',
             color: 'white',
             border: 'none',
             borderRadius: '8px',
             fontWeight: '600',
             cursor: 'pointer',
-            fontSize: '14.5px',
+            fontSize: 'clamp(13px, 3.5vw, 14px)',
             flexShrink: 0
           }}
         >
@@ -101,13 +107,13 @@ export default function MinistriesPage() {
       </div>
 
       {error && (
-        <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px' }}>
+        <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>
           {error}
         </div>
       )}
 
       {success && (
-        <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px' }}>
+        <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>
           {success}
         </div>
       )}
@@ -116,21 +122,26 @@ export default function MinistriesPage() {
         <AddMinistryForm 
           onMinistryAdded={handleMinistryAdded} 
           initialData={editingMinistry} 
-          isEdit={!!editingMinistry} 
+          isEdit={!!editingMinistry}
+          onCancel={handleCancelForm}
         />
       )}
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '80px', color: '#a1a1aa' }}>Loading ministries...</div>
-      ) : (
-        <div className="card">
-          <MinistryTable 
-            ministries={ministries} 
-            onDelete={handleDelete} 
-            onEdit={handleEdit}
-            onView={handleView}
-          />
-        </div>
+      {!showAddForm && (
+        <>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading ministries...</div>
+          ) : (
+            <div className="card" style={{ overflowX: 'auto' }}>
+              <MinistryTable 
+                ministries={ministries} 
+                onDelete={handleDelete} 
+                onEdit={handleEdit}
+                onView={handleView}
+              />
+            </div>
+          )}
+        </>
       )}
 
       {viewingMinistry && (
@@ -151,9 +162,11 @@ export default function MinistriesPage() {
               alignItems: 'center', 
               marginBottom: '24px',
               borderBottom: '1px solid #27272a',
-              paddingBottom: '16px'
+              paddingBottom: '16px',
+              flexWrap: 'wrap',
+              gap: '12px'
             }}>
-              <h3>{viewingMinistry.name}</h3>
+              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>{viewingMinistry.name}</h3>
               <button 
                 onClick={closeViewModal}
                 style={{

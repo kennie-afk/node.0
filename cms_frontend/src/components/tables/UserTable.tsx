@@ -37,8 +37,8 @@ export const UserTable: React.FC<Props> = ({ users, onDelete, onEdit }) => {
                 <span style={{
                   padding: '4px 12px',
                   borderRadius: '9999px',
-                  background: user.isAdmin ? '#22c55e' : '#f1f5f9',
-                  color: user.isAdmin ? 'white' : '#3f3f46',
+                  background: user.isAdmin ? 'rgba(34, 197, 94, 0.1)' : 'rgba(241, 245, 249, 0.1)',
+                  color: user.isAdmin ? '#22c55e' : '#f1f5f9',
                   fontSize: '13px',
                   fontWeight: '500',
                   whiteSpace: 'nowrap'

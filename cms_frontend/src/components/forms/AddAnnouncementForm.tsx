@@ -7,12 +7,14 @@ interface Props {
   onAnnouncementAdded: () => void;
   initialData?: any;
   isEdit?: boolean;
+  onCancel?: () => void;
 }
 
 export default function AddAnnouncementForm({ 
   onAnnouncementAdded, 
   initialData, 
-  isEdit = false 
+  isEdit = false,
+  onCancel
 }: Props) {
   const [formData, setFormData] = useState({
     title: '',
@@ -90,6 +92,12 @@ export default function AddAnnouncementForm({
       setError(err.response?.data?.message || 'Failed to save announcement');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
     }
   };
 
@@ -234,7 +242,7 @@ export default function AddAnnouncementForm({
 
           <Button
             type="button"
-            onClick={() => window.history.back()}
+            onClick={handleCancel}
             style={{
               background: 'transparent',
               border: '1px solid #f1f5f9',

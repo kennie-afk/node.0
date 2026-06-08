@@ -11,13 +11,15 @@ interface Props {
   initialData?: any;
   isEdit?: boolean;
   activeTab?: 'general' | 'event' | 'sermon';
+  onCancel?: () => void;
 }
 
 export default function AddAttendanceForm({ 
   onAttendanceAdded, 
   initialData, 
   isEdit = false,
-  activeTab = 'general' 
+  activeTab = 'general',
+  onCancel
 }: Props) {
   const [members, setMembers] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
@@ -101,6 +103,12 @@ export default function AddAttendanceForm({
       setError(err.response?.data?.message || 'Failed to record attendance');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
     }
   };
 
@@ -219,7 +227,7 @@ export default function AddAttendanceForm({
 
           <Button 
             type="button"
-            onClick={() => window.history.back()}
+            onClick={handleCancel}
             style={{ background: 'transparent', border: '1px solid #f1f5f9', color: '#f1f5f9', flex: 1 }}
           >
             Cancel

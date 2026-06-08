@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Contribution } from '../../api/contributionApi';
 import { fetchContributions, deleteContribution } from '../../api/contributionApi';
+import BackButton from '../../components/common/BackButton';
 import AddContributionForm from '../../components/forms/AddContributionForm';
 import { ContributionTable } from '../../components/tables/ContributionTable';
 
@@ -10,7 +11,6 @@ export default function ContributionsPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
-
   const [editingContribution, setEditingContribution] = useState<Contribution | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
 
@@ -56,6 +56,13 @@ export default function ContributionsPage() {
   const handleEdit = (contribution: Contribution) => {
     setEditingContribution(contribution);
     setShowEditForm(true);
+    setShowAddForm(false);
+  };
+
+  const handleCancelForm = () => {
+    setShowAddForm(false);
+    setShowEditForm(false);
+    setEditingContribution(null);
   };
 
   useEffect(() => {
@@ -64,34 +71,37 @@ export default function ContributionsPage() {
 
   return (
     <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
+      <BackButton />
+
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '28px',
+        marginBottom: '24px',
         flexWrap: 'wrap',
         gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: 'clamp(26px, 5.5vw, 32px)', fontWeight: '700', margin: 0 }}>Contributions Management</h1>
-          <p style={{ color: '#a1a1aa', margin: '4px 0 0 0' }}>Record and track member contributions</p>
+          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '700', margin: 0 }}>Contributions Management</h1>
+          <p style={{ color: '#a1a1aa', fontSize: 'clamp(13px, 3.5vw, 14px)' }}>Record and track member contributions</p>
         </div>
 
         <button 
-          onClick={() => setShowAddForm(!showAddForm)}
+          onClick={() => {
+            setShowAddForm(!showAddForm);
+            setShowEditForm(false);
+            setEditingContribution(null);
+          }}
           style={{
-            padding: '12px 24px',
-            background: 'linear-gradient(135deg, #ec4899, #c026d3)',
+            padding: '10px 20px',
+            background: '#ec4899',
             color: 'white',
             border: 'none',
-            borderRadius: '12px',
+            borderRadius: '8px',
             fontWeight: '600',
             cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontSize: '15px',
-            flexShrink: 0
+            flexShrink: 0,
+            fontSize: 'clamp(13px, 3.5vw, 14px)'
           }}
         >
           {showAddForm ? 'Cancel' : '+ Record New Contribution'}
@@ -103,8 +113,9 @@ export default function ContributionsPage() {
           color: '#f87171', 
           padding: '12px', 
           background: '#3f1e1e', 
-          borderRadius: '12px', 
-          marginBottom: '20px' 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          fontSize: '14px'
         }}>
           {error}
         </div>
@@ -115,33 +126,39 @@ export default function ContributionsPage() {
           color: '#4ade80', 
           padding: '12px', 
           background: '#1f3a1f', 
-          borderRadius: '12px', 
-          marginBottom: '20px' 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          fontSize: '14px'
         }}>
           {success}
         </div>
       )}
 
-      {showAddForm && <AddContributionForm onContributionAdded={handleContributionAdded} />}
+      {showAddForm && <AddContributionForm onContributionAdded={handleContributionAdded} onCancel={handleCancelForm} />}
 
       {showEditForm && editingContribution && (
         <AddContributionForm 
           onContributionAdded={handleContributionUpdated} 
           initialData={editingContribution} 
           isEdit={true} 
+          onCancel={handleCancelForm}
         />
       )}
 
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '80px', color: '#a1a1aa' }}>Loading contributions...</div>
-      ) : (
-        <div className="card">
-          <ContributionTable 
-            contributions={contributions} 
-            onDelete={handleDelete} 
-            onEdit={handleEdit}
-          />
-        </div>
+      {!showAddForm && !showEditForm && (
+        <>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading contributions...</div>
+          ) : (
+            <div className="card" style={{ overflowX: 'auto' }}>
+              <ContributionTable 
+                contributions={contributions} 
+                onDelete={handleDelete} 
+                onEdit={handleEdit}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

@@ -8,9 +8,10 @@ interface Props {
   onContributionAdded: () => void;
   initialData?: any;
   isEdit?: boolean;
+  onCancel?: () => void;
 }
 
-export default function AddContributionForm({ onContributionAdded, initialData, isEdit = false }: Props) {
+export default function AddContributionForm({ onContributionAdded, initialData, isEdit = false, onCancel }: Props) {
   const [members, setMembers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     memberId: '',
@@ -90,6 +91,12 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
       setError(err.response?.data?.message || 'Failed to save contribution');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
     }
   };
 
@@ -181,7 +188,7 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
 
           <Button 
             type="button"
-            onClick={() => window.history.back()}
+            onClick={handleCancel}
             style={{ 
               background: 'transparent', 
               border: '1px solid #f1f5f9', 

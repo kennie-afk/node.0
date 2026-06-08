@@ -7,9 +7,10 @@ interface Props {
   onEventAdded: () => void;
   initialData?: any;
   isEdit?: boolean;
+  onCancel?: () => void;
 }
 
-export default function AddEventForm({ onEventAdded, initialData, isEdit = false }: Props) {
+export default function AddEventForm({ onEventAdded, initialData, isEdit = false, onCancel }: Props) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -58,6 +59,12 @@ export default function AddEventForm({ onEventAdded, initialData, isEdit = false
     }
   };
 
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
   return (
     <div className="card" style={{ marginBottom: '30px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
       <h3 style={{ fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>{isEdit ? 'Edit Event' : 'Add New Event'}</h3>
@@ -78,12 +85,12 @@ export default function AddEventForm({ onEventAdded, initialData, isEdit = false
           placeholder="Description (optional)"
           style={{
             width: '100%',
-            padding: '14px 18px',
+            padding: '12px 16px',
             backgroundColor: '#27272a',
             border: '1px solid #3f3f46',
-            borderRadius: '8px',
+            borderRadius: '6px',
             color: 'white',
-            fontSize: '15px',
+            fontSize: '14px',
             minHeight: '80px',
             resize: 'vertical',
             boxSizing: 'border-box'
@@ -132,7 +139,7 @@ export default function AddEventForm({ onEventAdded, initialData, isEdit = false
 
           <Button 
             type="button"
-            onClick={() => window.history.back()}
+            onClick={handleCancel}
             style={{ 
               background: 'transparent', 
               border: '1px solid #f1f5f9', 

@@ -8,9 +8,10 @@ interface Props {
   onMinistryAdded: () => void;
   initialData?: any;
   isEdit?: boolean;
+  onCancel?: () => void;
 }
 
-export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit = false }: Props) {
+export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit = false, onCancel }: Props) {
   const [members, setMembers] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
@@ -76,6 +77,12 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
     }
   };
 
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel();
+    }
+  };
+
   return (
     <div className="card" style={{ marginBottom: '28px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
       <h3 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>
@@ -137,7 +144,7 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
 
           <Button 
             type="button"
-            onClick={() => window.history.back()}
+            onClick={handleCancel}
             style={{ background: 'transparent', border: '1px solid #f1f5f9', color: '#f1f5f9', flex: 1 }}
           >
             Cancel

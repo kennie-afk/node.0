@@ -37,13 +37,13 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth > 768 && isMobileMenuOpen) {
+      if (window.innerWidth > 768) {
         setIsMobileMenuOpen(false);
       }
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, [isMobileMenuOpen]);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -52,6 +52,8 @@ export default function DashboardLayout() {
 
   const toggleMobileMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
   const toggleSidebar = () => setIsSidebarCollapsed(!isSidebarCollapsed);
+  
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
   const sidebarWidth = isSidebarCollapsed ? '80px' : '280px';
   
@@ -104,20 +106,19 @@ export default function DashboardLayout() {
           position: 'fixed',
           top: '16px',
           left: '16px',
-          zIndex: 1000,
+          zIndex: 1001,
           background: '#18181b',
           border: '1px solid #27272a',
           color: 'white',
           width: '44px',
           height: '44px',
           borderRadius: '8px',
-          display: 'none',
+          display: window.innerWidth <= 768 ? 'flex' : 'none',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
           boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
         }}
-        className="mobile-menu-btn"
       >
         {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
       </button>
@@ -136,7 +137,7 @@ export default function DashboardLayout() {
           left: isMobileMenuOpen ? '0' : (window.innerWidth <= 768 ? `-${sidebarWidth}` : '0'),
           top: 0,
           transition: 'left 0.3s ease, width 0.2s ease',
-          zIndex: 999,
+          zIndex: 1000,
           overflowY: 'auto',
           overflowX: 'hidden'
         }}
@@ -207,6 +208,7 @@ export default function DashboardLayout() {
           <Link 
             to="/dashboard" 
             style={navItemStyle}
+            onClick={closeMobileMenu}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
@@ -217,6 +219,7 @@ export default function DashboardLayout() {
           <Link 
             to="/users" 
             style={navItemStyle}
+            onClick={closeMobileMenu}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
@@ -227,6 +230,7 @@ export default function DashboardLayout() {
           <Link 
             to="/families" 
             style={navItemStyle}
+            onClick={closeMobileMenu}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
@@ -237,6 +241,7 @@ export default function DashboardLayout() {
           <Link 
             to="/members" 
             style={navItemStyle}
+            onClick={closeMobileMenu}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
@@ -247,6 +252,7 @@ export default function DashboardLayout() {
           <Link 
             to="/events" 
             style={navItemStyle}
+            onClick={closeMobileMenu}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
@@ -275,6 +281,7 @@ export default function DashboardLayout() {
                 <Link 
                   to="/attendance" 
                   style={subNavItemStyle}
+                  onClick={closeMobileMenu}
                   onMouseEnter={(e) => { e.currentTarget.style.color = '#ec4899'; e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.05)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#a1a1aa'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
@@ -283,6 +290,7 @@ export default function DashboardLayout() {
                 <Link 
                   to="/attendance/event" 
                   style={subNavItemStyle}
+                  onClick={closeMobileMenu}
                   onMouseEnter={(e) => { e.currentTarget.style.color = '#ec4899'; e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.05)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#a1a1aa'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
@@ -291,6 +299,7 @@ export default function DashboardLayout() {
                 <Link 
                   to="/attendance/sermon" 
                   style={subNavItemStyle}
+                  onClick={closeMobileMenu}
                   onMouseEnter={(e) => { e.currentTarget.style.color = '#ec4899'; e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.05)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.color = '#a1a1aa'; e.currentTarget.style.backgroundColor = 'transparent'; }}
                 >
@@ -303,6 +312,7 @@ export default function DashboardLayout() {
           <Link 
             to="/announcements" 
             style={navItemStyle}
+            onClick={closeMobileMenu}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
@@ -313,6 +323,7 @@ export default function DashboardLayout() {
           <Link 
             to="/sermons" 
             style={navItemStyle}
+            onClick={closeMobileMenu}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
@@ -323,6 +334,7 @@ export default function DashboardLayout() {
           <Link 
             to="/contributions" 
             style={navItemStyle}
+            onClick={closeMobileMenu}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
@@ -333,6 +345,7 @@ export default function DashboardLayout() {
           <Link 
             to="/ministries" 
             style={navItemStyle}
+            onClick={closeMobileMenu}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
@@ -343,6 +356,7 @@ export default function DashboardLayout() {
           <Link 
             to="/small-groups" 
             style={navItemStyle}
+            onClick={closeMobileMenu}
             onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)'; e.currentTarget.style.color = '#ffffff'; }}
             onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#cbd5e1'; }}
           >
@@ -353,7 +367,10 @@ export default function DashboardLayout() {
 
         <div style={{ padding: isSidebarCollapsed ? '20px 12px' : '24px', borderTop: '1px solid #27272a' }}>
           <button 
-            onClick={handleLogout}
+            onClick={() => {
+              handleLogout();
+              closeMobileMenu();
+            }}
             style={{
               width: '100%',
               padding: isSidebarCollapsed ? '12px' : '12px',
@@ -391,12 +408,12 @@ export default function DashboardLayout() {
 
       {isMobileMenuOpen && (
         <div 
-          onClick={toggleMobileMenu}
+          onClick={closeMobileMenu}
           style={{
             position: 'fixed',
             inset: 0,
             backgroundColor: 'rgba(0,0,0,0.7)',
-            zIndex: 998
+            zIndex: 999
           }}
         />
       )}
