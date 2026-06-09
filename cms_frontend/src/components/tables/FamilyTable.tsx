@@ -12,6 +12,8 @@ export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit }) => 
     return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No families found.</p>;
   }
 
+  const sortedFamilies = [...families].sort((a, b) => b.id - a.id);
+
   return (
     <div style={{ overflowX: 'auto' }}>
       <table style={{ width: '100%', minWidth: '600px' }} className="table">
@@ -26,7 +28,7 @@ export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit }) => 
           </tr>
         </thead>
         <tbody>
-          {families.map(family => (
+          {sortedFamilies.map(family => (
             <tr key={family.id}>
               <td>{family.id}</td>
               <td><strong>{family.familyName}</strong></td>
