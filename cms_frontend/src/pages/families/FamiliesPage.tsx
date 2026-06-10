@@ -7,24 +7,46 @@ import { FamilyTable } from '../../components/tables/FamilyTable';
 
 export default function FamiliesPage() {
   const [families, setFamilies] = useState<Family[]>([]);
+  const [filteredFamilies, setFilteredFamilies] = useState<Family[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingFamily, setEditingFamily] = useState<Family | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [viewingFamily, setViewingFamily] = useState<Family | null>(null);
 
   const loadFamilies = async () => {
     try {
       setLoading(true);
       const response = await fetchFamilies();
-      setFamilies(response.data || response || []);
+      const data = response.data || response || [];
+      setFamilies(data);
+      setFilteredFamilies(data);
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to load families');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredFamilies(families);
+      return;
+    }
+
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = families.filter(family =>
+      family.familyName?.toLowerCase().includes(term) ||
+      family.address?.toLowerCase().includes(term) ||
+      family.city?.toLowerCase().includes(term) ||
+      family.phoneNumber?.includes(term) ||
+      family.email?.toLowerCase().includes(term)
+    );
+    setFilteredFamilies(filtered);
+  }, [searchTerm, families]);
 
   const handleFamilyAdded = async () => {
     setSuccess('Family created successfully!');
@@ -37,6 +59,14 @@ export default function FamiliesPage() {
     setEditingFamily(family);
     setShowEditForm(true);
     setShowAddForm(false);
+  };
+
+  const handleView = (family: Family) => {
+    setViewingFamily(family);
+  };
+
+  const closeViewModal = () => {
+    setViewingFamily(null);
   };
 
   const handleUpdateFamily = async (updatedData: any) => {
@@ -114,6 +144,32 @@ export default function FamiliesPage() {
         </button>
       </div>
 
+      <div style={{ 
+        display: 'flex', 
+        gap: '12px', 
+        marginBottom: '20px', 
+        flexWrap: 'wrap',
+        flexDirection: window.innerWidth < 500 ? 'column' : 'row'
+      }}>
+        <input
+          type="text"
+          placeholder="Search by family name, address, city, phone or email..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px 16px',
+            backgroundColor: '#27272a',
+            border: '1px solid #3f3f46',
+            borderRadius: '8px',
+            color: '#f1f5f9',
+            fontSize: '14px',
+            boxSizing: 'border-box'
+          }}
+        />
+      </div>
+
       {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{error}</div>}
       {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{success}</div>}
 
@@ -135,13 +191,66 @@ export default function FamiliesPage() {
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <FamilyTable 
-                families={families} 
+                families={filteredFamilies} 
                 onDelete={handleDelete} 
-                onEdit={handleEdit} 
+                onEdit={handleEdit}
+                onView={handleView}
               />
             </div>
           )}
         </>
+      )}
+
+      {viewingFamily && (
+        <div style={{ 
+          position: 'fixed', 
+          inset: 0, 
+          background: 'rgba(0,0,0,0.85)', 
+          zIndex: 2000, 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          padding: '16px'
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: '24px',
+              borderBottom: '1px solid #27272a',
+              paddingBottom: '16px',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>{viewingFamily.familyName}</h3>
+              <button 
+                onClick={closeViewModal}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #f87171',
+                  color: '#f87171',
+                  padding: '8px 18px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Close
+              </button>
+            </div>
+            <div style={{ color: '#cbd5e1', lineHeight: '1.8' }}>
+              <p><strong>Family Name:</strong> {viewingFamily.familyName}</p>
+              <p><strong>Address:</strong> {viewingFamily.address || '-'}</p>
+              <p><strong>City:</strong> {viewingFamily.city || '-'}</p>
+              <p><strong>County:</strong> {viewingFamily.county || '-'}</p>
+              <p><strong>Postal Code:</strong> {viewingFamily.postalCode || '-'}</p>
+              <p><strong>Phone:</strong> {viewingFamily.phoneNumber || '-'}</p>
+              <p><strong>Email:</strong> {viewingFamily.email || '-'}</p>
+              {viewingFamily.notes && <p><strong>Notes:</strong> {viewingFamily.notes}</p>}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

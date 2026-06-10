@@ -5,9 +5,10 @@ interface Props {
   families: Family[];
   onDelete: (id: number) => void;
   onEdit: (family: Family) => void;
+  onView: (family: Family) => void;
 }
 
-export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit }) => {
+export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit, onView }) => {
   if (families.length === 0) {
     return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No families found.</p>;
   }
@@ -16,7 +17,7 @@ export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit }) => 
 
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table style={{ width: '100%', minWidth: '600px' }} className="table">
+      <table style={{ width: '100%', minWidth: '700px' }} className="table">
         <thead>
           <tr>
             <th>ID</th>
@@ -24,7 +25,7 @@ export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit }) => 
             <th>Address</th>
             <th>City</th>
             <th>Phone</th>
-            <th>Actions</th>
+            <th style={{ width: '240px' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -36,11 +37,30 @@ export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit }) => 
               <td>{family.city || '-'}</td>
               <td>{family.phoneNumber || '-'}</td>
               <td>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'nowrap', alignItems: 'center' }}>
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    onClick={() => onView(family)}
+                    style={{ 
+                      padding: '4px 10px', 
+                      fontSize: '12px',
+                      minWidth: '50px',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    View
+                  </Button>
                   <Button 
                     variant="primary" 
                     size="sm" 
                     onClick={() => onEdit(family)}
+                    style={{ 
+                      padding: '4px 10px', 
+                      fontSize: '12px',
+                      minWidth: '50px',
+                      whiteSpace: 'nowrap'
+                    }}
                   >
                     Edit
                   </Button>
@@ -48,6 +68,12 @@ export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit }) => 
                     variant="danger" 
                     size="sm" 
                     onClick={() => onDelete(family.id)}
+                    style={{ 
+                      padding: '4px 10px', 
+                      fontSize: '12px',
+                      minWidth: '55px',
+                      whiteSpace: 'nowrap'
+                    }}
                   >
                     Delete
                   </Button>
