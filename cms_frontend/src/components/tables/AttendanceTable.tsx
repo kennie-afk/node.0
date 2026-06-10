@@ -1,4 +1,3 @@
-// src/components/tables/AttendanceTable.tsx
 import type { Attendance } from '../../api/attendanceApi';
 import { Button } from '../common/Button';
 
@@ -25,22 +24,21 @@ export function AttendanceTable({
 
   return (
     <div style={{ overflowX: 'auto' }}>
-      <table className="table" style={{ minWidth: '980px' }}>
+      <table className="table" style={{ minWidth: activeTab === 'general' ? '900px' : '700px' }}>
         <thead>
           <tr>
             <th>Date</th>
             <th>Attendee</th>
             <th>Type</th>
-            <th>Event</th>
-            <th>Sermon</th>
-            <th style={{ width: '260px' }}>Actions</th>
+            {activeTab !== 'sermon' && <th>Event</th>}
+            {activeTab !== 'event' && <th>Sermon</th>}
+            <th style={{ width: '240px' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
           {attendance.map(record => (
             <tr key={record.id}>
               <td>{new Date(record.attendanceDate).toLocaleDateString()}</td>
-
               <td>
                 {record.attendeeMember ? (
                   <strong>{record.attendeeMember.firstName} {record.attendeeMember.lastName}</strong>
@@ -58,46 +56,32 @@ export function AttendanceTable({
                 )}
                 {record.guestName && !record.attendeeMember && ` (${record.guestName})`}
               </td>
-
               <td>{record.attendanceType}</td>
-
-              <td>
-                {record.attendedEvent ? record.attendedEvent.name : 
-                  (activeTab === 'general' || activeTab === 'sermon') ? '-' : '—'}
-              </td>
-
-              <td>
-                {record.attendedSermon ? record.attendedSermon.title : 
-                  (activeTab === 'general' || activeTab === 'event') ? '-' : '—'}
-              </td>
-
+              {activeTab !== 'sermon' && (
+                <td>{record.attendedEvent ? record.attendedEvent.name : '-'}</td>
+              )}
+              {activeTab !== 'event' && (
+                <td>{record.attendedSermon ? record.attendedSermon.title : '-'}</td>
+              )}
               <td>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <Button variant="primary" size="sm" onClick={() => onEdit(record)}>
+                  <Button variant="primary" size="sm" onClick={() => onEdit(record)} style={{ padding: '4px 10px', fontSize: '12px' }}>
                     Edit
                   </Button>
 
-                  {record.eventId && (
-                    <Button 
-                      variant="primary" 
-                      size="sm" 
-                      onClick={() => onViewEvent(record.eventId!)}
-                    >
+                  {record.eventId && activeTab !== 'sermon' && (
+                    <Button variant="primary" size="sm" onClick={() => onViewEvent(record.eventId!)} style={{ padding: '4px 10px', fontSize: '12px' }}>
                       View
                     </Button>
                   )}
 
-                  {record.sermonId && (
-                    <Button 
-                      variant="primary" 
-                      size="sm" 
-                      onClick={() => onViewSermon(record.sermonId!)}
-                    >
+                  {record.sermonId && activeTab !== 'event' && (
+                    <Button variant="primary" size="sm" onClick={() => onViewSermon(record.sermonId!)} style={{ padding: '4px 10px', fontSize: '12px' }}>
                       View
                     </Button>
                   )}
 
-                  <Button variant="danger" size="sm" onClick={() => onDelete(record.id)}>
+                  <Button variant="danger" size="sm" onClick={() => onDelete(record.id)} style={{ padding: '4px 10px', fontSize: '12px' }}>
                     Delete
                   </Button>
                 </div>

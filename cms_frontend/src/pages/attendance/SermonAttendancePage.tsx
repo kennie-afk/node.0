@@ -6,6 +6,8 @@ import { AttendanceTable } from '../../components/tables/AttendanceTable';
 
 export default function SermonAttendancePage() {
   const [attendance, setAttendance] = useState<any[]>([]);
+  const [filteredAttendance, setFilteredAttendance] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -20,12 +22,29 @@ export default function SermonAttendancePage() {
       const res = await fetchAttendance();
       const sermonOnly = (res.data || res || []).filter((a: any) => a.sermonId !== null);
       setAttendance(sermonOnly);
+      setFilteredAttendance(sermonOnly);
     } catch (err: any) {
       setError('Failed to load sermon attendance');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredAttendance(attendance);
+      return;
+    }
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = attendance.filter(record =>
+      record.attendeeMember?.firstName?.toLowerCase().includes(term) ||
+      record.attendeeMember?.lastName?.toLowerCase().includes(term) ||
+      record.guestName?.toLowerCase().includes(term) ||
+      record.attendanceType?.toLowerCase().includes(term) ||
+      record.attendedSermon?.title?.toLowerCase().includes(term)
+    );
+    setFilteredAttendance(filtered);
+  }, [searchTerm, attendance]);
 
   const handleAttendanceAdded = () => {
     setSuccess('Sermon attendance recorded successfully');
@@ -112,6 +131,32 @@ export default function SermonAttendancePage() {
         </button>
       </div>
 
+      <div style={{ 
+        display: 'flex', 
+        gap: '12px', 
+        marginBottom: '20px', 
+        flexWrap: 'wrap',
+        flexDirection: window.innerWidth < 500 ? 'column' : 'row'
+      }}>
+        <input
+          type="text"
+          placeholder="Search by name, guest or sermon..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px 16px',
+            backgroundColor: '#27272a',
+            border: '1px solid #3f3f46',
+            borderRadius: '8px',
+            color: '#f1f5f9',
+            fontSize: '14px',
+            boxSizing: 'border-box'
+          }}
+        />
+      </div>
+
       {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{error}</div>}
       {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{success}</div>}
 
@@ -132,7 +177,7 @@ export default function SermonAttendancePage() {
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <AttendanceTable 
-                attendance={attendance} 
+                attendance={filteredAttendance} 
                 onDelete={handleDelete} 
                 onEdit={handleEdit}
                 onViewEvent={() => {}}
@@ -146,16 +191,44 @@ export default function SermonAttendancePage() {
 
       {showSermonModal && selectedSermon && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', borderBottom: '1px solid #27272a', paddingBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>{selectedSermon.title}</h3>
-              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '8px 18px', borderRadius: '8px', cursor: 'pointer', fontSize: '14px' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '85vh', overflow: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '12px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Sermon Details</h3>
+              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
                 Close
               </button>
             </div>
-            <div style={{ color: '#cbd5e1', lineHeight: '1.8' }}>
-              <p><strong>Date Preached:</strong> {new Date(selectedSermon.datePreached).toLocaleDateString()}</p>
-              {selectedSermon.content && <p><strong>Content:</strong> {selectedSermon.content}</p>}
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa', width: '100px' }}>Title</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedSermon.title}</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Date Preached</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{new Date(selectedSermon.datePreached).toLocaleDateString()}</td>
+                  </tr>
+                  {selectedSermon.speaker && (
+                    <tr style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Speaker</td>
+                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedSermon.speaker.firstName} {selectedSermon.speaker.lastName}</td>
+                    </tr>
+                  )}
+                  {selectedSermon.guestSpeakerName && (
+                    <tr style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Guest Speaker</td>
+                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedSermon.guestSpeakerName}</td>
+                    </tr>
+                  )}
+                  {selectedSermon.content && (
+                    <tr style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Content</td>
+                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedSermon.content}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

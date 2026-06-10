@@ -85,8 +85,8 @@ export default function AddAttendanceForm({
         memberId: formData.memberId ? parseInt(formData.memberId) : null,
         guestName: formData.guestName || null,
         attendanceDate: formData.attendanceDate,
-        eventId: formData.eventId ? parseInt(formData.eventId) : null,
-        sermonId: formData.sermonId ? parseInt(formData.sermonId) : null,
+        eventId: activeTab === 'sermon' ? null : (formData.eventId ? parseInt(formData.eventId) : null),
+        sermonId: activeTab === 'event' ? null : (formData.sermonId ? parseInt(formData.sermonId) : null),
         attendanceType: formData.attendanceType,
         notes: formData.notes || null,
       };
@@ -157,15 +157,16 @@ export default function AddAttendanceForm({
         {(activeTab === 'general' || activeTab === 'event') && (
           <div>
             <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
-              Event (optional)
+              Event
             </label>
             <select
               name="eventId"
               value={formData.eventId}
               onChange={handleChange}
+              required={activeTab === 'event'}
               style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }}
             >
-              <option value="">Select Event</option>
+              <option value="">{activeTab === 'event' ? 'Select Event *' : 'Select Event (optional)'}</option>
               {events.map((e: any) => (
                 <option key={e.id} value={e.id}>
                   {e.name}
@@ -178,15 +179,16 @@ export default function AddAttendanceForm({
         {(activeTab === 'general' || activeTab === 'sermon') && (
           <div>
             <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
-              Sermon (optional)
+              Sermon
             </label>
             <select
               name="sermonId"
               value={formData.sermonId}
               onChange={handleChange}
+              required={activeTab === 'sermon'}
               style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }}
             >
-              <option value="">Select Sermon</option>
+              <option value="">{activeTab === 'sermon' ? 'Select Sermon *' : 'Select Sermon (optional)'}</option>
               {sermons.map((s: any) => (
                 <option key={s.id} value={s.id}>
                   {s.title}
