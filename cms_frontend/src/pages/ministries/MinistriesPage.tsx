@@ -201,34 +201,26 @@ export default function MinistriesPage() {
           zIndex: 1000,
           padding: '16px'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center', 
-              marginBottom: '24px',
+              marginBottom: '20px',
               borderBottom: '1px solid #27272a',
-              paddingBottom: '16px',
-              flexWrap: 'wrap',
-              gap: '12px'
+              paddingBottom: '12px'
             }}>
-              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Ministry Details</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Ministry Details</h3>
               <button 
                 onClick={closeViewModal}
                 style={{
                   background: 'transparent',
                   border: '1px solid #f87171',
                   color: '#f87171',
-                  padding: '6px 14px',
+                  padding: '6px 16px',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '12px'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  fontSize: '13px'
                 }}
               >
                 Close
@@ -236,25 +228,25 @@ export default function MinistriesPage() {
             </div>
 
             <div style={{ overflowX: 'auto' }}>
-              <table className="table" style={{ width: '100%' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa', width: '140px' }}>Ministry Name</td>
-                    <td style={{ color: '#f1f5f9' }}><strong>{viewingMinistry.name}</strong></td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa', width: '120px' }}>Ministry Name</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingMinistry.name}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Description</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingMinistry.description || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Description</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingMinistry.description || '-'}</td>
                   </tr>
                   {viewingMinistry.leader && (
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Leader</td>
-                      <td style={{ color: '#f1f5f9' }}>{viewingMinistry.leader.firstName} {viewingMinistry.leader.lastName}</td>
+                    <tr style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Leader</td>
+                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingMinistry.leader.firstName} {viewingMinistry.leader.lastName}</td>
                     </tr>
                   )}
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingMinistry.createdAt ? new Date(viewingMinistry.createdAt).toLocaleDateString() : '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingMinistry.createdAt ? new Date(viewingMinistry.createdAt).toLocaleDateString() : '-'}</td>
                   </tr>
                 </tbody>
               </table>

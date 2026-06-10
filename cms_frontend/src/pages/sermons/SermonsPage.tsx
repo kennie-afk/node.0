@@ -202,34 +202,26 @@ export default function SermonsPage() {
           zIndex: 1000,
           padding: '16px'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '550px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center', 
-              marginBottom: '24px',
+              marginBottom: '20px',
               borderBottom: '1px solid #27272a',
-              paddingBottom: '16px',
-              flexWrap: 'wrap',
-              gap: '12px'
+              paddingBottom: '12px'
             }}>
-              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Sermon Details</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Sermon Details</h3>
               <button 
                 onClick={closeViewModal}
                 style={{
                   background: 'transparent',
                   border: '1px solid #f87171',
                   color: '#f87171',
-                  padding: '6px 14px',
+                  padding: '6px 16px',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '12px'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  fontSize: '13px'
                 }}
               >
                 Close
@@ -237,65 +229,59 @@ export default function SermonsPage() {
             </div>
 
             <div style={{ overflowX: 'auto' }}>
-              <table className="table" style={{ width: '100%' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa', width: '140px' }}>Title</td>
-                    <td style={{ color: '#f1f5f9' }}><strong>{viewingSermon.title}</strong></td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa', width: '120px' }}>Title</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.title}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Date Preached</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingSermon.datePreached ? new Date(viewingSermon.datePreached).toLocaleDateString() : '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Date Preached</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.datePreached ? new Date(viewingSermon.datePreached).toLocaleDateString() : '-'}</td>
                   </tr>
                   {viewingSermon.speaker && (
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Speaker</td>
-                      <td style={{ color: '#f1f5f9' }}>{viewingSermon.speaker.firstName} {viewingSermon.speaker.lastName}</td>
+                    <tr style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Speaker</td>
+                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.speaker.firstName} {viewingSermon.speaker.lastName}</td>
                     </tr>
                   )}
                   {viewingSermon.guestSpeakerName && (
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Guest Speaker</td>
-                      <td style={{ color: '#f1f5f9' }}>{viewingSermon.guestSpeakerName}</td>
+                    <tr style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Guest Speaker</td>
+                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.guestSpeakerName}</td>
                     </tr>
                   )}
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Passage Reference</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingSermon.passageReference || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Passage Reference</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.passageReference || '-'}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Summary</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingSermon.summary || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Summary</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.summary || '-'}</td>
                   </tr>
-                  {viewingSermon.content && (
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Content</td>
-                      <td style={{ color: '#f1f5f9' }}>{viewingSermon.content}</td>
-                    </tr>
-                  )}
                   {viewingSermon.audioUrl && (
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Audio</td>
-                      <td style={{ color: '#f1f5f9' }}>
+                    <tr style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Audio</td>
+                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>
                         <a href={viewingSermon.audioUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ec4899' }}>Listen</a>
                       </td>
                     </tr>
                   )}
                   {viewingSermon.videoUrl && (
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Video</td>
-                      <td style={{ color: '#f1f5f9' }}>
+                    <tr style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Video</td>
+                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>
                         <a href={viewingSermon.videoUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ec4899' }}>Watch</a>
                       </td>
                     </tr>
                   )}
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingSermon.notes || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.notes || '-'}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingSermon.createdAt ? new Date(viewingSermon.createdAt).toLocaleDateString() : '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.createdAt ? new Date(viewingSermon.createdAt).toLocaleDateString() : '-'}</td>
                   </tr>
                 </tbody>
               </table>

@@ -215,34 +215,26 @@ export default function FamiliesPage() {
           zIndex: 1000,
           padding: '16px'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center', 
-              marginBottom: '24px',
+              marginBottom: '20px',
               borderBottom: '1px solid #27272a',
-              paddingBottom: '16px',
-              flexWrap: 'wrap',
-              gap: '12px'
+              paddingBottom: '12px'
             }}>
-              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Family Details</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Family Details</h3>
               <button 
                 onClick={closeViewModal}
                 style={{
                   background: 'transparent',
                   border: '1px solid #f87171',
                   color: '#f87171',
-                  padding: '6px 14px',
+                  padding: '6px 16px',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '12px'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  fontSize: '13px'
                 }}
               >
                 Close
@@ -250,45 +242,45 @@ export default function FamiliesPage() {
             </div>
 
             <div style={{ overflowX: 'auto' }}>
-              <table className="table" style={{ width: '100%' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa', width: '140px' }}>Family Name</td>
-                    <td style={{ color: '#f1f5f9' }}><strong>{viewingFamily.familyName}</strong></td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa', width: '120px' }}>Family Name</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingFamily.familyName}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Address</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.address || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Address</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingFamily.address || '-'}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>City</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.city || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>City</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingFamily.city || '-'}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>County</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.county || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>County</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingFamily.county || '-'}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Postal Code</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.postalCode || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Postal Code</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingFamily.postalCode || '-'}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Phone Number</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.phoneNumber || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Phone Number</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingFamily.phoneNumber || '-'}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Email</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.email || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Email</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingFamily.email || '-'}</td>
                   </tr>
                   {viewingFamily.notes && (
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
-                      <td style={{ color: '#f1f5f9' }}>{viewingFamily.notes}</td>
+                    <tr style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
+                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingFamily.notes}</td>
                     </tr>
                   )}
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
-                    <td style={{ color: '#f1f5f9' }}>{new Date(viewingFamily.createdAt).toLocaleDateString()}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingFamily.createdAt ? new Date(viewingFamily.createdAt).toLocaleDateString() : '-'}</td>
                   </tr>
                 </tbody>
               </table>

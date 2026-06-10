@@ -210,34 +210,26 @@ export default function ContributionsPage() {
           zIndex: 1000,
           padding: '16px'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
               alignItems: 'center', 
-              marginBottom: '24px',
+              marginBottom: '20px',
               borderBottom: '1px solid #27272a',
-              paddingBottom: '16px',
-              flexWrap: 'wrap',
-              gap: '12px'
+              paddingBottom: '12px'
             }}>
-              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Contribution Details</h3>
+              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Contribution Details</h3>
               <button 
                 onClick={closeViewModal}
                 style={{
                   background: 'transparent',
                   border: '1px solid #f87171',
                   color: '#f87171',
-                  padding: '6px 14px',
+                  padding: '6px 16px',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '12px'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.backgroundColor = 'transparent';
+                  fontSize: '13px'
                 }}
               >
                 Close
@@ -245,37 +237,37 @@ export default function ContributionsPage() {
             </div>
 
             <div style={{ overflowX: 'auto' }}>
-              <table className="table" style={{ width: '100%' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa', width: '140px' }}>Member Name</td>
-                    <td style={{ color: '#f1f5f9' }}>
-                      <strong>{viewingContribution.member?.firstName} {viewingContribution.member?.lastName}</strong>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa', width: '110px' }}>Member Name</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>
+                      {viewingContribution.member?.firstName} {viewingContribution.member?.lastName}
                     </td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Amount</td>
-                    <td style={{ fontWeight: '600', color: '#4ade80' }}>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Amount</td>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#4ade80' }}>
                       KES {Number(viewingContribution.amount).toLocaleString()}
                     </td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Date</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingContribution.date ? new Date(viewingContribution.date).toLocaleDateString() : '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Date</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingContribution.date ? new Date(viewingContribution.date).toLocaleDateString() : '-'}</td>
                   </tr>
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Type</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingContribution.contributionType}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Type</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingContribution.contributionType}</td>
                   </tr>
                   {viewingContribution.notes && (
-                    <tr>
-                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
-                      <td style={{ color: '#f1f5f9' }}>{viewingContribution.notes}</td>
+                    <tr style={{ borderBottom: '1px solid #27272a' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
+                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingContribution.notes}</td>
                     </tr>
                   )}
-                  <tr>
-                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
-                    <td style={{ color: '#f1f5f9' }}>{viewingContribution.createdAt ? new Date(viewingContribution.createdAt).toLocaleDateString() : '-'}</td>
+                  <tr style={{ borderBottom: '1px solid #27272a' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
+                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingContribution.createdAt ? new Date(viewingContribution.createdAt).toLocaleDateString() : '-'}</td>
                   </tr>
                 </tbody>
               </table>
