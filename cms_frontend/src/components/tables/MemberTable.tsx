@@ -1,31 +1,34 @@
 import type { Member } from '../../api/memberApi';
 import { Button } from '../common/Button';
+import { PlusCircle } from 'lucide-react';
 
 interface Props {
   members: Member[];
   onDelete: (id: number) => void;
   onEdit: (member: Member) => void;
   onViewContributions: (memberId: number, memberName: string) => void;
+  onAddContribution?: (memberId: number, memberName: string) => void;
 }
 
 export const MemberTable: React.FC<Props> = ({
   members,
   onDelete,
   onEdit,
-  onViewContributions
+  onViewContributions,
+  onAddContribution
 }) => {
   if (members.length === 0) {
     return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No members found.</p>;
   }
 
   return (
-    <div style={{ overflowX: 'auto' }}>   {/* Only scroll if absolutely necessary */}
+    <div style={{ overflowX: 'auto' }}>
       <table 
         className="table" 
         style={{ 
           tableLayout: 'fixed', 
           width: '100%', 
-          minWidth: '980px',     // Balanced minimum width
+          minWidth: '980px',
           borderCollapse: 'collapse'
         }}
       >
@@ -36,7 +39,7 @@ export const MemberTable: React.FC<Props> = ({
             <th style={{ width: '160px' }}>Email</th>
             <th style={{ width: '120px' }}>Phone</th>
             <th style={{ width: '150px' }}>Family</th>
-            <th style={{ width: '240px' }}>Actions</th>
+            <th style={{ width: '280px' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -63,7 +66,7 @@ export const MemberTable: React.FC<Props> = ({
                 <div style={{ 
                   display: 'flex', 
                   gap: '5px', 
-                  flexWrap: 'nowrap',
+                  flexWrap: 'wrap',
                   alignItems: 'center'
                 }}>
                   <Button 
@@ -91,6 +94,38 @@ export const MemberTable: React.FC<Props> = ({
                   >
                     Contributions
                   </Button>
+
+                  {onAddContribution && (
+                    <button
+                      onClick={() => onAddContribution(member.id, `${member.firstName} ${member.lastName}`)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#4ade80',
+                        fontSize: '12px',
+                        fontWeight: '500',
+                        cursor: 'pointer',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        transition: 'all 0.2s ease',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        minWidth: '112px'
+                      }}
+                      onMouseOver={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(74, 222, 128, 0.1)';
+                        e.currentTarget.style.color = '#ffffff';
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.color = '#4ade80';
+                      }}
+                    >
+                      <PlusCircle size={12} />
+                      Add Contribution
+                    </button>
+                  )}
 
                   <Button 
                     variant="danger" 

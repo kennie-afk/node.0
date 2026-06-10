@@ -9,9 +9,10 @@ interface Props {
   initialData?: any;
   isEdit?: boolean;
   onCancel?: () => void;
+  preSelectedMemberId?: number;
 }
 
-export default function AddContributionForm({ onContributionAdded, initialData, isEdit = false, onCancel }: Props) {
+export default function AddContributionForm({ onContributionAdded, initialData, isEdit = false, onCancel, preSelectedMemberId }: Props) {
   const [members, setMembers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     memberId: '',
@@ -44,8 +45,13 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
         contributionType: initialData.contributionType || 'Tithe',
         notes: initialData.notes || '',
       });
+    } else if (preSelectedMemberId && !isEdit) {
+      setFormData(prev => ({
+        ...prev,
+        memberId: String(preSelectedMemberId)
+      }));
     }
-  }, [initialData, isEdit]);
+  }, [initialData, isEdit, preSelectedMemberId]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -110,6 +116,7 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
           value={formData.memberId} 
           onChange={handleChange}
           required
+          disabled={!!preSelectedMemberId && !isEdit}
           style={{
             width: '100%',
             padding: '12px 16px',
@@ -118,7 +125,9 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
             borderRadius: '6px',
             color: '#f1f5f9',
             fontSize: '14px',
-            boxSizing: 'border-box'
+            boxSizing: 'border-box',
+            opacity: preSelectedMemberId && !isEdit ? 0.7 : 1,
+            cursor: preSelectedMemberId && !isEdit ? 'not-allowed' : 'pointer'
           }}
         >
           <option value="">Select Member *</option>
