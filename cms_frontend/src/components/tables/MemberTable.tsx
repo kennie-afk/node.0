@@ -39,7 +39,7 @@ export const MemberTable: React.FC<Props> = ({
             <th style={{ width: '160px' }}>Email</th>
             <th style={{ width: '120px' }}>Phone</th>
             <th style={{ width: '150px' }}>Family</th>
-            <th style={{ width: '280px' }}>Actions</th>
+            <th style={{ width: '340px' }}>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -65,8 +65,8 @@ export const MemberTable: React.FC<Props> = ({
               <td>
                 <div style={{ 
                   display: 'flex', 
-                  gap: '5px', 
-                  flexWrap: 'wrap',
+                  gap: '6px', 
+                  flexWrap: 'nowrap',
                   alignItems: 'center'
                 }}>
                   <Button 
@@ -76,7 +76,8 @@ export const MemberTable: React.FC<Props> = ({
                     style={{ 
                       padding: '4px 10px', 
                       fontSize: '12px',
-                      minWidth: '62px'
+                      minWidth: '55px',
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     Edit
@@ -89,7 +90,8 @@ export const MemberTable: React.FC<Props> = ({
                     style={{ 
                       padding: '4px 10px', 
                       fontSize: '12px',
-                      minWidth: '92px'
+                      minWidth: '95px',
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     Contributions
@@ -111,7 +113,7 @@ export const MemberTable: React.FC<Props> = ({
                         display: 'flex',
                         alignItems: 'center',
                         gap: '4px',
-                        minWidth: '112px'
+                        whiteSpace: 'nowrap'
                       }}
                       onMouseOver={(e) => {
                         e.currentTarget.style.backgroundColor = 'rgba(74, 222, 128, 0.1)';
@@ -123,7 +125,7 @@ export const MemberTable: React.FC<Props> = ({
                       }}
                     >
                       <PlusCircle size={12} />
-                      Add Contribution
+                      Add
                     </button>
                   )}
 
@@ -134,7 +136,8 @@ export const MemberTable: React.FC<Props> = ({
                     style={{ 
                       padding: '4px 10px', 
                       fontSize: '12px',
-                      minWidth: '62px'
+                      minWidth: '55px',
+                      whiteSpace: 'nowrap'
                     }}
                   >
                     Delete
