@@ -7,18 +7,22 @@ import { ContributionTable } from '../../components/tables/ContributionTable';
 
 export default function ContributionsPage() {
   const [contributions, setContributions] = useState<Contribution[]>([]);
+  const [filteredContributions, setFilteredContributions] = useState<Contribution[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingContribution, setEditingContribution] = useState<Contribution | null>(null);
-  const [showEditForm, setShowEditForm] = useState(false);
+  const [viewingContribution, setViewingContribution] = useState<Contribution | null>(null);
 
   const loadContributions = async () => {
     try {
       setLoading(true);
       const res = await fetchContributions();
-      setContributions(res.data || res || []);
+      const data = res.data || res || [];
+      setContributions(data);
+      setFilteredContributions(data);
     } catch (err: any) {
       setError('Failed to load contributions');
     } finally {
@@ -26,19 +30,40 @@ export default function ContributionsPage() {
     }
   };
 
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredContributions(contributions);
+      return;
+    }
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = contributions.filter(contrib =>
+      contrib.contributionType?.toLowerCase().includes(term) ||
+      contrib.member?.firstName?.toLowerCase().includes(term) ||
+      contrib.member?.lastName?.toLowerCase().includes(term) ||
+      contrib.notes?.toLowerCase().includes(term)
+    );
+    setFilteredContributions(filtered);
+  }, [searchTerm, contributions]);
+
   const handleContributionAdded = () => {
     setSuccess('Contribution recorded successfully');
     setTimeout(() => setSuccess(''), 3000);
     setShowAddForm(false);
+    setEditingContribution(null);
     loadContributions();
   };
 
-  const handleContributionUpdated = () => {
-    setSuccess('Contribution updated successfully');
-    setTimeout(() => setSuccess(''), 3000);
-    setShowEditForm(false);
-    setEditingContribution(null);
-    loadContributions();
+  const handleEdit = (contribution: Contribution) => {
+    setEditingContribution(contribution);
+    setShowAddForm(true);
+  };
+
+  const handleView = (contribution: Contribution) => {
+    setViewingContribution(contribution);
+  };
+
+  const closeViewModal = () => {
+    setViewingContribution(null);
   };
 
   const handleDelete = async (id: number) => {
@@ -53,15 +78,8 @@ export default function ContributionsPage() {
     }
   };
 
-  const handleEdit = (contribution: Contribution) => {
-    setEditingContribution(contribution);
-    setShowEditForm(true);
-    setShowAddForm(false);
-  };
-
   const handleCancelForm = () => {
     setShowAddForm(false);
-    setShowEditForm(false);
     setEditingContribution(null);
   };
 
@@ -89,7 +107,6 @@ export default function ContributionsPage() {
         <button 
           onClick={() => {
             setShowAddForm(!showAddForm);
-            setShowEditForm(false);
             setEditingContribution(null);
           }}
           style={{
@@ -106,6 +123,32 @@ export default function ContributionsPage() {
         >
           {showAddForm ? 'Cancel' : '+ Record New Contribution'}
         </button>
+      </div>
+
+      <div style={{ 
+        display: 'flex', 
+        gap: '12px', 
+        marginBottom: '20px', 
+        flexWrap: 'wrap',
+        flexDirection: window.innerWidth < 500 ? 'column' : 'row'
+      }}>
+        <input
+          type="text"
+          placeholder="Search by type, member name or notes..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px 16px',
+            backgroundColor: '#27272a',
+            border: '1px solid #3f3f46',
+            borderRadius: '8px',
+            color: '#f1f5f9',
+            fontSize: '14px',
+            boxSizing: 'border-box'
+          }}
+        />
       </div>
 
       {error && (
@@ -134,31 +177,111 @@ export default function ContributionsPage() {
         </div>
       )}
 
-      {showAddForm && <AddContributionForm onContributionAdded={handleContributionAdded} onCancel={handleCancelForm} />}
+      {showAddForm && <AddContributionForm onContributionAdded={handleContributionAdded} onCancel={handleCancelForm} isEdit={!!editingContribution} initialData={editingContribution} />}
 
-      {showEditForm && editingContribution && (
-        <AddContributionForm 
-          onContributionAdded={handleContributionUpdated} 
-          initialData={editingContribution} 
-          isEdit={true} 
-          onCancel={handleCancelForm}
-        />
-      )}
-
-      {!showAddForm && !showEditForm && (
+      {!showAddForm && (
         <>
           {loading ? (
             <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading contributions...</div>
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <ContributionTable 
-                contributions={contributions} 
+                contributions={filteredContributions} 
                 onDelete={handleDelete} 
                 onEdit={handleEdit}
+                onView={handleView}
               />
             </div>
           )}
         </>
+      )}
+
+      {viewingContribution && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          padding: '16px'
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto' }}>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center', 
+              marginBottom: '24px',
+              borderBottom: '1px solid #27272a',
+              paddingBottom: '16px',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Contribution Details</h3>
+              <button 
+                onClick={closeViewModal}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid #f87171',
+                  color: '#f87171',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }}
+              >
+                Close
+              </button>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa', width: '140px' }}>Member Name</td>
+                    <td style={{ color: '#f1f5f9' }}>
+                      <strong>{viewingContribution.member?.firstName} {viewingContribution.member?.lastName}</strong>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Amount</td>
+                    <td style={{ fontWeight: '600', color: '#4ade80' }}>
+                      KES {Number(viewingContribution.amount).toLocaleString()}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Date</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingContribution.date ? new Date(viewingContribution.date).toLocaleDateString() : '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Type</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingContribution.contributionType}</td>
+                  </tr>
+                  {viewingContribution.notes && (
+                    <tr>
+                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
+                      <td style={{ color: '#f1f5f9' }}>{viewingContribution.notes}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingContribution.createdAt ? new Date(viewingContribution.createdAt).toLocaleDateString() : '-'}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

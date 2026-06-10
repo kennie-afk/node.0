@@ -202,17 +202,20 @@ export default function FamiliesPage() {
       )}
 
       {viewingFamily && (
-        <div style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(0,0,0,0.85)', 
-          zIndex: 2000, 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
+          zIndex: 1000,
           padding: '16px'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
@@ -223,31 +226,72 @@ export default function FamiliesPage() {
               flexWrap: 'wrap',
               gap: '12px'
             }}>
-              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>{viewingFamily.familyName}</h3>
+              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Family Details</h3>
               <button 
                 onClick={closeViewModal}
                 style={{
                   background: 'transparent',
                   border: '1px solid #f87171',
                   color: '#f87171',
-                  padding: '8px 18px',
-                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '12px'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
                 Close
               </button>
             </div>
-            <div style={{ color: '#cbd5e1', lineHeight: '1.8' }}>
-              <p><strong>Family Name:</strong> {viewingFamily.familyName}</p>
-              <p><strong>Address:</strong> {viewingFamily.address || '-'}</p>
-              <p><strong>City:</strong> {viewingFamily.city || '-'}</p>
-              <p><strong>County:</strong> {viewingFamily.county || '-'}</p>
-              <p><strong>Postal Code:</strong> {viewingFamily.postalCode || '-'}</p>
-              <p><strong>Phone:</strong> {viewingFamily.phoneNumber || '-'}</p>
-              <p><strong>Email:</strong> {viewingFamily.email || '-'}</p>
-              {viewingFamily.notes && <p><strong>Notes:</strong> {viewingFamily.notes}</p>}
+
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa', width: '140px' }}>Family Name</td>
+                    <td style={{ color: '#f1f5f9' }}><strong>{viewingFamily.familyName}</strong></td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Address</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.address || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>City</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.city || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>County</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.county || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Postal Code</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.postalCode || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Phone Number</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.phoneNumber || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Email</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingFamily.email || '-'}</td>
+                  </tr>
+                  {viewingFamily.notes && (
+                    <tr>
+                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
+                      <td style={{ color: '#f1f5f9' }}>{viewingFamily.notes}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
+                    <td style={{ color: '#f1f5f9' }}>{new Date(viewingFamily.createdAt).toLocaleDateString()}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

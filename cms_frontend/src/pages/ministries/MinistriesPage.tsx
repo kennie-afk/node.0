@@ -7,6 +7,8 @@ import { MinistryTable } from '../../components/tables/MinistryTable';
 
 export default function MinistriesPage() {
   const [ministries, setMinistries] = useState<Ministry[]>([]);
+  const [filteredMinistries, setFilteredMinistries] = useState<Ministry[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -18,13 +20,28 @@ export default function MinistriesPage() {
     try {
       setLoading(true);
       const res = await fetchMinistries();
-      setMinistries(res.data || res || []);
+      const data = res.data || res || [];
+      setMinistries(data);
+      setFilteredMinistries(data);
     } catch (err: any) {
       setError('Failed to load ministries');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredMinistries(ministries);
+      return;
+    }
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = ministries.filter(ministry =>
+      ministry.name?.toLowerCase().includes(term) ||
+      ministry.description?.toLowerCase().includes(term)
+    );
+    setFilteredMinistries(filtered);
+  }, [searchTerm, ministries]);
 
   const handleMinistryAdded = () => {
     setSuccess('Ministry saved successfully!');
@@ -106,6 +123,32 @@ export default function MinistriesPage() {
         </button>
       </div>
 
+      <div style={{ 
+        display: 'flex', 
+        gap: '12px', 
+        marginBottom: '20px', 
+        flexWrap: 'wrap',
+        flexDirection: window.innerWidth < 500 ? 'column' : 'row'
+      }}>
+        <input
+          type="text"
+          placeholder="Search by ministry name or description..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px 16px',
+            backgroundColor: '#27272a',
+            border: '1px solid #3f3f46',
+            borderRadius: '8px',
+            color: '#f1f5f9',
+            fontSize: '14px',
+            boxSizing: 'border-box'
+          }}
+        />
+      </div>
+
       {error && (
         <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>
           {error}
@@ -134,7 +177,7 @@ export default function MinistriesPage() {
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <MinistryTable 
-                ministries={ministries} 
+                ministries={filteredMinistries} 
                 onDelete={handleDelete} 
                 onEdit={handleEdit}
                 onView={handleView}
@@ -145,17 +188,20 @@ export default function MinistriesPage() {
       )}
 
       {viewingMinistry && (
-        <div style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(0,0,0,0.85)', 
-          zIndex: 2000, 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
+          zIndex: 1000,
           padding: '16px'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
@@ -166,28 +212,52 @@ export default function MinistriesPage() {
               flexWrap: 'wrap',
               gap: '12px'
             }}>
-              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>{viewingMinistry.name}</h3>
+              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Ministry Details</h3>
               <button 
                 onClick={closeViewModal}
                 style={{
                   background: 'transparent',
                   border: '1px solid #f87171',
                   color: '#f87171',
-                  padding: '8px 18px',
-                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '12px'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
                 Close
               </button>
             </div>
 
-            <div style={{ color: '#cbd5e1', lineHeight: '1.8' }}>
-              <p><strong>Description:</strong> {viewingMinistry.description || 'No description provided'}</p>
-              {viewingMinistry.leader && (
-                <p><strong>Leader:</strong> {viewingMinistry.leader.firstName} {viewingMinistry.leader.lastName}</p>
-              )}
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa', width: '140px' }}>Ministry Name</td>
+                    <td style={{ color: '#f1f5f9' }}><strong>{viewingMinistry.name}</strong></td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Description</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingMinistry.description || '-'}</td>
+                  </tr>
+                  {viewingMinistry.leader && (
+                    <tr>
+                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Leader</td>
+                      <td style={{ color: '#f1f5f9' }}>{viewingMinistry.leader.firstName} {viewingMinistry.leader.lastName}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingMinistry.createdAt ? new Date(viewingMinistry.createdAt).toLocaleDateString() : '-'}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

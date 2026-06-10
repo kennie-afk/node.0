@@ -7,6 +7,8 @@ import { SmallGroupTable } from '../../components/tables/SmallGroupTable';
 
 export default function SmallGroupsPage() {
   const [smallGroups, setSmallGroups] = useState<SmallGroup[]>([]);
+  const [filteredGroups, setFilteredGroups] = useState<SmallGroup[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -18,13 +20,29 @@ export default function SmallGroupsPage() {
     try {
       setLoading(true);
       const res = await fetchSmallGroups();
-      setSmallGroups(res.data || res || []);
+      const data = res.data || res || [];
+      setSmallGroups(data);
+      setFilteredGroups(data);
     } catch (err: any) {
       setError('Failed to load small groups');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredGroups(smallGroups);
+      return;
+    }
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = smallGroups.filter(group =>
+      group.name?.toLowerCase().includes(term) ||
+      group.description?.toLowerCase().includes(term) ||
+      group.meetingLocation?.toLowerCase().includes(term)
+    );
+    setFilteredGroups(filtered);
+  }, [searchTerm, smallGroups]);
 
   const handleSmallGroupAdded = () => {
     setSuccess('Small Group saved successfully!');
@@ -106,6 +124,32 @@ export default function SmallGroupsPage() {
         </button>
       </div>
 
+      <div style={{ 
+        display: 'flex', 
+        gap: '12px', 
+        marginBottom: '20px', 
+        flexWrap: 'wrap',
+        flexDirection: window.innerWidth < 500 ? 'column' : 'row'
+      }}>
+        <input
+          type="text"
+          placeholder="Search by group name, description or location..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px 16px',
+            backgroundColor: '#27272a',
+            border: '1px solid #3f3f46',
+            borderRadius: '8px',
+            color: '#f1f5f9',
+            fontSize: '14px',
+            boxSizing: 'border-box'
+          }}
+        />
+      </div>
+
       {error && (
         <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>
           {error}
@@ -134,7 +178,7 @@ export default function SmallGroupsPage() {
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <SmallGroupTable 
-                smallGroups={smallGroups} 
+                smallGroups={filteredGroups} 
                 onDelete={handleDelete} 
                 onEdit={handleEdit}
                 onView={handleView}
@@ -145,17 +189,20 @@ export default function SmallGroupsPage() {
       )}
 
       {viewingGroup && (
-        <div style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(0,0,0,0.85)', 
-          zIndex: 2000, 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
+          zIndex: 1000,
           padding: '16px'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
@@ -166,34 +213,78 @@ export default function SmallGroupsPage() {
               flexWrap: 'wrap',
               gap: '12px'
             }}>
-              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>{viewingGroup.name}</h3>
+              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Small Group Details</h3>
               <button 
                 onClick={closeViewModal}
                 style={{
                   background: 'transparent',
                   border: '1px solid #f87171',
                   color: '#f87171',
-                  padding: '8px 18px',
-                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '12px'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
                 Close
               </button>
             </div>
 
-            <div style={{ color: '#cbd5e1', lineHeight: '1.8' }}>
-              <p><strong>Ministry:</strong> {viewingGroup.parentMinistry?.name || viewingGroup.ministry?.name || 'N/A'}</p>
-              {viewingGroup.leader && (
-                <p><strong>Leader:</strong> {viewingGroup.leader.firstName} {viewingGroup.leader.lastName}</p>
-              )}
-              {viewingGroup.meetingDay && <p><strong>Meeting Day:</strong> {viewingGroup.meetingDay}</p>}
-              {viewingGroup.meetingTime && <p><strong>Meeting Time:</strong> {viewingGroup.meetingTime}</p>}
-              {viewingGroup.meetingLocation && <p><strong>Location:</strong> {viewingGroup.meetingLocation}</p>}
-              {viewingGroup.description && <p><strong>Description:</strong> {viewingGroup.description}</p>}
-              {viewingGroup.notes && <p><strong>Notes:</strong> {viewingGroup.notes}</p>}
-              <p><strong>Status:</strong> {viewingGroup.isActive ? 'Active' : 'Inactive'}</p>
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa', width: '140px' }}>Group Name</td>
+                    <td style={{ color: '#f1f5f9' }}><strong>{viewingGroup.name}</strong></td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Ministry</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingGroup.parentMinistry?.name || viewingGroup.ministry?.name || 'N/A'}</td>
+                  </tr>
+                  {viewingGroup.leader && (
+                    <tr>
+                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Leader</td>
+                      <td style={{ color: '#f1f5f9' }}>{viewingGroup.leader.firstName} {viewingGroup.leader.lastName}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Meeting Day</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingGroup.meetingDay || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Meeting Time</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingGroup.meetingTime || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Meeting Location</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingGroup.meetingLocation || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Description</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingGroup.description || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingGroup.notes || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Status</td>
+                    <td style={{ color: viewingGroup.isActive ? '#4ade80' : '#f87171' }}>
+                      {viewingGroup.isActive ? 'Active' : 'Inactive'}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingGroup.createdAt ? new Date(viewingGroup.createdAt).toLocaleDateString() : '-'}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>

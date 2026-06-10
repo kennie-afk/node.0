@@ -7,6 +7,8 @@ import { SermonTable } from '../../components/tables/SermonTable';
 
 export default function SermonsPage() {
   const [sermons, setSermons] = useState<Sermon[]>([]);
+  const [filteredSermons, setFilteredSermons] = useState<Sermon[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -18,13 +20,29 @@ export default function SermonsPage() {
     try {
       setLoading(true);
       const res = await fetchSermons();
-      setSermons(res.data || res || []);
+      const data = res.data || res || [];
+      setSermons(data);
+      setFilteredSermons(data);
     } catch (err: any) {
       setError('Failed to load sermons');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!searchTerm.trim()) {
+      setFilteredSermons(sermons);
+      return;
+    }
+    const term = searchTerm.toLowerCase().trim();
+    const filtered = sermons.filter(sermon =>
+      sermon.title?.toLowerCase().includes(term) ||
+      sermon.passageReference?.toLowerCase().includes(term) ||
+      sermon.summary?.toLowerCase().includes(term)
+    );
+    setFilteredSermons(filtered);
+  }, [searchTerm, sermons]);
 
   const handleSermonAdded = () => {
     setSuccess('Sermon saved successfully!');
@@ -106,6 +124,32 @@ export default function SermonsPage() {
         </button>
       </div>
 
+      <div style={{ 
+        display: 'flex', 
+        gap: '12px', 
+        marginBottom: '20px', 
+        flexWrap: 'wrap',
+        flexDirection: window.innerWidth < 500 ? 'column' : 'row'
+      }}>
+        <input
+          type="text"
+          placeholder="Search by title, passage or summary..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={{
+            flex: 1,
+            minWidth: '200px',
+            padding: '12px 16px',
+            backgroundColor: '#27272a',
+            border: '1px solid #3f3f46',
+            borderRadius: '8px',
+            color: '#f1f5f9',
+            fontSize: '14px',
+            boxSizing: 'border-box'
+          }}
+        />
+      </div>
+
       {error && (
         <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>
           {error}
@@ -134,7 +178,7 @@ export default function SermonsPage() {
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <SermonTable 
-                sermons={sermons} 
+                sermons={filteredSermons} 
                 onDelete={handleDelete} 
                 onEdit={handleEdit}
                 onView={handleView}
@@ -145,17 +189,20 @@ export default function SermonsPage() {
       )}
 
       {viewingSermon && (
-        <div style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(0,0,0,0.85)', 
-          zIndex: 2000, 
-          display: 'flex', 
-          alignItems: 'center', 
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(0, 0, 0, 0.85)',
+          display: 'flex',
+          alignItems: 'center',
           justifyContent: 'center',
+          zIndex: 1000,
           padding: '16px'
         }}>
-          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto', position: 'relative' }}>
+          <div className="card" style={{ width: '100%', maxWidth: '620px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ 
               display: 'flex', 
               justifyContent: 'space-between', 
@@ -166,37 +213,92 @@ export default function SermonsPage() {
               flexWrap: 'wrap',
               gap: '12px'
             }}>
-              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>{viewingSermon.title}</h3>
+              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Sermon Details</h3>
               <button 
                 onClick={closeViewModal}
                 style={{
                   background: 'transparent',
                   border: '1px solid #f87171',
                   color: '#f87171',
-                  padding: '8px 18px',
-                  borderRadius: '8px',
+                  padding: '6px 14px',
+                  borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '14px'
+                  fontSize: '12px'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
                 }}
               >
                 Close
               </button>
             </div>
 
-            <div style={{ color: '#cbd5e1', lineHeight: '1.8' }}>
-              <p><strong>Date Preached:</strong> {new Date(viewingSermon.datePreached).toLocaleDateString()}</p>
-              {viewingSermon.speaker && (
-                <p><strong>Speaker:</strong> {viewingSermon.speaker.firstName} {viewingSermon.speaker.lastName}</p>
-              )}
-              {viewingSermon.guestSpeakerName && (
-                <p><strong>Guest Speaker:</strong> {viewingSermon.guestSpeakerName}</p>
-              )}
-              {viewingSermon.passageReference && <p><strong>Passage:</strong> {viewingSermon.passageReference}</p>}
-              {viewingSermon.content && <p><strong>Content:</strong> {viewingSermon.content}</p>}
-              {viewingSermon.summary && <p><strong>Summary:</strong> {viewingSermon.summary}</p>}
-              {viewingSermon.audioUrl && <p><strong>Audio:</strong> <a href={viewingSermon.audioUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ec4899' }}>Listen</a></p>}
-              {viewingSermon.videoUrl && <p><strong>Video:</strong> <a href={viewingSermon.videoUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ec4899' }}>Watch</a></p>}
-              {viewingSermon.notes && <p><strong>Notes:</strong> {viewingSermon.notes}</p>}
+            <div style={{ overflowX: 'auto' }}>
+              <table className="table" style={{ width: '100%' }}>
+                <tbody>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa', width: '140px' }}>Title</td>
+                    <td style={{ color: '#f1f5f9' }}><strong>{viewingSermon.title}</strong></td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Date Preached</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingSermon.datePreached ? new Date(viewingSermon.datePreached).toLocaleDateString() : '-'}</td>
+                  </tr>
+                  {viewingSermon.speaker && (
+                    <tr>
+                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Speaker</td>
+                      <td style={{ color: '#f1f5f9' }}>{viewingSermon.speaker.firstName} {viewingSermon.speaker.lastName}</td>
+                    </tr>
+                  )}
+                  {viewingSermon.guestSpeakerName && (
+                    <tr>
+                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Guest Speaker</td>
+                      <td style={{ color: '#f1f5f9' }}>{viewingSermon.guestSpeakerName}</td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Passage Reference</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingSermon.passageReference || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Summary</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingSermon.summary || '-'}</td>
+                  </tr>
+                  {viewingSermon.content && (
+                    <tr>
+                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Content</td>
+                      <td style={{ color: '#f1f5f9' }}>{viewingSermon.content}</td>
+                    </tr>
+                  )}
+                  {viewingSermon.audioUrl && (
+                    <tr>
+                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Audio</td>
+                      <td style={{ color: '#f1f5f9' }}>
+                        <a href={viewingSermon.audioUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ec4899' }}>Listen</a>
+                      </td>
+                    </tr>
+                  )}
+                  {viewingSermon.videoUrl && (
+                    <tr>
+                      <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Video</td>
+                      <td style={{ color: '#f1f5f9' }}>
+                        <a href={viewingSermon.videoUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ec4899' }}>Watch</a>
+                      </td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingSermon.notes || '-'}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
+                    <td style={{ color: '#f1f5f9' }}>{viewingSermon.createdAt ? new Date(viewingSermon.createdAt).toLocaleDateString() : '-'}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
