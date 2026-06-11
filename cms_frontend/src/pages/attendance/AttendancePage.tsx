@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
 import { fetchAttendance, deleteAttendance } from '../../api/attendanceApi';
 import BackButton from '../../components/common/BackButton';
 import AddAttendanceForm from '../../components/forms/AddAttendanceForm';
 import { AttendanceTable } from '../../components/tables/AttendanceTable';
 
 export default function AttendancePage() {
-  const location = useLocation();
   const [attendance, setAttendance] = useState<any[]>([]);
   const [filteredAttendance, setFilteredAttendance] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
