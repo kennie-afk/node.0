@@ -1,8 +1,8 @@
-const BASE_URL = 'https://church-cms-backend.onrender.com';
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 const API_BASE = `${BASE_URL}/auth`;
 
 export const login = async (email: string, password: string) => {
-  console.log('Attempting login to:', `${API_BASE}/login`);   // For debugging
+  console.log('Attempting login to:', `${API_BASE}/login`);  
 
   const res = await fetch(`${API_BASE}/login`, {
     method: 'POST',
