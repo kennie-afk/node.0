@@ -1,88 +1,72 @@
 import db from '@models';
-import { Op } from 'sequelize';
-import { NotFoundError, BadRequestError, ConflictError } from '../utils/errors';
+import { createCrudService } from '../common/crud-service';
+import { TenantRepository } from '../common/tenant-repository';
+import { Page, Pagination } from '../common/pagination';
+import { BadRequestError } from '../utils/errors';
 
-const MinistryDbModel = db.Ministry;
-const MemberDbModel = db.Member;
-const MinistryMemberDbModel = db.MinistryMember;
+const service = createCrudService<any>(db.Ministry, 'Ministry', {
+  order: [['name', 'ASC'], ['id', 'ASC']]
+});
 
-export const createMinistry = async (data: any) => {
-  const { leaderId, ...rest } = data;
+const memberships = new TenantRepository<any>(db.MinistryMember, 'Ministry membership');
+const members = new TenantRepository<any>(db.Member, 'Member');
 
-  if (leaderId) {
-    const leader = await MemberDbModel.findByPk(leaderId);
-    if (!leader) throw new NotFoundError(`Leader with ID ${leaderId} not found.`);
+export const repository = service.repository;
+
+export const createMinistry = service.create;
+export const getAllMinistries = service.list;
+export const getMinistryById = service.findById;
+export const updateMinistry = service.update;
+export const deleteMinistry = service.remove;
+
+async function assertBothInChurch(groupId: number, memberId: number): Promise<void> {
+  await service.findByIdOrFail(groupId);
+  if (!(await members.exists({ id: memberId }))) {
+    throw new BadRequestError('That member does not belong to this church.');
+  }
+}
+
+export const addMemberToMinistry = async (
+  groupId: number,
+  memberId: number,
+  attributes: Record<string, unknown> = {}
+) => {
+  await assertBothInChurch(groupId, memberId);
+
+  const existing = await memberships.findOne({ ministryId: groupId, memberId });
+  if (existing) {
+    throw new BadRequestError('That member is already in this group.');
   }
 
-  const newMinistry = await MinistryDbModel.create({ leaderId, ...rest });
+  return memberships.create({ ...attributes, ministryId: groupId, memberId });
+};
 
-  return await MinistryDbModel.findByPk(newMinistry.id, {
-    include: [{ model: MemberDbModel, as: 'leader' }]
+export const removeMemberFromMinistry = async (
+  groupId: number,
+  memberId: number
+): Promise<void> => {
+  await service.findByIdOrFail(groupId);
+
+  const membership = await memberships.findOne({ ministryId: groupId, memberId });
+  if (!membership) {
+    throw new BadRequestError('That member is not in this group.');
+  }
+
+  await membership.destroy();
+};
+
+export const getMembersOfMinistry = async (
+  groupId: number,
+  pagination: Pagination
+): Promise<Page<any>> => {
+  await service.findByIdOrFail(groupId);
+
+  return memberships.list({
+    pagination,
+    where: { ministryId: groupId },
+    include: [{ model: db.Member, as: 'member' }],
+    order: [['memberId', 'ASC']]
   });
 };
 
-export const getAllMinistries = async (filters: any, limit: number, offset: number) => {
-  const where: any = {};
-  if (filters.name) where.name = { [Op.like]: `%${filters.name}%` };
-  if (filters.leaderId) where.leaderId = filters.leaderId;
-  if (filters.isActive !== undefined) where.isActive = filters.isActive;
-
-  const { count, rows } = await MinistryDbModel.findAndCountAll({
-    where,
-    limit,
-    offset,
-    include: [{ model: MemberDbModel, as: 'leader' }]
-  });
-
-  return { ministries: rows, totalCount: count };
-};
-
-export const getMinistryById = async (id: number) => {
-  return await MinistryDbModel.findByPk(id, {
-    include: [{ model: MemberDbModel, as: 'leader' }]
-  });
-};
-
-export const updateMinistry = async (id: number, data: any) => {
-  const [updatedRows] = await MinistryDbModel.update(data, { where: { id } });
-  if (updatedRows === 0) return null;
-  return await MinistryDbModel.findByPk(id);
-};
-
-export const deleteMinistry = async (id: number) => {
-  return await MinistryDbModel.destroy({ where: { id } });
-};
-
-export const addMemberToMinistry = async (ministryId: number, memberId: number, role?: string) => {
-  const ministry = await MinistryDbModel.findByPk(ministryId);
-  if (!ministry) throw new NotFoundError('Ministry not found.');
-
-  const member = await MemberDbModel.findByPk(memberId);
-  if (!member) throw new NotFoundError('Member not found.');
-
-  const effectiveRole = role || 'Member';
-
-  const [ministryMember] = await MinistryMemberDbModel.findOrCreate({
-    where: { ministryId, memberId },
-    defaults: { ministryId, memberId, role: effectiveRole, startDate: new Date() }
-  });
-
-  return ministryMember;
-};
-
-export const removeMemberFromMinistry = async (ministryId: number, memberId: number) => {
-  return await MinistryMemberDbModel.destroy({ where: { ministryId, memberId } });
-};
-
-export const getMembersOfMinistry = async (ministryId: number) => {
-  const ministry = await MinistryDbModel.findByPk(ministryId, {
-    include: [{
-      model: MemberDbModel,
-      as: 'members',
-      through: { attributes: ['role', 'startDate'] }
-    }]
-  });
-
-  if (!ministry) throw new NotFoundError('Ministry not found.');
-  return ministry.members || [];
-};
+export default service;

@@ -1,6 +1,7 @@
 import { Sequelize, DataTypes } from 'sequelize';
-import dotenv from 'dotenv';
+import { env, isProduction } from '../config/env';
 
+import churchInit from '../churches/church.model';
 import announcementInit from '@announcements/announcement.model';
 import userInit from '@users/user.model';
 import familyInit from '@families/family.model';
@@ -14,19 +15,24 @@ import smallGroupInit from '@small_groups/small_group.model';
 import ministryMemberInit from '@ministries/ministry_member.model';
 import smallGroupMemberInit from '@small_groups/small_group_member.model';
 
-dotenv.config();
+const isSqlite = env.DATABASE_URL.startsWith('sqlite');
 
-const sequelize = new Sequelize(process.env.DATABASE_URL as string, {
-  dialect: 'postgres',
+const sequelize = new Sequelize(env.DATABASE_URL, {
+  dialect: isSqlite ? 'sqlite' : 'postgres',
   logging: false,
-  dialectOptions: {
-    ssl: {
-      require: true,
-      rejectUnauthorized: false
-    }
-  }
+  pool: {
+    max: isProduction ? 20 : 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  },
+  dialectOptions:
+    !isSqlite && env.DATABASE_SSL
+      ? { ssl: { require: true, rejectUnauthorized: false } }
+      : {}
 });
 
+export const Church = churchInit(sequelize) as any;
 export const Announcement = announcementInit(sequelize) as any;
 export const User = userInit(sequelize) as any;
 export const Family = familyInit(sequelize) as any;
@@ -41,6 +47,7 @@ export const MinistryMember = ministryMemberInit(sequelize, DataTypes) as any;
 export const SmallGroupMember = smallGroupMemberInit(sequelize, DataTypes) as any;
 
 const models = {
+  Church,
   Announcement,
   User,
   Family,
@@ -64,6 +71,7 @@ Object.values(models).forEach((model: any) => {
 const db = {
   sequelize,
   Sequelize,
+  Church,
   Announcement,
   User,
   Family,

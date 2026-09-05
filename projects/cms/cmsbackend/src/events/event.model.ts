@@ -2,6 +2,7 @@ import { DataTypes, Sequelize, Optional } from 'sequelize';
 import BaseModel from '../common/base.model';
 
 export interface EventAttributes {
+  churchId: number;
   id: number;
   name: string;
   description?: string | null;
@@ -17,6 +18,7 @@ export interface EventAttributes {
 export interface EventCreationAttributes extends Optional<EventAttributes, 'id' | 'description' | 'endTime' | 'location' | 'organizerUserId' | 'recurrencePattern'> {}
 
 export class Event extends BaseModel<EventAttributes, EventCreationAttributes> implements EventAttributes {
+  public churchId!: number;
   public id!: number;
   public name!: string;
   public description!: string | null;
@@ -39,6 +41,7 @@ export class Event extends BaseModel<EventAttributes, EventCreationAttributes> i
 
 export default (sequelize: Sequelize) => {
   return Event.initModel({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: true },

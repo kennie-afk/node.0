@@ -2,6 +2,7 @@ import { DataTypes, Sequelize, Optional } from 'sequelize';
 import BaseModel from '../common/base.model';
 
 export interface FamilyAttributes {
+  churchId: number;
   id: number;
   familyName: string;
   headOfFamilyMemberId?: number | null;
@@ -17,6 +18,7 @@ export interface FamilyAttributes {
 export interface FamilyCreationAttributes extends Optional<FamilyAttributes, 'id' | 'headOfFamilyMemberId'> {}
 
 export class Family extends BaseModel<FamilyAttributes, FamilyCreationAttributes> implements FamilyAttributes {
+  public churchId!: number;
   public id!: number;
   public familyName!: string;
   public headOfFamilyMemberId!: number | null;
@@ -39,6 +41,7 @@ export class Family extends BaseModel<FamilyAttributes, FamilyCreationAttributes
 
 export default (sequelize: Sequelize) => {
   return Family.initModel({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
     familyName: { type: DataTypes.STRING(100), allowNull: false, unique: true },
     headOfFamilyMemberId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },

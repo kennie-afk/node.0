@@ -2,6 +2,7 @@ import { DataTypes, Sequelize, Optional } from 'sequelize';
 import BaseModel from '../common/base.model';
 
 export interface AnnouncementAttributes {
+  churchId: number;
   id: number;
   title: string;
   content: string;
@@ -15,6 +16,7 @@ export interface AnnouncementAttributes {
 export interface AnnouncementCreationAttributes extends Optional<AnnouncementAttributes, 'id' | 'publicationDate' | 'isPublished'> {}
 
 export class Announcement extends BaseModel<AnnouncementAttributes, AnnouncementCreationAttributes> implements AnnouncementAttributes {
+  public churchId!: number;
   public id!: number;
   public title!: string;
   public content!: string;
@@ -34,6 +36,7 @@ export class Announcement extends BaseModel<AnnouncementAttributes, Announcement
 
 export default (sequelize: Sequelize) => {
   return Announcement.initModel({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
     title: { type: DataTypes.STRING(255), allowNull: false },
     content: { type: DataTypes.TEXT, allowNull: false },

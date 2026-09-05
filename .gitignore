@@ -52,3 +52,4 @@ portfolios/techmara3_updated.zip
 **/.mcp.json
 .cursor/
 .aider*
+projects/**/dist/

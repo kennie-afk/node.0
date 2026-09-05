@@ -2,6 +2,7 @@ import { DataTypes, Sequelize, Optional } from 'sequelize';
 import BaseModel from '../common/base.model';
 
 export interface MinistryAttributes {
+  churchId: number;
   id: number;
   name: string;
   description?: string | null;
@@ -12,6 +13,7 @@ export interface MinistryAttributes {
 export interface MinistryCreationAttributes extends Optional<MinistryAttributes, 'id' | 'description' | 'leaderId' | 'isActive'> {}
 
 export class Ministry extends BaseModel<MinistryAttributes, MinistryCreationAttributes> implements MinistryAttributes {
+  public churchId!: number;
   public id!: number;
   public name!: string;
   public description!: string | null;
@@ -30,6 +32,7 @@ export class Ministry extends BaseModel<MinistryAttributes, MinistryCreationAttr
 
 export default (sequelize: Sequelize) => {
   return Ministry.initModel({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
     name: { type: DataTypes.STRING(255), allowNull: false, unique: true },
     description: { type: DataTypes.TEXT, allowNull: true },

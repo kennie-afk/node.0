@@ -2,6 +2,7 @@ import { DataTypes, Sequelize, Optional } from 'sequelize';
 import BaseModel from '../common/base.model';
 
 export interface ContributionAttributes {
+  churchId: number;
   id: number;
   memberId?: number | null;
   contributorName?: string | null;
@@ -17,6 +18,7 @@ export interface ContributionCreationAttributes extends Optional<ContributionAtt
   'id' | 'memberId' | 'contributorName' | 'paymentMethod' | 'transactionId' | 'notes'> {}
 
 export class Contribution extends BaseModel<ContributionAttributes, ContributionCreationAttributes> implements ContributionAttributes {
+  public churchId!: number;
   public id!: number;
   public memberId!: number | null;
   public contributorName!: string | null;
@@ -40,6 +42,7 @@ export class Contribution extends BaseModel<ContributionAttributes, Contribution
 
 export default (sequelize: Sequelize) => {
   return Contribution.initModel({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
     memberId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     contributorName: { type: DataTypes.STRING(255), allowNull: true },

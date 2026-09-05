@@ -1,28 +1,25 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import * as authService from './auth.service';
+import { UnauthorizedError } from '../utils/errors';
 
-export const login = async (req: Request, res: Response): Promise<Response> => {
-  const { email, password } = req.body;
-
+export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const token = await authService.loginUser(email, password);
-    return res.status(200).json({ token });
-  } catch (error: any) {
-    return res.status(401).json({ message: error.message || 'Invalid credentials' });
+    const { email, password } = req.body;
+    const session = await authService.loginUser(email, password);
+    res.status(200).json(session);
+  } catch (error) {
+    next(error);
   }
 };
 
-export const getProfile = async (req: any, res: Response): Promise<Response> => {
+export const getProfile = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const userId = req.user?.id;
-
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized' });
+    if (!req.user) {
+      throw new UnauthorizedError('Unauthorized');
     }
-
-    const user = await authService.getProfile(userId);
-    return res.status(200).json(user);
-  } catch (error: any) {
-    return res.status(500).json({ message: error.message || 'Failed to retrieve user profile' });
+    const user = await authService.getProfile(req.user.id, req.user.churchId);
+    res.status(200).json(user);
+  } catch (error) {
+    next(error);
   }
 };

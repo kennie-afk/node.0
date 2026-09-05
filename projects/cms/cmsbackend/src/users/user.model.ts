@@ -2,6 +2,7 @@ import { DataTypes, Sequelize, Optional } from 'sequelize';
 import BaseModel from '../common/base.model';
 
 export interface UserAttributes {
+  churchId: number;
   id: number;
   username: string;
   email: string;
@@ -12,6 +13,7 @@ export interface UserAttributes {
 export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'isAdmin'> {}
 
 export class User extends BaseModel<UserAttributes, UserCreationAttributes> implements UserAttributes {
+  public churchId!: number;
   public id!: number;
   public username!: string;
   public email!: string;
@@ -29,6 +31,7 @@ export class User extends BaseModel<UserAttributes, UserCreationAttributes> impl
 
 export default (sequelize: Sequelize) => {
   return User.initModel({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
     username: { type: DataTypes.STRING(50), allowNull: false, unique: true },
     email: { type: DataTypes.STRING(100), allowNull: false, unique: true, validate: { isEmail: true } },

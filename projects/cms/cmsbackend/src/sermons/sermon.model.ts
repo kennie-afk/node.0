@@ -2,6 +2,7 @@ import { DataTypes, Sequelize, Optional } from 'sequelize';
 import BaseModel from '../common/base.model';
 
 export interface SermonAttributes {
+  churchId: number;
   id: number;
   title: string;
   speakerMemberId?: number | null;
@@ -17,6 +18,7 @@ export interface SermonAttributes {
 export interface SermonCreationAttributes extends Optional<SermonAttributes, 'id' | 'speakerMemberId' | 'eventId' | 'passageReference' | 'summary' | 'audioUrl' | 'videoUrl' | 'notes'> {}
 
 export class Sermon extends BaseModel<SermonAttributes, SermonCreationAttributes> implements SermonAttributes {
+  public churchId!: number;
   public id!: number;
   public title!: string;
   public speakerMemberId!: number | null;
@@ -39,6 +41,7 @@ export class Sermon extends BaseModel<SermonAttributes, SermonCreationAttributes
 
 export default (sequelize: Sequelize) => {
   return Sermon.initModel({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
     title: { type: DataTypes.STRING(255), allowNull: false },
     speakerMemberId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },

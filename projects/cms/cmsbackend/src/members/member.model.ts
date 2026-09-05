@@ -2,6 +2,7 @@ import { DataTypes, Sequelize, Optional } from 'sequelize';
 import BaseModel from '../common/base.model';
 
 export interface MemberAttributes {
+  churchId: number;
   id: number;
   firstName: string;
   lastName: string;
@@ -25,6 +26,7 @@ export interface MemberAttributes {
 export interface MemberCreationAttributes extends Optional<MemberAttributes, 'id' | 'middleName' | 'gender' | 'dateOfBirth' | 'email' | 'phoneNumber' | 'address' | 'city' | 'county' | 'postalCode' | 'baptismDate' | 'familyId' | 'profilePictureUrl' | 'notes'> {}
 
 export class Member extends BaseModel<MemberAttributes, MemberCreationAttributes> implements MemberAttributes {
+  public churchId!: number;
   public id!: number;
   public firstName!: string;
   public lastName!: string;
@@ -59,6 +61,7 @@ export class Member extends BaseModel<MemberAttributes, MemberCreationAttributes
 
 export default (sequelize: Sequelize) => {
   return Member.initModel({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
     firstName: { type: DataTypes.STRING(100), allowNull: false },
     lastName: { type: DataTypes.STRING(100), allowNull: false },

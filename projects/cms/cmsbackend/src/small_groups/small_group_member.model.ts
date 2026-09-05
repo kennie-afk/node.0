@@ -1,6 +1,7 @@
 import { DataTypes, Model, Optional, Sequelize } from 'sequelize';
 
 export interface SmallGroupMemberAttributes {
+  churchId: number;
   smallGroupId: number;
   memberId: number;
   role?: string | null;
@@ -11,6 +12,7 @@ export interface SmallGroupMemberAttributes {
 export interface SmallGroupMemberCreationAttributes extends Optional<SmallGroupMemberAttributes, 'role' | 'startDate' | 'endDate'> {}
 
 export class SmallGroupMember extends Model<SmallGroupMemberAttributes, SmallGroupMemberCreationAttributes> implements SmallGroupMemberAttributes {
+  public churchId!: number;
   public smallGroupId!: number;
   public memberId!: number;
   public role?: string | null;
@@ -25,6 +27,7 @@ export class SmallGroupMember extends Model<SmallGroupMemberAttributes, SmallGro
 
 export default (sequelize: Sequelize, DataTypes: any) => {
   SmallGroupMember.init({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     smallGroupId: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,

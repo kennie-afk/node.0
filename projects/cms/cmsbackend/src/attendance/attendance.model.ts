@@ -2,6 +2,7 @@ import { DataTypes, Sequelize, Optional } from 'sequelize';
 import BaseModel from '../common/base.model';
 
 export interface AttendanceAttributes {
+  churchId: number;
   id: number;
   memberId?: number | null;
   guestName?: string | null;
@@ -15,6 +16,7 @@ export interface AttendanceAttributes {
 export interface AttendanceCreationAttributes extends Optional<AttendanceAttributes, 'id' | 'memberId' | 'guestName' | 'eventId' | 'sermonId' | 'notes'> {}
 
 export class Attendance extends BaseModel<AttendanceAttributes, AttendanceCreationAttributes> implements AttendanceAttributes {
+  public churchId!: number;
   public id!: number;
   public memberId!: number | null;
   public guestName!: string | null;
@@ -36,6 +38,7 @@ export class Attendance extends BaseModel<AttendanceAttributes, AttendanceCreati
 
 export default (sequelize: Sequelize) => {
   return Attendance.initModel({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
     memberId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     guestName: { type: DataTypes.STRING(255), allowNull: true },

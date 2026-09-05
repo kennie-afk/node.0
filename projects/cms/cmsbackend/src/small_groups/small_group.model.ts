@@ -2,6 +2,7 @@ import { DataTypes, Sequelize, Optional } from 'sequelize';
 import BaseModel from '../common/base.model';
 
 export interface SmallGroupAttributes {
+  churchId: number;
   id: number;
   name: string;
   description?: string | null;
@@ -16,6 +17,7 @@ export interface SmallGroupAttributes {
 export interface SmallGroupCreationAttributes extends Optional<SmallGroupAttributes, 'id' | 'description' | 'leaderId' | 'meetingDay' | 'meetingTime' | 'meetingLocation' | 'isActive'> {}
 
 export class SmallGroup extends BaseModel<SmallGroupAttributes, SmallGroupCreationAttributes> implements SmallGroupAttributes {
+  public churchId!: number;
   public id!: number;
   public name!: string;
   public description!: string | null;
@@ -38,6 +40,7 @@ export class SmallGroup extends BaseModel<SmallGroupAttributes, SmallGroupCreati
 
 export default (sequelize: Sequelize) => {
   return SmallGroup.initModel({
+    churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
     name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: true },
