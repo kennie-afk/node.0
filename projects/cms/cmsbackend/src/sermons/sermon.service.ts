@@ -3,7 +3,7 @@ import { Sermon } from './sermon.model';
 import { createCrudService } from '../common/crud-service';
 
 const service = createCrudService<Sermon>(db.Sermon, 'Sermon', {
-  order: [['date', 'DESC'], ['id', 'ASC']]
+  order: [['datePreached', 'DESC'], ['id', 'ASC']]
 });
 
 export const repository = service.repository;

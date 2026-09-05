@@ -3,7 +3,7 @@ import { Announcement } from './announcement.model';
 import { createCrudService } from '../common/crud-service';
 
 const service = createCrudService<Announcement>(db.Announcement, 'Announcement', {
-  order: [['createdAt', 'DESC'], ['id', 'ASC']]
+  order: [['publicationDate', 'DESC'], ['id', 'ASC']]
 });
 
 export const repository = service.repository;

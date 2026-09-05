@@ -7,6 +7,7 @@ const TENANT_TABLES = [
   'events',
   'announcements',
   'sermons',
+  'contribution',
   'contributions',
   'attendance',
   'ministries',
@@ -34,7 +35,16 @@ module.exports = {
       defaultChurchId = inserted[0].id;
     }
 
+    const [present] = await queryInterface.sequelize.query(
+      "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
+    );
+    const presentTables = new Set(present.map((row) => row.tablename));
+
     for (const table of TENANT_TABLES) {
+      if (!presentTables.has(table)) {
+        continue;
+      }
+
       const description = await queryInterface.describeTable(table);
       if (description.church_id) {
         continue;

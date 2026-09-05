@@ -6,7 +6,6 @@ import { authenticateToken } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.get('/test', (req, res) => res.json({ message: 'Auth route works!' }));
 
 router.post('/login', validate(loginUserSchema), login);
 router.get('/profile', authenticateToken, getProfile);

@@ -47,9 +47,10 @@ export default (sequelize: Sequelize) => {
     memberId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     contributorName: { type: DataTypes.STRING(255), allowNull: true },
     amount: { type: DataTypes.DECIMAL(10, 2), allowNull: false },
-    date: { 
-      type: DataTypes.DATE, 
-      allowNull: false 
+    date: {
+      type: DataTypes.DATE,
+      field: 'contribution_date',
+      allowNull: false
     },
     contributionType: { 
       type: DataTypes.STRING(100), 

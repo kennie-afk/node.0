@@ -13,8 +13,8 @@ import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware
 const router = Router();
 
 router.post('/', authenticateToken, authorizeAdmin, validate(createAnnouncementSchema), createAnnouncement);
-router.get('/', getAllAnnouncements);
-router.get('/:id', getAnnouncementById);
+router.get('/', authenticateToken, getAllAnnouncements);
+router.get('/:id', authenticateToken, getAnnouncementById);
 router.put('/:id', authenticateToken, authorizeAdmin, validate(updateAnnouncementSchema), updateAnnouncement);
 router.delete('/:id', authenticateToken, authorizeAdmin, deleteAnnouncement);
 
