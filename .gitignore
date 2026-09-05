@@ -53,3 +53,11 @@ portfolios/techmara3_updated.zip
 .cursor/
 .aider*
 projects/**/dist/
+
+# Personal portfolio sites and brand sites - kept local, never published
+portfolios/
+kennedy-portfolio/
+techmara3/
+Portfolio_Website/
+Portfolio-website2/
+portfolio_website/
