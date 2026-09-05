@@ -81,8 +81,23 @@ Use that for `JWT_SECRET`, set a `POSTGRES_PASSWORD`, then:
 
 ```
 docker compose up -d
+npm run migrate
 npm test
 ```
+
+### The database user matters
+
+Migrations run as the owner. The application must not. A superuser bypasses
+row level security entirely, which would leave the tenant policies decorative
+while looking correct in a code review, so migration 0004 creates
+`forecourt_app` as `NOSUPERUSER NOBYPASSRLS` and the API checks its own role
+at boot: it warns in development and refuses to start in production if the
+connected user can bypass RLS.
+
+The Daraja webhook has to find which organisation a till belongs to before it
+knows the organisation, which no tenant-scoped query can do. `resolve_till` is
+a `SECURITY DEFINER` function granted only to the application role, so that is
+the single deliberate hole rather than an accidental one.
 
 ## Not built yet
 

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { fromShillings } from '../domain/money';
+import { Cents, fromShillings } from '../domain/money';
 import { BadRequestError } from '../domain/errors';
 
 export const c2bConfirmationSchema = z.object({
@@ -18,7 +18,7 @@ export type C2bConfirmation = z.infer<typeof c2bConfirmationSchema>;
 
 export interface NormalisedPayment {
   externalRef: string;
-  amountCents: number;
+  amountCents: Cents;
   payerMsisdn: string;
   receivedAt: Date;
   shortCode: string;

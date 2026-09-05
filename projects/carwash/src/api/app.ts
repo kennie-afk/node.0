@@ -4,7 +4,8 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { env } from '../config/env';
 import { pool } from '../persistence/pool';
-import { authenticate, errorHandler, notFound, requestContext } from './middleware';
+import { errorHandler, notFound, requestContext } from './middleware';
+import routes from './routes';
 
 export function createApiApp(): Express {
   const app = express();
@@ -42,9 +43,7 @@ export function createApiApp(): Express {
     rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false })
   );
 
-  app.get('/v1/me', authenticate, (req, res) => {
-    res.status(200).json(req.principal);
-  });
+  app.use('/v1', routes);
 
   app.use(notFound);
   app.use(errorHandler);

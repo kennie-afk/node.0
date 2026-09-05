@@ -42,6 +42,22 @@ export async function withoutTenant<T>(run: (client: PoolClient) => Promise<T>):
   }
 }
 
+export async function assertRlsIsEffective(): Promise<void> {
+  const { rows } = await pool.query(
+    `SELECT rolsuper OR rolbypassrls AS bypasses FROM pg_roles WHERE rolname = current_user`
+  );
+
+  if (rows[0]?.bypasses) {
+    const message =
+      'the database user bypasses row level security, so tenant isolation is not enforced; ' +
+      'connect as a NOSUPERUSER NOBYPASSRLS role such as forecourt_app';
+    if (isProduction) {
+      throw new Error(message);
+    }
+    logger.warn(message, { user: 'current' });
+  }
+}
+
 export async function closePool(): Promise<void> {
   await pool.end();
 }
