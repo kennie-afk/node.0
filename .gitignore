@@ -46,3 +46,9 @@ temp/
 config.local.json
 
 portfolios/techmara3_updated.zip
+
+# Local editor and assistant tooling — never published
+.mcp.json
+**/.mcp.json
+.cursor/
+.aider*
