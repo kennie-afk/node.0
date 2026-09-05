@@ -1,3 +1,4 @@
+import { unwrapList } from './pagination';
 import axiosInstance from './axiosInstance';
 
 export interface SmallGroup {
@@ -30,7 +31,7 @@ export interface SmallGroup {
 
 export const fetchSmallGroups = async () => {
   const response = await axiosInstance.get('/small-groups');
-  return response.data;
+  return unwrapList<SmallGroup>(response.data);
 };
 
 export const createSmallGroup = async (data: Omit<SmallGroup, 'id' | 'createdAt' | 'updatedAt'>) => {

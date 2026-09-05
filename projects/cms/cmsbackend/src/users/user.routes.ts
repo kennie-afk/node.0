@@ -13,7 +13,7 @@ import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware
 
 const router = Router();
 
-router.post('/', validate(createUserSchema), createUser);
+router.post('/', authenticateToken, authorizeAdmin, validate(createUserSchema), createUser);
 
 router.get('/', authenticateToken, authorizeAdmin, getAllUsers);
 router.get('/:id', authenticateToken, getUserById);

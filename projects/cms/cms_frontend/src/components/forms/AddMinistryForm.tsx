@@ -27,7 +27,7 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
     const loadMembers = async () => {
       try {
         const res = await fetchMembers();
-        setMembers(res.data || res || []);
+        setMembers(res);
       } catch (err) {
         console.error('Failed to load members', err);
       }

@@ -52,19 +52,19 @@ export default function DashboardPage() {
         fetchEvents()
       ]);
 
-      const announcements = annRes.data || annRes || [];
+      const announcements = annRes;
       const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
       const recentAnns = announcements.filter((a: any) => 
         a.createdAt && new Date(a.createdAt) > sixHoursAgo
       );
 
       setStats({
-        members: membersRes.data?.length || membersRes.length || 0,
-        ministries: ministriesRes.data?.length || ministriesRes.length || 0,
-        smallGroups: groupsRes.data?.length || groupsRes.length || 0,
-        sermons: sermonsRes.data?.length || sermonsRes.length || 0,
+        members: membersRes.length,
+        ministries: ministriesRes.length,
+        smallGroups: groupsRes.length,
+        sermons: sermonsRes.length,
         announcements: announcements.length,
-        events: eventsRes.data?.length || eventsRes.length || 0,
+        events: eventsRes.length,
       });
 
       setNewAnnCount(recentAnns.length);

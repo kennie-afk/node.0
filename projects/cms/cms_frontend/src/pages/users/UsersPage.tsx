@@ -20,7 +20,7 @@ export default function UsersPage() {
     try {
       setLoading(true);
       const response = await fetchUsers();
-      const data = response.data || response.users || [];
+      const data = response;
       setUsers(data);
       setFilteredUsers(data);
     } catch (err: any) {

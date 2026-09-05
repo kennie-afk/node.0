@@ -46,9 +46,9 @@ export default function AddAttendanceForm({
           fetchEvents(),
           fetchSermons(),
         ]);
-        setMembers(mRes.data || mRes || []);
-        setEvents(eRes.data || eRes || []);
-        setSermons(sRes.data || sRes || []);
+        setMembers(mRes);
+        setEvents(eRes);
+        setSermons(sRes);
       } catch (err) {
         console.error('Failed to load dropdowns', err);
       }

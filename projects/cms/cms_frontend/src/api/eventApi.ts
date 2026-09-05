@@ -1,3 +1,4 @@
+import { unwrapList } from './pagination';
 import axiosInstance from './axiosInstance';
 
 export interface Event {
@@ -13,7 +14,7 @@ export interface Event {
 
 export const fetchEvents = async () => {
   const response = await axiosInstance.get('/events');
-  return response.data;
+  return unwrapList<Event>(response.data);
 };
 
 export const createEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => {

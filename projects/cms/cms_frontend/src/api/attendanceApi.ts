@@ -1,3 +1,4 @@
+import { unwrapList } from './pagination';
 import axiosInstance from './axiosInstance';
 
 export interface Attendance {
@@ -18,7 +19,7 @@ export interface Attendance {
 
 export const fetchAttendance = async () => {
   const response = await axiosInstance.get('/attendance');
-  return response.data;
+  return unwrapList<Attendance>(response.data);
 };
 
 export const createAttendance = async (attendanceData: Omit<Attendance, 'id' | 'createdAt' | 'updatedAt'>) => {

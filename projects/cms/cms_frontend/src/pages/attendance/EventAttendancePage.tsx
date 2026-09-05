@@ -20,7 +20,7 @@ export default function EventAttendancePage() {
     try {
       setLoading(true);
       const res = await fetchAttendance();
-      const eventOnly = (res.data || res || []).filter((a: any) => a.eventId !== null);
+      const eventOnly = (res).filter((a: any) => a.eventId !== null);
       setAttendance(eventOnly);
       setFilteredAttendance(eventOnly);
     } catch (err: any) {

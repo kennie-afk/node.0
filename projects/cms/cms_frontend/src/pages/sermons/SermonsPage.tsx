@@ -20,7 +20,7 @@ export default function SermonsPage() {
     try {
       setLoading(true);
       const res = await fetchSermons();
-      const data = res.data || res || [];
+      const data = res;
       setSermons(data);
       setFilteredSermons(data);
     } catch (err: any) {

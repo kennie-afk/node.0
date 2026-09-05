@@ -37,7 +37,7 @@ export const AddFamilyForm: React.FC<Props> = ({
     const loadMembers = async () => {
       try {
         const response = await fetchMembers();
-        setMembers(response.data || response || []);
+        setMembers(response);
       } catch (err) {
         console.error("Failed to load members", err);
       }

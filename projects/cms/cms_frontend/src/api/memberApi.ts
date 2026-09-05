@@ -1,3 +1,4 @@
+import { unwrapList } from './pagination';
 import axiosInstance from './axiosInstance';
 
 export interface Member {
@@ -15,7 +16,7 @@ export interface Member {
 
 export const fetchMembers = async () => {
   const response = await axiosInstance.get('/members');
-  return response.data;
+  return unwrapList<Member>(response.data);
 };
 
 export const createMember = async (memberData: any) => {

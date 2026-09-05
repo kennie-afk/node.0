@@ -22,7 +22,7 @@ export default function AttendancePage() {
     try {
       setLoading(true);
       const res = await fetchAttendance();
-      const data = res.data || res || [];
+      const data = res;
       setAttendance(data);
       setFilteredAttendance(data);
     } catch (err: any) {

@@ -28,7 +28,7 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
     const loadMembers = async () => {
       try {
         const res = await fetchMembers();
-        setMembers(res.data || res || []);
+        setMembers(res);
       } catch (err) {
         console.error('Failed to load members', err);
       }

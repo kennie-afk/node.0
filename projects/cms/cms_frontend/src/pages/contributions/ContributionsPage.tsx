@@ -20,7 +20,7 @@ export default function ContributionsPage() {
     try {
       setLoading(true);
       const res = await fetchContributions();
-      const data = res.data || res || [];
+      const data = res;
       setContributions(data);
       setFilteredContributions(data);
     } catch (err: any) {

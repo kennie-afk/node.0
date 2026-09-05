@@ -4,10 +4,11 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 
-import { env } from './config/env';
+import { env, isTest } from './config/env';
 import { requestContext } from './middleware/request-context.middleware';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import healthRoutes from './health/health.routes';
+import churchRoutes from './churches/church.routes';
 
 import userRoutes from '@users/user.routes';
 import authRoutes from './auth/auth.routes';
@@ -52,10 +53,12 @@ export function createApp(): Express {
       windowMs: env.RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
       max: env.RATE_LIMIT_MAX,
       standardHeaders: true,
-      legacyHeaders: false
+      legacyHeaders: false,
+      skip: () => isTest
     })
   );
 
+  app.use('/churches', churchRoutes);
   app.use('/auth', authRoutes);
   app.use('/users', userRoutes);
   app.use('/families', familyRoutes);

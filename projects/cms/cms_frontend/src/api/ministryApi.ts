@@ -1,3 +1,4 @@
+import { unwrapList } from './pagination';
 import axiosInstance from './axiosInstance';
 
 export interface Ministry {
@@ -15,7 +16,7 @@ export interface Ministry {
 
 export const fetchMinistries = async () => {
   const response = await axiosInstance.get('/ministries');
-  return response.data;
+  return unwrapList<Ministry>(response.data);
 };
 
 export const createMinistry = async (ministryData: Omit<Ministry, 'id' | 'createdAt' | 'updatedAt'>) => {

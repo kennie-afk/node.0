@@ -1,3 +1,4 @@
+import { unwrapList } from './pagination';
 import axiosInstance from './axiosInstance';
 
 export interface Sermon {
@@ -23,7 +24,7 @@ export interface Sermon {
 
 export const fetchSermons = async () => {
   const response = await axiosInstance.get('/sermons');
-  return response.data;
+  return unwrapList<Sermon>(response.data);
 };
 
 export const createSermon = async (sermonData: Omit<Sermon, 'id' | 'createdAt' | 'updatedAt'>) => {

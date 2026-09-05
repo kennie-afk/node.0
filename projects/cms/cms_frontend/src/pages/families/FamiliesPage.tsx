@@ -21,7 +21,7 @@ export default function FamiliesPage() {
     try {
       setLoading(true);
       const response = await fetchFamilies();
-      const data = response.data || response || [];
+      const data = response;
       setFamilies(data);
       setFilteredFamilies(data);
     } catch (err: any) {

@@ -1,3 +1,4 @@
+import { unwrapList } from './pagination';
 import axiosInstance from './axiosInstance';
 
 export interface Family {
@@ -16,7 +17,7 @@ export interface Family {
 
 export const fetchFamilies = async () => {
   const response = await axiosInstance.get('/families');
-  return response.data;
+  return unwrapList<Family>(response.data);
 };
 
 export const createFamily = async (familyData: Omit<Family, 'id' | 'createdAt' | 'updatedAt'>) => {

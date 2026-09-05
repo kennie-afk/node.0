@@ -18,7 +18,7 @@ export default function EventsPage() {
     try {
       setLoading(true);
       const res = await fetchEvents();
-      setEvents(res.data || res || []);
+      setEvents(res);
     } catch (err: any) {
       setError('Failed to load events');
     } finally {

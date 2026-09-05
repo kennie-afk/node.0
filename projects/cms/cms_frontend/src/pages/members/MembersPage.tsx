@@ -28,7 +28,7 @@ export default function MembersPage() {
     try {
       setLoading(true);
       const res = await fetchMembers();
-      const data = res.data || res || [];
+      const data = res;
       setMembers(data);
       setFilteredMembers(data);
     } catch (err: any) {
@@ -42,7 +42,7 @@ export default function MembersPage() {
     try {
       setLoadingContributions(true);
       const res = await fetchMemberContributions(memberId);
-      setMemberContributions(res.data || res || []);
+      setMemberContributions(res);
     } catch (err: any) {
       setError('Failed to load contributions for this member');
       setMemberContributions([]);

@@ -1,3 +1,4 @@
+import { unwrapList } from './pagination';
 import axiosInstance from './axiosInstance';
 
 export interface Contribution {
@@ -16,12 +17,12 @@ export interface Contribution {
 
 export const fetchContributions = async () => {
   const response = await axiosInstance.get('/contributions');
-  return response.data;
+  return unwrapList<Contribution>(response.data);
 };
 
 export const fetchMemberContributions = async (memberId: number) => {
   const response = await axiosInstance.get(`/contributions?memberId=${memberId}`);
-  return response.data;
+  return unwrapList<Contribution>(response.data);
 };
 
 export const createContribution = async (data: {

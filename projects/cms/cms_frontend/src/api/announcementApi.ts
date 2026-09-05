@@ -1,3 +1,4 @@
+import { unwrapList } from './pagination';
 import axiosInstance from './axiosInstance';
 
 export interface Announcement {
@@ -19,7 +20,7 @@ export interface Announcement {
 
 export const fetchAnnouncements = async () => {
   const response = await axiosInstance.get('/announcements');
-  return response.data;
+  return unwrapList<Announcement>(response.data);
 };
 
 export const createAnnouncement = async (data: {

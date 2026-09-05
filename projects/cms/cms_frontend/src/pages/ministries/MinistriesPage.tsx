@@ -20,7 +20,7 @@ export default function MinistriesPage() {
     try {
       setLoading(true);
       const res = await fetchMinistries();
-      const data = res.data || res || [];
+      const data = res;
       setMinistries(data);
       setFilteredMinistries(data);
     } catch (err: any) {

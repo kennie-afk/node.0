@@ -20,7 +20,7 @@ export default function SmallGroupsPage() {
     try {
       setLoading(true);
       const res = await fetchSmallGroups();
-      const data = res.data || res || [];
+      const data = res;
       setSmallGroups(data);
       setFilteredGroups(data);
     } catch (err: any) {

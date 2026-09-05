@@ -20,7 +20,7 @@ export default function SermonAttendancePage() {
     try {
       setLoading(true);
       const res = await fetchAttendance();
-      const sermonOnly = (res.data || res || []).filter((a: any) => a.sermonId !== null);
+      const sermonOnly = (res).filter((a: any) => a.sermonId !== null);
       setAttendance(sermonOnly);
       setFilteredAttendance(sermonOnly);
     } catch (err: any) {

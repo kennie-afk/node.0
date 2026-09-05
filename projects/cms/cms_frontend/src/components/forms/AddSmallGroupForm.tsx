@@ -37,8 +37,8 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
     const loadData = async () => {
       try {
         const [minRes, memRes] = await Promise.all([fetchMinistries(), fetchMembers()]);
-        setMinistries(minRes.data || minRes || []);
-        setMembers(memRes.data || memRes || []);
+        setMinistries(minRes);
+        setMembers(memRes);
       } catch (err) {
         console.error('Failed to load data', err);
       }

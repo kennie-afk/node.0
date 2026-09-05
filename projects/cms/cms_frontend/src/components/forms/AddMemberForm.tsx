@@ -34,7 +34,7 @@ export const AddMemberForm: React.FC<Props> = ({
     const loadFamilies = async () => {
       try {
         const res = await fetchFamilies();
-        setFamilies(res.data || res || []);
+        setFamilies(res);
       } catch (err) {
         console.error('Failed to load families', err);
       }

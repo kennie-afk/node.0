@@ -18,7 +18,7 @@ export default function AnnouncementsPage() {
     try {
       setLoading(true);
       const res = await fetchAnnouncements();
-      setAnnouncements(res.data || res || []);
+      setAnnouncements(res);
     } catch (err: any) {
       setError('Failed to load announcements');
     } finally {
