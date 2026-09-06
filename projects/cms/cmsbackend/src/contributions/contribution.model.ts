@@ -35,7 +35,7 @@ export class Contribution extends BaseModel<ContributionAttributes, Contribution
   static associate(models: any) {
     Contribution.belongsTo(models.Member, { 
       foreignKey: 'memberId', 
-      as: 'member'                    // ← Changed to 'member' for consistency with frontend
+      as: 'member'
     });
   }
 }

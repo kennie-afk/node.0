@@ -5,6 +5,7 @@ import { Page, Pagination } from '../common/pagination';
 import { BadRequestError } from '../utils/errors';
 
 const service = createCrudService<any>(db.Ministry, 'Ministry', {
+  include: [{ model: db.Member, as: 'leader', attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber'] }],
   order: [['name', 'ASC'], ['id', 'ASC']]
 });
 

@@ -1,18 +1,65 @@
 import { Router } from 'express';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import { z } from 'zod';
+import { withoutTenant } from '../persistence/pool';
 import { authenticate, requireRole } from './middleware';
 import { closeDay } from '../reconciliation/service';
 import { ingestConfirmation } from '../mpesa/service';
 import { DARAJA_ACCEPTED, DARAJA_REJECTED } from '../mpesa/daraja';
 import { env } from '../config/env';
 import { logger } from '../common/logger';
-import { BadRequestError, ForbiddenError } from '../domain/errors';
+import { BadRequestError, UnauthorizedError } from '../domain/errors';
 
 const router = Router();
 
 const closeSchema = z.object({
   siteId: z.string().uuid(),
   day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+});
+
+const loginSchema = z.object({
+  phone: z.string().min(6).max(20),
+  pin: z.string().min(4).max(64)
+});
+
+router.post('/auth/login', async (req, res, next) => {
+  try {
+    const parsed = loginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      throw new BadRequestError('a phone number and a pin are required');
+    }
+
+    const row = await withoutTenant(async (client) => {
+      const { rows } = await client.query(
+        `SELECT id, org_id, site_id, role, display_name, pin_hash FROM resolve_login($1)`,
+        [parsed.data.phone]
+      );
+      return rows[0];
+    });
+
+    const stored = row?.pin_hash ?? '$2b$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva';
+    const matches = await bcrypt.compare(parsed.data.pin, stored);
+
+    if (!row || !matches) {
+      throw new UnauthorizedError('Those credentials are not valid.');
+    }
+
+    const token = jwt.sign(
+      { sub: row.id, orgId: row.org_id, siteId: row.site_id, role: row.role },
+      env.JWT_SECRET,
+      { expiresIn: env.JWT_TTL_MINUTES * 60 }
+    );
+
+    res.status(200).json({
+      token,
+      displayName: row.display_name,
+      role: row.role,
+      expiresInSeconds: env.JWT_TTL_MINUTES * 60
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 router.get('/me', authenticate, (req, res) => {

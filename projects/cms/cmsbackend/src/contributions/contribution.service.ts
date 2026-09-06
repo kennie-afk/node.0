@@ -3,6 +3,13 @@ import { Contribution } from './contribution.model';
 import { createCrudService } from '../common/crud-service';
 
 const service = createCrudService<Contribution>(db.Contribution, 'Contribution', {
+  include: [
+    {
+      model: db.Member,
+      as: 'member',
+      attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber']
+    }
+  ],
   order: [['date', 'DESC'], ['id', 'ASC']]
 });
 

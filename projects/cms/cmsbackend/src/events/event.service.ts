@@ -3,6 +3,7 @@ import { Event } from './event.model';
 import { createCrudService } from '../common/crud-service';
 
 const service = createCrudService<Event>(db.Event, 'Event', {
+  include: [{ model: db.User, as: 'organizer', attributes: ['id', 'username', 'email'] }],
   order: [['startTime', 'DESC'], ['id', 'ASC']]
 });
 

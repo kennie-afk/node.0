@@ -3,6 +3,7 @@ import { Announcement } from './announcement.model';
 import { createCrudService } from '../common/crud-service';
 
 const service = createCrudService<Announcement>(db.Announcement, 'Announcement', {
+  include: [{ model: db.User, as: 'author', attributes: ['id', 'username', 'email'] }],
   order: [['publicationDate', 'DESC'], ['id', 'ASC']]
 });
 

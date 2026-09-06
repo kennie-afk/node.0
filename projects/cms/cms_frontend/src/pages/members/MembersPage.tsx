@@ -239,7 +239,6 @@ export default function MembersPage() {
         </>
       )}
 
-      {/* Contributions Modal */}
       {showContributionsModal && selectedMemberId && (
         <div style={{
           position: 'fixed',
@@ -347,7 +346,6 @@ export default function MembersPage() {
         </div>
       )}
 
-      {/* Add Contribution Modal */}
       {showAddContributionModal && selectedMemberId && (
         <div style={{
           position: 'fixed',

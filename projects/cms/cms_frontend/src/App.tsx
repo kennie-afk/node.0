@@ -22,13 +22,11 @@ function App() {
 
   return (
     <Routes>
-      {/* Public Login Route */}
       <Route 
         path="/login" 
         element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
       />
 
-      {/* Protected Routes with Dashboard Layout */}
       <Route 
         element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />} 
       >
@@ -43,13 +41,11 @@ function App() {
         <Route path="/ministries" element={<MinistriesPage />} />
         <Route path="/small-groups" element={<SmallGroupsPage />} />
 
-        {/* Attendance Routes */}
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/attendance/event" element={<EventAttendancePage />} />
         <Route path="/attendance/sermon" element={<SermonAttendancePage />} />
       </Route>
 
-      {/* Default Redirects */}
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

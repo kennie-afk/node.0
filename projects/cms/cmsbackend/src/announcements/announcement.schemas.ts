@@ -7,7 +7,7 @@ export const createAnnouncementSchema = z.object({
     publicationDate: z.string().datetime({ message: "Publication date must be a valid ISO datetime" }).optional(),
     expiryDate: z.string().datetime({ message: "Expiry date must be a valid ISO datetime" }).optional(),
     isPublished: z.boolean().optional(),
-    targetAudience: z.enum(['All', 'Members', 'Visitors']).optional(),
+    targetAudience: z.enum(['All', 'Members', 'Leaders', 'Specific Group']).optional(),
   }),
 });
 
@@ -21,6 +21,6 @@ export const updateAnnouncementSchema = z.object({
     publicationDate: z.string().datetime().optional(),
     expiryDate: z.string().datetime().optional(),
     isPublished: z.boolean().optional(),
-    targetAudience: z.enum(['All', 'Members', 'Visitors']).optional(),
+    targetAudience: z.enum(['All', 'Members', 'Leaders', 'Specific Group']).optional(),
   }).strict(),
 });

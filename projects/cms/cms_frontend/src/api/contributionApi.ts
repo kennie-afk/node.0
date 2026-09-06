@@ -36,7 +36,6 @@ export const createContribution = async (data: {
   return response.data;
 };
 
-// NEW: Update contribution
 export const updateContribution = async (id: number, data: {
   memberId?: number;
   amount?: number;

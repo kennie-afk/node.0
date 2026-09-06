@@ -64,3 +64,11 @@ portfolio_website/
 
 # Superseded TypeScript SmartSeason - the Java platform in java.0 replaces it
 projects/smartSeason/
+
+# personal documents, never published
+*.pdf
+*.docx
+*Resume*
+*resume*
+*_CV*
+*Curriculum*

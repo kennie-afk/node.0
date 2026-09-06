@@ -3,6 +3,11 @@ import { Attendance } from './attendance.model';
 import { createCrudService } from '../common/crud-service';
 
 const service = createCrudService<Attendance>(db.Attendance, 'Attendance', {
+  include: [
+    { model: db.Member, as: 'attendeeMember', attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber'] },
+    { model: db.Event, as: 'attendedEvent', attributes: ['id', 'name', 'startTime'] },
+    { model: db.Sermon, as: 'attendedSermon', attributes: ['id', 'title', 'datePreached'] }
+  ],
   order: [['attendanceDate', 'DESC'], ['id', 'ASC']]
 });
 

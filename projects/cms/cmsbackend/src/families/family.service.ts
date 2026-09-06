@@ -3,6 +3,7 @@ import { Family } from './family.model';
 import { createCrudService } from '../common/crud-service';
 
 const service = createCrudService<Family>(db.Family, 'Family', {
+  include: [{ model: db.Member, as: 'headOfFamily', attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber'] }],
   order: [['familyName', 'ASC'], ['id', 'ASC']]
 });
 

@@ -6,6 +6,7 @@ import { env } from '../config/env';
 import { pool } from '../persistence/pool';
 import { errorHandler, notFound, requestContext } from './middleware';
 import routes from './routes';
+import readRoutes from './read';
 
 export function createApiApp(): Express {
   const app = express();
@@ -44,6 +45,7 @@ export function createApiApp(): Express {
   );
 
   app.use('/v1', routes);
+  app.use('/v1', readRoutes);
 
   app.use(notFound);
   app.use(errorHandler);
