@@ -3,6 +3,7 @@ import { createFamily, updateFamily } from '../../api/familyApi';
 import { fetchMembers } from '../../api/memberApi';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { describeError } from '../../api/errors';
 
 interface Props {
   onFamilyAdded: (data?: any) => void;
@@ -89,7 +90,7 @@ export const AddFamilyForm: React.FC<Props> = ({
 
       onFamilyAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || (isEdit ? 'Failed to update family' : 'Failed to create family'));
+      setError(describeError(err, (isEdit ? 'Failed to update family' : 'Failed to create family')));
     } finally {
       setLoading(false);
     }

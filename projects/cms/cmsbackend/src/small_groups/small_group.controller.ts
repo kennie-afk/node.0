@@ -14,8 +14,8 @@ export const deleteSmallGroup = controller.remove;
 export const addMemberToSmallGroup = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const created = await groupService.addMemberToSmallGroup(
-      Number(req.params.id),
-      Number(req.body.memberId),
+      Number(req.params.smallGroupId),
+      Number(req.params.memberId),
       req.body
     );
     res.status(201).json(created);
@@ -30,7 +30,10 @@ export const removeMemberFromSmallGroup = async (
   next: NextFunction
 ) => {
   try {
-    await groupService.removeMemberFromSmallGroup(Number(req.params.id), Number(req.params.memberId));
+    await groupService.removeMemberFromSmallGroup(
+      Number(req.params.smallGroupId),
+      Number(req.params.memberId)
+    );
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -40,7 +43,7 @@ export const removeMemberFromSmallGroup = async (
 export const getMembersOfSmallGroup = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const page = await groupService.getMembersOfSmallGroup(
-      Number(req.params.id),
+      Number(req.params.smallGroupId),
       paginationSchema.parse(req.query)
     );
     res.status(200).json(page);

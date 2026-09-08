@@ -38,6 +38,12 @@ export const smallGroupParamSchema = z.object({
   }),
 });
 
+export const smallGroupRosterParamSchema = z.object({
+  params: z.object({
+    smallGroupId: z.string().regex(/^\d+$/, 'Small Group ID must be a number string.')
+  }),
+});
+
 export const smallGroupMemberParamSchema = z.object({
   params: z.object({
     smallGroupId: z.string().regex(/^\d+$/, 'Small Group ID must be a number string.'),

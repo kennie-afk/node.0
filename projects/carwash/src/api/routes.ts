@@ -1,4 +1,6 @@
 import { Router } from 'express';
+import { timingSafeEqual } from 'node:crypto';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
@@ -13,6 +15,28 @@ import { BadRequestError, UnauthorizedError } from '../domain/errors';
 
 const router = Router();
 
+const loginLimiter = rateLimit({
+  windowMs: env.LOGIN_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
+  limit: env.LOGIN_RATE_LIMIT_PER_WINDOW,
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  keyGenerator: (req) => {
+    const phone = typeof req.body?.phone === 'string' ? req.body.phone : '';
+    return `${ipKeyGenerator(req.ip ?? 'unknown')}|${phone}`;
+  },
+  message: { code: 'too-many-attempts', message: 'Too many sign in attempts. Try again shortly.' }
+});
+
+function secretMatches(presented: string | undefined, expected: string): boolean {
+  if (!presented) {
+    return false;
+  }
+  const a = Buffer.from(presented, 'utf8');
+  const b = Buffer.from(expected, 'utf8');
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
 const closeSchema = z.object({
   siteId: z.string().uuid(),
   day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -23,7 +47,7 @@ const loginSchema = z.object({
   pin: z.string().min(4).max(64)
 });
 
-router.post('/auth/login', async (req, res, next) => {
+router.post('/auth/login', loginLimiter, async (req, res, next) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -104,7 +128,7 @@ router.post('/webhooks/mpesa/confirmation', async (req, res) => {
     return res.status(200).json(DARAJA_REJECTED);
   }
 
-  if (secret !== env.MPESA_CALLBACK_SECRET) {
+  if (!secretMatches(secret, env.MPESA_CALLBACK_SECRET)) {
     logger.warn('daraja callback with a bad secret', { requestId: req.id });
     return res.status(200).json(DARAJA_REJECTED);
   }

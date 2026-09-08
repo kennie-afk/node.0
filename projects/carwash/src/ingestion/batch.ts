@@ -81,3 +81,14 @@ export function foldToMinute(readings: Reading[]): Map<string, { total: number; 
 
   return buckets;
 }
+
+export function selectFreshReadings(lastSequence: number, readings: Reading[]): Reading[] {
+  const seen = new Set<number>();
+  return readings.filter((reading) => {
+    if (reading.sequence <= lastSequence || seen.has(reading.sequence)) {
+      return false;
+    }
+    seen.add(reading.sequence);
+    return true;
+  });
+}

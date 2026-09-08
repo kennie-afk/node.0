@@ -3,6 +3,7 @@ import { createMinistry, updateMinistry } from '../../api/ministryApi';
 import { fetchMembers } from '../../api/memberApi';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { describeError } from '../../api/errors';
 
 interface Props {
   onMinistryAdded: () => void;
@@ -71,7 +72,7 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
       setFormData({ name: '', description: '', leaderId: '' });
       onMinistryAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save ministry');
+      setError(describeError(err, 'Failed to save ministry'));
     } finally {
       setLoading(false);
     }

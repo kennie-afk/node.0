@@ -22,7 +22,10 @@ export class SmallGroupMember extends Model<SmallGroupMemberAttributes, SmallGro
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
-  static associate(models: any) {}
+  static associate(models: any) {
+    SmallGroupMember.belongsTo(models.Member, { foreignKey: 'memberId', as: 'member' });
+    SmallGroupMember.belongsTo(models.SmallGroup, { foreignKey: 'smallGroupId', as: 'smallGroup' });
+  }
 }
 
 export default (sequelize: Sequelize, DataTypes: any) => {

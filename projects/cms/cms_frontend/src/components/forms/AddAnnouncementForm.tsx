@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createAnnouncement, updateAnnouncement } from '../../api/announcementApi';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { describeError } from '../../api/errors';
 
 interface Props {
   onAnnouncementAdded: () => void;
@@ -89,7 +90,7 @@ export default function AddAnnouncementForm({
 
       onAnnouncementAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save announcement');
+      setError(describeError(err, 'Failed to save announcement'));
     } finally {
       setLoading(false);
     }

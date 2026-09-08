@@ -15,6 +15,7 @@ import {
   createSmallGroupSchema,
   updateSmallGroupSchema,
   smallGroupParamSchema,
+  smallGroupRosterParamSchema,
   smallGroupMemberParamSchema,
   smallGroupMemberBodySchema
 } from './small_group.schemas';
@@ -29,6 +30,6 @@ router.delete('/:id', authenticateToken, authorizeAdmin, validate(smallGroupPara
 
 router.post('/:smallGroupId/members/:memberId', authenticateToken, authorizeAdmin, validate(smallGroupMemberParamSchema), validate(smallGroupMemberBodySchema), addMemberToSmallGroup);
 router.delete('/:smallGroupId/members/:memberId', authenticateToken, authorizeAdmin, validate(smallGroupMemberParamSchema), removeMemberFromSmallGroup);
-router.get('/:smallGroupId/members', authenticateToken, validate(smallGroupParamSchema), getMembersOfSmallGroup);
+router.get('/:smallGroupId/members', authenticateToken, validate(smallGroupRosterParamSchema), getMembersOfSmallGroup);
 
 export default router;

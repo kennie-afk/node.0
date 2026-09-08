@@ -6,6 +6,7 @@ import BackButton from '../../components/common/BackButton';
 import { AddMemberForm } from '../../components/forms/AddMemberForm';
 import { MemberTable } from '../../components/tables/MemberTable';
 import AddContributionForm from '../../components/forms/AddContributionForm';
+import { describeError } from '../../api/errors';
 
 export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -90,7 +91,7 @@ export default function MembersPage() {
       setTimeout(() => setSuccess(''), 3000);
       loadMembers();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete member');
+      setError(describeError(err, 'Failed to delete member'));
     }
   };
 

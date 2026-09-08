@@ -3,6 +3,7 @@ import { createMember } from '../../api/memberApi';
 import { fetchFamilies } from '../../api/familyApi';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { describeError } from '../../api/errors';
 
 interface Props {
   onMemberAdded: () => void;
@@ -80,7 +81,7 @@ export const AddMemberForm: React.FC<Props> = ({
 
       onMemberAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save member');
+      setError(describeError(err, 'Failed to save member'));
     } finally {
       setLoading(false);
     }

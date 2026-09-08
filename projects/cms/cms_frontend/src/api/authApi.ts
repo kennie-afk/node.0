@@ -1,8 +1,14 @@
 import axiosInstance from './axiosInstance';
 
-export const login = async (email: string, password: string) => {
-  const response = await axiosInstance.post('/auth/login', { email, password });
-  return response.data.token as string;
+export interface LoginResponse {
+  token: string;
+  expiresInSeconds: number;
+  churchId: number;
+}
+
+export const login = async (email: string, password: string): Promise<LoginResponse> => {
+  const response = await axiosInstance.post<LoginResponse>('/auth/login', { email, password });
+  return response.data;
 };
 
 export const getProfile = async () => {

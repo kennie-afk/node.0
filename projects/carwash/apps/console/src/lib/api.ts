@@ -4,11 +4,22 @@ const API = process.env.FORECOURT_API_URL ?? "http://127.0.0.1:4000";
 
 export class ApiError extends Error {
   readonly status: number;
-  constructor(status: number, message: string) {
+  readonly code: string | null;
+  readonly requestId: string | null;
+
+  constructor(status: number, message: string, code: string | null, requestId: string | null) {
     super(message);
     this.name = "ApiError";
     this.status = status;
+    this.code = code;
+    this.requestId = requestId;
   }
+}
+
+interface ApiFailure {
+  code?: string;
+  message?: string;
+  requestId?: string;
 }
 
 async function request<T>(path: string, init?: RequestInit, token?: string): Promise<T> {
@@ -25,14 +36,18 @@ async function request<T>(path: string, init?: RequestInit, token?: string): Pro
   });
 
   if (!response.ok) {
-    let detail = response.statusText;
+    let failure: ApiFailure = {};
     try {
-      const body = (await response.json()) as { detail?: string };
-      detail = body.detail ?? detail;
+      failure = (await response.json()) as ApiFailure;
     } catch {
-      detail = response.statusText;
+      failure = {};
     }
-    throw new ApiError(response.status, detail);
+    throw new ApiError(
+      response.status,
+      failure.message ?? response.statusText,
+      failure.code ?? null,
+      failure.requestId ?? null
+    );
   }
 
   return (await response.json()) as T;
@@ -70,7 +85,10 @@ export function describeError(error: unknown): string {
     if (error.status === 401) {
       return "That session has expired. Sign out on the left, then sign in again.";
     }
-    return error.message;
+    if (error.status === 429) {
+      return "Too many attempts. Wait a few minutes and try again.";
+    }
+    return error.requestId ? `${error.message} (reference ${error.requestId})` : error.message;
   }
   if (error instanceof Error && error.message.includes("fetch failed")) {
     return `The Forecourt API is not reachable at ${API}. Start it with npm start in projects/carwash.`;

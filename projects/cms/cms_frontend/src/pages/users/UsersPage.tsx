@@ -4,6 +4,7 @@ import { fetchUsers, deleteUser, updateUser } from '../../api/userApi';
 import BackButton from '../../components/common/BackButton';
 import AddUserForm from '../../components/forms/AddUserForm';
 import { UserTable } from '../../components/tables/UserTable';
+import { describeError } from '../../api/errors';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -24,7 +25,7 @@ export default function UsersPage() {
       setUsers(data);
       setFilteredUsers(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load users');
+      setError(describeError(err, 'Failed to load users'));
     } finally {
       setLoading(false);
     }
@@ -65,7 +66,7 @@ export default function UsersPage() {
       setEditingUser(null);
       await loadUsers();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update user');
+      setError(describeError(err, 'Failed to update user'));
     }
   };
 
@@ -77,7 +78,7 @@ export default function UsersPage() {
       setTimeout(() => setSuccess(''), 3000);
       await loadUsers();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete user');
+      setError(describeError(err, 'Failed to delete user'));
     }
   };
 

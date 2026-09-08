@@ -4,6 +4,7 @@ import { fetchSermons, deleteSermon } from '../../api/sermonApi';
 import BackButton from '../../components/common/BackButton';
 import AddSermonForm from '../../components/forms/AddSermonForm';
 import { SermonTable } from '../../components/tables/SermonTable';
+import { describeError } from '../../api/errors';
 
 export default function SermonsPage() {
   const [sermons, setSermons] = useState<Sermon[]>([]);
@@ -73,7 +74,7 @@ export default function SermonsPage() {
       setTimeout(() => setSuccess(''), 3000);
       loadSermons();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete sermon');
+      setError(describeError(err, 'Failed to delete sermon'));
     }
   };
 

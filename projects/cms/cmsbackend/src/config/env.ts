@@ -26,6 +26,9 @@ const schema = z.object({
     ),
   RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  LOGIN_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
+  LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+  REDIS_URL: z.string().url().optional(),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   SHUTDOWN_GRACE_MS: z.coerce.number().int().nonnegative().default(10000)
 });

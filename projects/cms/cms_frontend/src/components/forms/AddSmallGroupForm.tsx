@@ -4,6 +4,7 @@ import { fetchMinistries } from '../../api/ministryApi';
 import { fetchMembers } from '../../api/memberApi';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { describeError } from '../../api/errors';
 
 interface Props {
   onSmallGroupAdded: () => void;
@@ -112,7 +113,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
       });
       onSmallGroupAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save small group');
+      setError(describeError(err, 'Failed to save small group'));
     } finally {
       setLoading(false);
     }

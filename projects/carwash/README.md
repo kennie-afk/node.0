@@ -34,8 +34,11 @@ a divergence between two of them.
 - M-Pesa Daraja C2B parsing, amount handling in whole cents, and payment to job
   matching that refuses to guess when two open jobs share an amount.
 - Plate normalisation that survives OCR confusion without destroying data.
-- Telemetry ingestion with sequence gap detection, batch caps and per-minute
-  edge folding.
+- Telemetry ingestion on its own service and its own port: devices authenticate
+  with an id and a bcrypt-hashed secret, readings are written raw and folded into
+  per-minute buckets in one transaction, and a replayed sequence is dropped rather
+  than double counted. Sequence gaps are detected and reported, not silently
+  swallowed.
 - Postgres schema with `org_id` on every tenant table, row level security as a
   second line of defence, and monthly partitioning on the two tables that grow.
 
@@ -77,13 +80,28 @@ cp .env.example .env
 node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"
 ```
 
-Use that for `JWT_SECRET`, set a `POSTGRES_PASSWORD`, then:
+Use that for `JWT_SECRET`, generate a second value for `MPESA_CALLBACK_SECRET`, and
+set a `POSTGRES_PASSWORD`. Neither secret has a fallback default: the process refuses
+to start without them, because a defaulted callback secret would let anyone forge the
+payment confirmations the whole product is built to trust.
 
 ```
 docker compose up -d
 npm run migrate
 npm test
 ```
+
+That brings up Postgres, the API on 4000, the telemetry ingestion service on 4100
+and the console on 3300.
+
+### Devices are credentials, not addresses
+
+A meter posting to `/v1/telemetry` sends `X-Device-Id` and `X-Device-Secret`, checked
+against the bcrypt hash in `devices.secret_hash` by `resolve_device`, another
+`SECURITY DEFINER` lookup. A batch whose `deviceId` does not match the authenticated
+device is refused. This matters more than ordinary endpoint auth: telemetry is the
+witness that is meant not to be a human, so an unauthenticated ingest would let the
+person being audited write the evidence.
 
 ### The database user matters
 

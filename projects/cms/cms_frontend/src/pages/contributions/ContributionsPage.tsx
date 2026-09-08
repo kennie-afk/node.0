@@ -4,6 +4,7 @@ import { fetchContributions, deleteContribution } from '../../api/contributionAp
 import BackButton from '../../components/common/BackButton';
 import AddContributionForm from '../../components/forms/AddContributionForm';
 import { ContributionTable } from '../../components/tables/ContributionTable';
+import { describeError } from '../../api/errors';
 
 export default function ContributionsPage() {
   const [contributions, setContributions] = useState<Contribution[]>([]);
@@ -74,7 +75,7 @@ export default function ContributionsPage() {
       setTimeout(() => setSuccess(''), 3000);
       loadContributions();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete contribution');
+      setError(describeError(err, 'Failed to delete contribution'));
     }
   };
 

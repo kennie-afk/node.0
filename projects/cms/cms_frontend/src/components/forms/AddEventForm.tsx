@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createEvent, updateEvent } from '../../api/eventApi';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { describeError } from '../../api/errors';
 
 interface Props {
   onEventAdded: () => void;
@@ -53,7 +54,7 @@ export default function AddEventForm({ onEventAdded, initialData, isEdit = false
       setFormData({ name: '', description: '', startTime: '', endTime: '', location: '' });
       onEventAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save event');
+      setError(describeError(err, 'Failed to save event'));
     } finally {
       setLoading(false);
     }

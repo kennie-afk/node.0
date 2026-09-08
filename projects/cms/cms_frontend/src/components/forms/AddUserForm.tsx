@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { User } from '../../api/userApi';
 import { createUser, updateUser } from '../../api/userApi';
+import { describeError } from '../../api/errors';
 
 interface AddUserFormProps {
   onUserAdded: (data?: any) => void;
@@ -58,7 +59,7 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
 
       onUserAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || (isEdit ? 'Failed to update user' : 'Failed to create user'));
+      setError(describeError(err, (isEdit ? 'Failed to update user' : 'Failed to create user')));
     } finally {
       setLoading(false);
     }

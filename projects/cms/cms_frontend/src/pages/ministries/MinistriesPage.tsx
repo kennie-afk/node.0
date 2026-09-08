@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
 import type { Ministry } from '../../api/ministryApi';
-import { fetchMinistries, deleteMinistry } from '../../api/ministryApi';
+import {
+  fetchMinistries,
+  deleteMinistry,
+  fetchMinistryMembers,
+  addMinistryMember,
+  removeMinistryMember
+} from '../../api/ministryApi';
+import MembershipPanel from '../../components/common/MembershipPanel';
 import BackButton from '../../components/common/BackButton';
 import AddMinistryForm from '../../components/forms/AddMinistryForm';
 import { MinistryTable } from '../../components/tables/MinistryTable';
+import { describeError } from '../../api/errors';
 
 export default function MinistriesPage() {
   const [ministries, setMinistries] = useState<Ministry[]>([]);
@@ -72,7 +80,7 @@ export default function MinistriesPage() {
       setTimeout(() => setSuccess(''), 3000);
       loadMinistries();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete ministry');
+      setError(describeError(err, 'Failed to delete ministry'));
     }
   };
 
@@ -251,6 +259,16 @@ export default function MinistriesPage() {
                 </tbody>
               </table>
             </div>
+
+            <MembershipPanel
+              key={viewingMinistry.id}
+              title="Members"
+              loadRoster={() => fetchMinistryMembers(viewingMinistry.id)}
+              addMember={(memberId, role) =>
+                addMinistryMember(viewingMinistry.id, memberId, role)
+              }
+              removeMember={(memberId) => removeMinistryMember(viewingMinistry.id, memberId)}
+            />
           </div>
         </div>
       )}

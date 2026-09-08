@@ -41,7 +41,7 @@ export function createApiApp(): Express {
   });
 
   app.use(
-    rateLimit({ windowMs: 60_000, max: 120, standardHeaders: true, legacyHeaders: false })
+    rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: true, legacyHeaders: false })
   );
 
   app.use('/v1', routes);

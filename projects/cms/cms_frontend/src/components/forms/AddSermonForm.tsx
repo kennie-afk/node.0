@@ -3,6 +3,7 @@ import { createSermon, updateSermon } from '../../api/sermonApi';
 import { fetchMembers } from '../../api/memberApi';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { describeError } from '../../api/errors';
 
 interface Props {
   onSermonAdded: () => void;
@@ -113,7 +114,7 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
 
       onSermonAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save sermon');
+      setError(describeError(err, 'Failed to save sermon'));
     } finally {
       setLoading(false);
     }

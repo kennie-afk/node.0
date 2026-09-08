@@ -1,9 +1,17 @@
 import { useState, useEffect } from 'react';
 import type { SmallGroup } from '../../api/smallGroupApi';
-import { fetchSmallGroups, deleteSmallGroup } from '../../api/smallGroupApi';
+import {
+  fetchSmallGroups,
+  deleteSmallGroup,
+  fetchSmallGroupMembers,
+  addSmallGroupMember,
+  removeSmallGroupMember
+} from '../../api/smallGroupApi';
+import MembershipPanel from '../../components/common/MembershipPanel';
 import BackButton from '../../components/common/BackButton';
 import AddSmallGroupForm from '../../components/forms/AddSmallGroupForm';
 import { SmallGroupTable } from '../../components/tables/SmallGroupTable';
+import { describeError } from '../../api/errors';
 
 export default function SmallGroupsPage() {
   const [smallGroups, setSmallGroups] = useState<SmallGroup[]>([]);
@@ -73,7 +81,7 @@ export default function SmallGroupsPage() {
       setTimeout(() => setSuccess(''), 3000);
       loadSmallGroups();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete small group');
+      setError(describeError(err, 'Failed to delete small group'));
     }
   };
 
@@ -278,6 +286,16 @@ export default function SmallGroupsPage() {
                 </tbody>
               </table>
             </div>
+
+            <MembershipPanel
+              key={viewingGroup.id}
+              title="Members"
+              loadRoster={() => fetchSmallGroupMembers(viewingGroup.id)}
+              addMember={(memberId, role) =>
+                addSmallGroupMember(viewingGroup.id, memberId, role)
+              }
+              removeMember={(memberId) => removeSmallGroupMember(viewingGroup.id, memberId)}
+            />
           </div>
         </div>
       )}

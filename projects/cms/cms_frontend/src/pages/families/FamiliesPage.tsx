@@ -4,6 +4,7 @@ import { fetchFamilies, deleteFamily, updateFamily } from '../../api/familyApi';
 import BackButton from '../../components/common/BackButton';
 import { AddFamilyForm } from '../../components/forms/AddFamilyForm';
 import { FamilyTable } from '../../components/tables/FamilyTable';
+import { describeError } from '../../api/errors';
 
 export default function FamiliesPage() {
   const [families, setFamilies] = useState<Family[]>([]);
@@ -25,7 +26,7 @@ export default function FamiliesPage() {
       setFamilies(data);
       setFilteredFamilies(data);
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to load families');
+      setError(describeError(err, 'Failed to load families'));
     } finally {
       setLoading(false);
     }
@@ -79,7 +80,7 @@ export default function FamiliesPage() {
       setEditingFamily(null);
       await loadFamilies();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update family');
+      setError(describeError(err, 'Failed to update family'));
     }
   };
 
@@ -91,7 +92,7 @@ export default function FamiliesPage() {
       setTimeout(() => setSuccess(''), 3000);
       await loadFamilies();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete family');
+      setError(describeError(err, 'Failed to delete family'));
     }
   };
 

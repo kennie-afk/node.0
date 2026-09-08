@@ -2,6 +2,7 @@ import { createApp } from './app';
 import { env } from './config/env';
 import { logger } from './common/logger';
 import db from '@models';
+import { closeRateLimitStore } from './middleware/rate-limit.middleware';
 
 async function main(): Promise<void> {
   await db.sequelize.authenticate();
@@ -29,6 +30,7 @@ async function main(): Promise<void> {
 
     server.close(async () => {
       try {
+        await closeRateLimitStore();
         await db.sequelize.close();
         logger.info('shutdown complete');
         process.exit(0);

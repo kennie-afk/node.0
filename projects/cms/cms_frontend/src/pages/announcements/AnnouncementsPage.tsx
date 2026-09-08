@@ -4,6 +4,7 @@ import { fetchAnnouncements, deleteAnnouncement } from '../../api/announcementAp
 import BackButton from '../../components/common/BackButton';
 import AddAnnouncementForm from '../../components/forms/AddAnnouncementForm';
 import { AnnouncementTable } from '../../components/tables/AnnouncementTable';
+import { describeError } from '../../api/errors';
 
 export default function AnnouncementsPage() {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
@@ -49,7 +50,7 @@ export default function AnnouncementsPage() {
       setTimeout(() => setSuccess(''), 3000);
       loadAnnouncements();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete announcement');
+      setError(describeError(err, 'Failed to delete announcement'));
     }
   };
 

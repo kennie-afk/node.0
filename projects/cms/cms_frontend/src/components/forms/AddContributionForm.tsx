@@ -3,6 +3,7 @@ import { createContribution, updateContribution } from '../../api/contributionAp
 import { fetchMembers } from '../../api/memberApi';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { describeError } from '../../api/errors';
 
 interface Props {
   onContributionAdded: () => void;
@@ -94,7 +95,7 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
 
       onContributionAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to save contribution');
+      setError(describeError(err, 'Failed to save contribution'));
     } finally {
       setLoading(false);
     }

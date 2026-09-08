@@ -22,7 +22,10 @@ export class MinistryMember extends Model<MinistryMemberAttributes, MinistryMemb
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
-  static associate(models: any) {}
+  static associate(models: any) {
+    MinistryMember.belongsTo(models.Member, { foreignKey: 'memberId', as: 'member' });
+    MinistryMember.belongsTo(models.Ministry, { foreignKey: 'ministryId', as: 'ministry' });
+  }
 }
 
 export default (sequelize: Sequelize, DataTypes: any) => {

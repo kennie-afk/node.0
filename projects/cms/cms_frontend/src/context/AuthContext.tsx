@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { login as apiLogin } from '../api/authApi';
+import { clearSession, onSessionChange, readSession, writeSession } from '../api/session';
 
 interface AuthContextType {
   token: string | null;
@@ -11,40 +12,31 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [token, setTokenState] = useState<string | null>(localStorage.getItem('token'));
+  const [token, setTokenState] = useState<string | null>(() => readSession()?.token ?? null);
+
+  useEffect(() => onSessionChange(() => setTokenState(readSession()?.token ?? null)), []);
+
+  useEffect(() => {
+    const session = readSession();
+    if (!session) {
+      return;
+    }
+
+    const timer = window.setTimeout(clearSession, session.expiresAt - Date.now());
+    return () => window.clearTimeout(timer);
+  }, [token]);
 
   const login = async (email: string, password: string) => {
-    try {
-      const result = await apiLogin(email, password);
-
-      let newToken: string | null = null;
-
-      if (typeof result === 'string') {
-        newToken = result;
-      } else if (result && typeof result === 'object') {
-        newToken = (result as any).token || (result as any).data?.token;
-      }
-
-      if (newToken) {
-        localStorage.setItem('token', newToken);
-        setTokenState(newToken);
-      } else {
-        throw new Error('No token received from server');
-      }
-    } catch (err: any) {
-      throw err;
-    }
+    const session = await apiLogin(email, password);
+    writeSession(session.token, session.expiresInSeconds, session.churchId);
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    setTokenState(null);
+    clearSession();
   };
 
-  const isAuthenticated = !!token;
-
   return (
-    <AuthContext.Provider value={{ token, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ token, login, logout, isAuthenticated: !!token }}>
       {children}
     </AuthContext.Provider>
   );

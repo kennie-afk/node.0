@@ -2,9 +2,9 @@ import 'module-alias/register';
 import express, { Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import rateLimit from 'express-rate-limit';
 
-import { env, isTest } from './config/env';
+import { env } from './config/env';
+import { generalLimiter, loginLimiter } from './middleware/rate-limit.middleware';
 import { requestContext } from './middleware/request-context.middleware';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import healthRoutes from './health/health.routes';
@@ -48,17 +48,10 @@ export function createApp(): Express {
 
   app.use('/', healthRoutes);
 
-  app.use(
-    rateLimit({
-      windowMs: env.RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
-      max: env.RATE_LIMIT_MAX,
-      standardHeaders: true,
-      legacyHeaders: false,
-      skip: () => isTest
-    })
-  );
+  app.use(generalLimiter);
 
   app.use('/churches', churchRoutes);
+  app.use('/auth/login', loginLimiter);
   app.use('/auth', authRoutes);
   app.use('/users', userRoutes);
   app.use('/families', familyRoutes);

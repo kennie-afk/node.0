@@ -5,6 +5,7 @@ import { fetchEvents } from '../../api/eventApi';
 import { fetchSermons } from '../../api/sermonApi';
 import { Input } from '../common/Input';
 import { Button } from '../common/Button';
+import { describeError } from '../../api/errors';
 
 interface Props {
   onAttendanceAdded: () => void;
@@ -100,7 +101,7 @@ export default function AddAttendanceForm({
       setFormData({ memberId: '', guestName: '', attendanceDate: '', eventId: '', sermonId: '', attendanceType: 'In-person', notes: '' });
       onAttendanceAdded();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to record attendance');
+      setError(describeError(err, 'Failed to record attendance'));
     } finally {
       setLoading(false);
     }

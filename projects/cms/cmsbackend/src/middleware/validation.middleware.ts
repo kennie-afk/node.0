@@ -1,29 +1,28 @@
 import { Request, Response, NextFunction } from 'express';
+import { ZodError, ZodType } from 'zod';
 
-export const validate = (schema: any) => (req: Request, res: Response, next: NextFunction) => {
-  try {
-    schema.parse({
+export const validate =
+  (schema: ZodType) => (req: Request, res: Response, next: NextFunction) => {
+    const result = schema.safeParse({
       body: req.body,
       query: req.query,
-      params: req.params,
+      params: req.params
     });
 
-    next();
-  } catch (error: any) {
-    const issues =
-      error?.errors?.map((issue: any) => ({
-        field: issue?.path?.join('.') || 'unknown',
-        message: issue?.message || 'Invalid input',
-      })) || [
-        {
-          field: 'unknown',
-          message: error?.message || 'Validation failed',
-        },
-      ];
+    if (result.success) {
+      return next();
+    }
 
     return res.status(400).json({
       success: false,
-      errors: issues,
+      errors: fieldErrors(result.error),
+      requestId: req.id
     });
-  }
-};
+  };
+
+function fieldErrors(error: ZodError): Array<{ field: string; message: string }> {
+  return error.issues.map((issue) => ({
+    field: issue.path.length > 0 ? issue.path.join('.') : 'body',
+    message: issue.message
+  }));
+}

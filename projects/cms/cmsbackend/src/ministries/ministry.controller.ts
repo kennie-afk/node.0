@@ -14,7 +14,7 @@ export const deleteMinistry = controller.remove;
 export const addMemberToMinistry = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const created = await groupService.addMemberToMinistry(
-      Number(req.params.id),
+      Number(req.params.ministryId),
       Number(req.body.memberId),
       req.body
     );
@@ -30,7 +30,10 @@ export const removeMemberFromMinistry = async (
   next: NextFunction
 ) => {
   try {
-    await groupService.removeMemberFromMinistry(Number(req.params.id), Number(req.params.memberId));
+    await groupService.removeMemberFromMinistry(
+      Number(req.params.ministryId),
+      Number(req.body.memberId)
+    );
     res.status(204).send();
   } catch (error) {
     next(error);
@@ -40,7 +43,7 @@ export const removeMemberFromMinistry = async (
 export const getMembersOfMinistry = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const page = await groupService.getMembersOfMinistry(
-      Number(req.params.id),
+      Number(req.params.ministryId),
       paginationSchema.parse(req.query)
     );
     res.status(200).json(page);

@@ -4,6 +4,7 @@ import { fetchEvents, deleteEvent } from '../../api/eventApi';
 import BackButton from '../../components/common/BackButton';
 import AddEventForm from '../../components/forms/AddEventForm';
 import { EventTable } from '../../components/tables/EventTable';
+import { describeError } from '../../api/errors';
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -49,7 +50,7 @@ export default function EventsPage() {
       setTimeout(() => setSuccess(''), 3000);
       loadEvents();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to delete event');
+      setError(describeError(err, 'Failed to delete event'));
     }
   };
 

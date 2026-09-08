@@ -2,12 +2,21 @@ import { Pool, PoolClient } from 'pg';
 import { env, isProduction } from '../config/env';
 import { logger } from '../common/logger';
 
+function databaseTls(): { rejectUnauthorized: boolean; ca?: string } | undefined {
+  if (!isProduction) {
+    return undefined;
+  }
+  return env.DATABASE_CA_CERT
+    ? { rejectUnauthorized: true, ca: env.DATABASE_CA_CERT }
+    : { rejectUnauthorized: true };
+}
+
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,
   max: env.DATABASE_POOL_MAX,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5_000,
-  ssl: isProduction ? { rejectUnauthorized: false } : undefined
+  ssl: databaseTls()
 });
 
 pool.on('error', (error) => {
