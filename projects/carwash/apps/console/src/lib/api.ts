@@ -65,6 +65,19 @@ export interface LoginResult {
   expiresInSeconds: number;
 }
 
+export interface SignupRequest {
+  businessName: string;
+  contactName: string;
+  phone: string;
+  siteCount?: number;
+  notes?: string;
+}
+
+export interface SignupResult {
+  id: string;
+  status: string;
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string) => request<T>(path, { method: "POST" }),
@@ -75,6 +88,16 @@ export const api = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials)
+      },
+      ""
+    ),
+  signup: (signup: SignupRequest) =>
+    request<SignupResult>(
+      "/v1/signup",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(signup)
       },
       ""
     )

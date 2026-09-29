@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 @theme {
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.375rem;
+  --radius-xl: 0.375rem;
+  --radius-2xl: 0.375rem;
+  --radius-3xl: 0.375rem;
   --color-canvas: #fbfbfc;
   --color-surface: #ffffff;
   --color-raised: #f6f7f9;
@@ -25,7 +31,7 @@ html,
 body {
   background: var(--color-canvas);
   color: var(--color-ink);
-  font-size: 15px;
+  font-size: 12px;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }

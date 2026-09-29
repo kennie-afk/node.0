@@ -18,11 +18,26 @@ services:
       timeout: 5s
       retries: 10
 
+  migrate:
+    build: .
+    command: ["node", "dist/persistence/migrate.js"]
+    environment:
+      DATABASE_URL: postgres://forecourt_app:${FORECOURT_APP_PASSWORD:?FORECOURT_APP_PASSWORD must be set and at least 12 characters}@postgres:5432/${POSTGRES_DB:-forecourt}
+      DATABASE_MIGRATION_URL: postgres://${POSTGRES_USER:-forecourt}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-forecourt}
+      FORECOURT_APP_PASSWORD: ${FORECOURT_APP_PASSWORD:?FORECOURT_APP_PASSWORD must be set and at least 12 characters}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set and at least 32 characters}
+      MPESA_CALLBACK_SECRET: ${MPESA_CALLBACK_SECRET:?MPESA_CALLBACK_SECRET must be set and at least 16 characters}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
     build: .
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-forecourt}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-forecourt}
+      DATABASE_URL: postgres://forecourt_app:${FORECOURT_APP_PASSWORD}@postgres:5432/${POSTGRES_DB:-forecourt}
+      DATABASE_MIGRATION_URL: postgres://${POSTGRES_USER:-forecourt}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-forecourt}
+      FORECOURT_APP_PASSWORD: ${FORECOURT_APP_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set and at least 32 characters}
       MPESA_CALLBACK_SECRET: ${MPESA_CALLBACK_SECRET:?MPESA_CALLBACK_SECRET must be set and at least 16 characters}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
@@ -30,15 +45,17 @@ services:
     ports:
       - "${API_PORT:-4000}:4000"
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   ingestion:
     build: .
     restart: unless-stopped
     command: ["node", "dist/ingestion/server.js"]
     environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-forecourt}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-forecourt}
+      DATABASE_URL: postgres://forecourt_app:${FORECOURT_APP_PASSWORD}@postgres:5432/${POSTGRES_DB:-forecourt}
+      DATABASE_MIGRATION_URL: postgres://${POSTGRES_USER:-forecourt}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-forecourt}
+      FORECOURT_APP_PASSWORD: ${FORECOURT_APP_PASSWORD}
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set and at least 32 characters}
       MPESA_CALLBACK_SECRET: ${MPESA_CALLBACK_SECRET:?MPESA_CALLBACK_SECRET must be set and at least 16 characters}
       INGESTION_PORT: 4100
@@ -51,8 +68,8 @@ services:
       start_period: 20s
       retries: 5
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   console:
     build:

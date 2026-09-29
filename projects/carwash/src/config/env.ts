@@ -8,8 +8,23 @@ const schema = z.object({
   API_PORT: z.coerce.number().int().positive().default(4000),
   INGESTION_PORT: z.coerce.number().int().positive().default(4100),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
+  DATABASE_MIGRATION_URL: z
+    .string()
+    .min(1, 'DATABASE_MIGRATION_URL is required (migrations create/grant the app role, which DATABASE_URL cannot do)'),
+  FORECOURT_APP_PASSWORD: z
+    .string()
+    .min(12, 'FORECOURT_APP_PASSWORD must be at least 12 characters'),
   DATABASE_POOL_MAX: z.coerce.number().int().positive().default(20),
   DATABASE_CA_CERT: z.string().optional(),
+  // Explicit, not inferred from NODE_ENV: the Docker image bakes NODE_ENV=production
+  // regardless of environment, so tying TLS to isProduction meant the bundled
+  // docker-compose Postgres (which has no SSL configured) could never be reached -
+  // "the server does not support SSL connections" on every fresh `docker compose up`.
+  // A real deployment with a TLS-terminating database sets this explicitly to true.
+  DATABASE_SSL: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_TTL_MINUTES: z.coerce.number().int().positive().default(720),
   CORS_ORIGINS: z

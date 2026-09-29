@@ -3,13 +3,13 @@ import { Rail, type RailItem } from "@/components/rail";
 import { readSession } from "@/lib/session";
 
 const ITEMS: RailItem[] = [
-  { href: "/", label: "Overview", icon: "home" },
-  { href: "/flags", label: "Flags", icon: "flags" },
-  { href: "/jobs", label: "Jobs", icon: "jobs" },
-  { href: "/payments", label: "Payments", icon: "payments" },
-  { href: "/telemetry", label: "Water", icon: "telemetry" },
-  { href: "/sites", label: "Sites", icon: "sites" },
-  { href: "/report", label: "Report", icon: "report" }
+  { href: "/console", label: "Overview", icon: "home" },
+  { href: "/console/flags", label: "Flags", icon: "flags" },
+  { href: "/console/jobs", label: "Jobs", icon: "jobs" },
+  { href: "/console/payments", label: "Payments", icon: "payments" },
+  { href: "/console/telemetry", label: "Water", icon: "telemetry" },
+  { href: "/console/sites", label: "Sites", icon: "sites" },
+  { href: "/console/report", label: "Report", icon: "report" }
 ];
 
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {

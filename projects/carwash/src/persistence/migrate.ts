@@ -1,12 +1,13 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { withoutTenant } from './pool';
+import { withMigrator } from './pool';
+import { env } from '../config/env';
 import { logger } from '../common/logger';
 
 const MIGRATIONS_DIR = path.resolve(process.cwd(), 'migrations');
 
 export async function migrate(): Promise<string[]> {
-  return withoutTenant(async (client) => {
+  return withMigrator(async (client) => {
     await client.query(
       `CREATE TABLE IF NOT EXISTS schema_migrations (
          name text PRIMARY KEY,
@@ -39,6 +40,15 @@ export async function migrate(): Promise<string[]> {
         );
       }
     }
+
+    // forecourt_app is created LOGIN by migration 0004 but no migration file ever sets its
+    // password (a static SQL file is the wrong place for a secret). Set it here, every run,
+    // from an env var - idempotent, and lets the password rotate by changing the env and
+    // re-running rather than editing a migration. ALTER ROLE's PASSWORD clause is a string
+    // literal in the grammar, not a bind-parameter position, so this uses pg's own
+    // escapeLiteral rather than a $1 placeholder (which is a syntax error here).
+    const escapedPassword = client.escapeLiteral(env.FORECOURT_APP_PASSWORD);
+    await client.query(`ALTER ROLE forecourt_app WITH LOGIN PASSWORD ${escapedPassword}`);
 
     return ran;
   });

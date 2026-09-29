@@ -3,7 +3,7 @@ import { env, isProduction } from '../config/env';
 import { logger } from '../common/logger';
 
 function databaseTls(): { rejectUnauthorized: boolean; ca?: string } | undefined {
-  if (!isProduction) {
+  if (!env.DATABASE_SSL) {
     return undefined;
   }
   return env.DATABASE_CA_CERT
@@ -49,6 +49,29 @@ export async function withoutTenant<T>(run: (client: PoolClient) => Promise<T>):
   } finally {
     client.release();
   }
+}
+
+// Migrations create and grant the app role (forecourt_app), which forecourt_app itself has no
+// privilege to do. This connects with DATABASE_MIGRATION_URL - a role with CREATEROLE and
+// ownership of the schema - kept entirely separate from the app's own restricted pool above.
+const migrationPool = new Pool({
+  connectionString: env.DATABASE_MIGRATION_URL,
+  max: 1,
+  connectionTimeoutMillis: 5_000,
+  ssl: databaseTls()
+});
+
+export async function withMigrator<T>(run: (client: PoolClient) => Promise<T>): Promise<T> {
+  const client = await migrationPool.connect();
+  try {
+    return await run(client);
+  } finally {
+    client.release();
+  }
+}
+
+export async function closeMigrationPool(): Promise<void> {
+  await migrationPool.end();
 }
 
 export async function assertRlsIsEffective(): Promise<void> {

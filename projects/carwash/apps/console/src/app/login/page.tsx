@@ -5,7 +5,7 @@ import { LoginForm } from "@/app/login/form";
 
 export default async function LoginPage() {
   if (await readSession()) {
-    redirect("/");
+    redirect("/console");
   }
 
   return (

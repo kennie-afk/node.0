@@ -94,6 +94,15 @@ npm test
 That brings up Postgres, the API on 4000, the telemetry ingestion service on 4100
 and the console on 3300.
 
+### Signup intake
+
+The console serves a public landing page, `/pricing` and `/signup`. `POST /v1/signup`
+(5 requests per hour per IP) writes to `signup_requests`, a table with no `org_id` and
+no row-level security because it exists before any organisation does. Verified live:
+201 on a valid request, 400 on a missing field, 429 on the sixth request in an hour.
+This is intake, not provisioning: someone still turns a request into an organisation,
+site and user by hand. The prices on `/pricing` are introductory and provisional.
+
 ### Devices are credentials, not addresses
 
 A meter posting to `/v1/telemetry` sends `X-Device-Id` and `X-Device-Secret`, checked
