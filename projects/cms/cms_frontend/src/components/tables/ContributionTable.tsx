@@ -50,7 +50,7 @@ export const ContributionTable: React.FC<Props> = ({ contributions, onDelete, on
                     onClick={() => onView(contribution)}
                     style={{ 
                       padding: '4px 10px', 
-                      fontSize: '12px',
+                      fontSize: '10.5px',
                       minWidth: '50px',
                       whiteSpace: 'nowrap'
                     }}
@@ -63,7 +63,7 @@ export const ContributionTable: React.FC<Props> = ({ contributions, onDelete, on
                     onClick={() => onEdit(contribution)}
                     style={{ 
                       padding: '4px 10px', 
-                      fontSize: '12px',
+                      fontSize: '10.5px',
                       minWidth: '50px',
                       whiteSpace: 'nowrap'
                     }}
@@ -76,7 +76,7 @@ export const ContributionTable: React.FC<Props> = ({ contributions, onDelete, on
                     onClick={() => onDelete(contribution.id)}
                     style={{ 
                       padding: '4px 10px', 
-                      fontSize: '12px',
+                      fontSize: '10.5px',
                       minWidth: '55px',
                       whiteSpace: 'nowrap'
                     }}

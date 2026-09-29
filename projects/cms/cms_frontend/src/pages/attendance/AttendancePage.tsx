@@ -119,8 +119,8 @@ export default function AttendancePage() {
         gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '700', margin: 0 }}>General Attendance</h1>
-          <p style={{ color: '#a1a1aa', fontSize: 'clamp(13px, 3.5vw, 14px)' }}>Record and manage all church attendance</p>
+          <h1 style={{ fontSize: '16.5px', fontWeight: '700', margin: 0 }}>General Attendance</h1>
+          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Record and manage all church attendance</p>
         </div>
 
         <button 
@@ -133,11 +133,11 @@ export default function AttendancePage() {
             background: '#ec4899',
             color: 'white',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: '6px',
             fontWeight: '600',
             cursor: 'pointer',
             flexShrink: 0,
-            fontSize: 'clamp(13px, 3.5vw, 14px)'
+            fontSize: '11.5px'
           }}
         >
           {showAddForm ? 'Cancel' : '+ Record Attendance'}
@@ -162,16 +162,16 @@ export default function AttendancePage() {
             padding: '12px 16px',
             backgroundColor: '#27272a',
             border: '1px solid #3f3f46',
-            borderRadius: '8px',
+            borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px',
+            fontSize: '12px',
             boxSizing: 'border-box'
           }}
         />
       </div>
 
-      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{error}</div>}
-      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{success}</div>}
+      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
+      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
 
       {showAddForm && (
         <AddAttendanceForm 
@@ -206,8 +206,8 @@ export default function AttendancePage() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '12px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Event Details</h3>
-              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+              <h3 style={{ fontSize: '14.5px', fontWeight: '600' }}>Event Details</h3>
+              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '11.5px' }}>
                 Close
               </button>
             </div>
@@ -251,8 +251,8 @@ export default function AttendancePage() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '85vh', overflow: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '12px' }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Sermon Details</h3>
-              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px' }}>
+              <h3 style={{ fontSize: '14.5px', fontWeight: '600' }}>Sermon Details</h3>
+              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '11.5px' }}>
                 Close
               </button>
             </div>

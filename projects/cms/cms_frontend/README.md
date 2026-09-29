@@ -1,73 +1,36 @@
-# React + TypeScript + Vite
+# Church CMS console
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React 19 + TypeScript + Vite single-page console for the church CMS API in `../cmsbackend`.
+Served in production by nginx (port 8080) from the image built by `Dockerfile`.
 
-Currently, two official plugins are available:
+## Run the whole stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+From `../cmsbackend`:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+cp .env.example .env          # then set POSTGRES_PASSWORD and a 32+ character JWT_SECRET
+docker compose up -d --build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Compose starts Postgres and Redis, runs the migrations once (`migrate` service), starts the API
+on host port 4400, then the console on `WEB_PORT` (default 8080). If 5432, 4400 or 8080 are
+taken, set `POSTGRES_HOST_PORT`, `API_HOST_PORT` or `WEB_PORT`; keep `PUBLIC_API_URL` and
+`CORS_ORIGINS` in step with them, because the API URL is baked into the console at build time.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+A new church registers itself with `POST /churches` (church plus first administrator), then
+signs in with that administrator's e-mail and password.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Develop
+
 ```
+npm ci
+VITE_API_URL=http://localhost:4400 npm run dev
+npm run build      # type-checks, then bundles
+npm run lint
+```
+
+## Look and feel
+
+Dark theme, 12px root, 6px corner radius everywhere, no shadows for depth, and hover changes
+colour only: nothing moves or lifts on hover or press. Type sizes follow the house scale
+(10.5, 11.5, 12, 13, 14.5, 16.5, 19px).

@@ -66,8 +66,8 @@ export default function DashboardLayout() {
     padding: isSidebarCollapsed ? '12px' : '12px 20px',
     color: '#cbd5e1',
     textDecoration: 'none',
-    fontSize: '14px',
-    borderRadius: '8px',
+    fontSize: '12px',
+    borderRadius: '6px',
     marginBottom: '4px',
     transition: 'all 0.2s ease',
     fontWeight: '500',
@@ -81,8 +81,8 @@ export default function DashboardLayout() {
     paddingLeft: isSidebarCollapsed ? '10px' : '44px',
     color: '#a1a1aa',
     textDecoration: 'none',
-    fontSize: '13px',
-    borderRadius: '8px',
+    fontSize: '11.5px',
+    borderRadius: '6px',
     marginBottom: '2px',
     transition: 'all 0.2s ease',
     cursor: 'pointer',
@@ -113,12 +113,11 @@ export default function DashboardLayout() {
           color: 'white',
           width: '44px',
           height: '44px',
-          borderRadius: '8px',
+          borderRadius: '6px',
           display: window.innerWidth <= 768 ? 'flex' : 'none',
           alignItems: 'center',
           justifyContent: 'center',
           cursor: 'pointer',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
           transition: 'all 0.2s ease'
         }}
         onMouseOver={(e) => {
@@ -144,7 +143,6 @@ export default function DashboardLayout() {
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
-          boxShadow: '2px 0 12px rgba(0, 0, 0, 0.25)',
           position: 'fixed',
           left: isMobileMenuOpen ? '0' : (window.innerWidth <= 768 ? `-${mobileSidebarWidth}` : '0'),
           top: 0,
@@ -170,15 +168,15 @@ export default function DashboardLayout() {
                 width: '40px',
                 height: '40px',
                 background: 'linear-gradient(135deg, #ec4899, #a855f7)',
-                borderRadius: '10px',
+                borderRadius: '6px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                <span style={{ fontSize: '22px', fontWeight: '900', color: 'white' }}>C</span>
+                <span style={{ fontSize: '16.5px', fontWeight: '900', color: 'white' }}>C</span>
               </div>
               <div>
-                <h1 style={{ fontSize: '20px', fontWeight: '700', color: '#f1f5f9', margin: 0 }}>Church CMS</h1>
+                <h1 style={{ fontSize: '14.5px', fontWeight: '700', color: '#f1f5f9', margin: 0 }}>Church CMS</h1>
               </div>
             </div>
           )}
@@ -187,13 +185,13 @@ export default function DashboardLayout() {
               width: '40px',
               height: '40px',
               background: 'linear-gradient(135deg, #ec4899, #a855f7)',
-              borderRadius: '10px',
+              borderRadius: '6px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto'
             }}>
-              <span style={{ fontSize: '22px', fontWeight: '900', color: 'white' }}>C</span>
+              <span style={{ fontSize: '16.5px', fontWeight: '900', color: 'white' }}>C</span>
             </div>
           )}
           
@@ -394,7 +392,7 @@ export default function DashboardLayout() {
               backgroundColor: 'transparent',
               border: '1px solid #f87171',
               color: '#f87171',
-              borderRadius: '8px',
+              borderRadius: '6px',
               fontWeight: '500',
               cursor: 'pointer',
               transition: 'all 0.2s',

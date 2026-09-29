@@ -93,7 +93,7 @@ export const AddMemberForm: React.FC<Props> = ({
 
   return (
     <div className="card" style={{ marginBottom: '30px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
-      <h3 style={{ fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>{isEdit ? 'Edit Member' : 'Add New Member'}</h3>
+      <h3 style={{ fontSize: '13px', fontWeight: '600' }}>{isEdit ? 'Edit Member' : 'Add New Member'}</h3>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div style={{ 
@@ -154,7 +154,7 @@ export const AddMemberForm: React.FC<Props> = ({
               border: '1px solid #3f3f46',
               borderRadius: '6px',
               color: '#f1f5f9',
-              fontSize: '14px',
+              fontSize: '12px',
               boxSizing: 'border-box'
             }}
           >
@@ -174,7 +174,7 @@ export const AddMemberForm: React.FC<Props> = ({
             border: '1px solid #3f3f46',
             borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px',
+            fontSize: '12px',
             boxSizing: 'border-box'
           }}
         >

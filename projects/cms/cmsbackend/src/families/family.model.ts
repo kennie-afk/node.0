@@ -43,19 +43,24 @@ export default (sequelize: Sequelize) => {
   return Family.initModel({
     churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
-    familyName: { type: DataTypes.STRING(100), allowNull: false, unique: true },
+    familyName: { type: DataTypes.STRING(100), allowNull: false },
     headOfFamilyMemberId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     address: { type: DataTypes.STRING(255), allowNull: true },
     city: { type: DataTypes.STRING(100), allowNull: true },
     county: { type: DataTypes.STRING(100), allowNull: true },
     postalCode: { type: DataTypes.STRING(20), allowNull: true },
-    phoneNumber: { type: DataTypes.STRING(20), allowNull: true, unique: true },
-    email: { type: DataTypes.STRING(100), allowNull: true, unique: true, validate: { isEmail: true } },
+    phoneNumber: { type: DataTypes.STRING(20), allowNull: true },
+    email: { type: DataTypes.STRING(100), allowNull: true, validate: { isEmail: true } },
     notes: { type: DataTypes.TEXT, allowNull: true },
   }, {
     tableName: 'families',
     timestamps: true,
     underscored: true,
     modelName: 'Family',
+    indexes: [
+    { unique: true, fields: ['church_id', 'family_name'], name: 'families_church_family_name_unique' },
+    { unique: true, fields: ['church_id', 'phone_number'], name: 'families_church_phone_number_unique' },
+    { unique: true, fields: ['church_id', 'email'], name: 'families_church_email_unique' }
+    ],
   }, sequelize);
 };

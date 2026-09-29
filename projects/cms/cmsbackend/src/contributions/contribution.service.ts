@@ -10,7 +10,10 @@ const service = createCrudService<Contribution>(db.Contribution, 'Contribution',
       attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber']
     }
   ],
-  order: [['date', 'DESC'], ['id', 'ASC']]
+  order: [['date', 'DESC'], ['id', 'ASC']],
+  references: {
+    memberId: { model: db.Member, label: 'Member' }
+  }
 });
 
 export const repository = service.repository;

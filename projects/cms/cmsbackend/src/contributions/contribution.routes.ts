@@ -14,7 +14,7 @@ const router = Router();
 
 router.post('/', authenticateToken, authorizeAdmin, validate(createContributionSchema), createContribution);
 router.get('/', authenticateToken, authorizeAdmin, getAllContributions);
-router.get('/:id', authenticateToken, getContributionById);
+router.get('/:id', authenticateToken, authorizeAdmin, getContributionById);
 router.put('/:id', authenticateToken, authorizeAdmin, validate(updateContributionSchema), updateContribution);
 router.delete('/:id', authenticateToken, authorizeAdmin, deleteContribution);
 

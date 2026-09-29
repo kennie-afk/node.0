@@ -41,7 +41,7 @@ export function AnnouncementTable({ announcements, onDelete, onEdit }: Props) {
                   <span style={{ 
                     color: ann.isPublished ? '#4ade80' : '#f87171',
                     padding: '4px 10px',
-                    borderRadius: '9999px',
+                    borderRadius: '6px',
                     background: ann.isPublished ? 'rgba(74, 222, 128, 0.1)' : 'rgba(248, 113, 113, 0.1)'
                   }}>
                     {ann.isPublished ? 'Published' : 'Draft'}

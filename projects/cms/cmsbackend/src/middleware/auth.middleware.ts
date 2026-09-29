@@ -51,3 +51,22 @@ export const authorizeAdmin = (req: Request, _res: Response, next: NextFunction)
   }
   next();
 };
+
+/**
+ * Admins may act on any user in their church; everyone else only on themselves. Without this
+ * any signed-in member could rewrite another user's password or promote themselves.
+ */
+export const authorizeSelfOrAdmin = (req: Request, _res: Response, next: NextFunction) => {
+  if (req.user?.isAdmin || String(req.user?.id) === req.params.id) {
+    return next();
+  }
+  next(new ForbiddenError('You may only access your own account.'));
+};
+
+/** Blocks non-admins from changing privilege, even on their own account. */
+export const forbidSelfPromotion = (req: Request, _res: Response, next: NextFunction) => {
+  if (!req.user?.isAdmin && req.body && 'isAdmin' in req.body) {
+    return next(new ForbiddenError('Only an administrator can change admin access.'));
+  }
+  next();
+};

@@ -41,7 +41,7 @@ export default function LoginPage() {
         maxWidth: '360px',
         backgroundColor: '#18181b',
         padding: 'clamp(24px, 5vw, 32px)',
-        borderRadius: '10px',
+        borderRadius: '6px',
         border: '1px solid #27272a'
       }}>
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
@@ -49,26 +49,26 @@ export default function LoginPage() {
             width: '48px',
             height: '48px',
             background: 'linear-gradient(135deg, #ec4899, #a855f7)',
-            borderRadius: '10px',
+            borderRadius: '6px',
             margin: '0 auto 12px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '24px',
+            fontSize: '16.5px',
             fontWeight: '900',
             color: 'white'
           }}>
             C
           </div>
-          <h1 style={{ fontSize: 'clamp(20px, 5vw, 24px)', fontWeight: '700', color: '#f1f5f9', marginBottom: '4px' }}>
+          <h1 style={{ fontSize: '16.5px', fontWeight: '700', color: '#f1f5f9', marginBottom: '4px' }}>
             Church CMS
           </h1>
-          <p style={{ color: '#a1a1aa', fontSize: '13px' }}>Sign in to manage the Church</p>
+          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Sign in to manage the Church</p>
         </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px', fontWeight: '500' }}>Email Address</label>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '10.5px', fontWeight: '500' }}>Email Address</label>
             <input
               type="email"
               value={email}
@@ -81,14 +81,14 @@ export default function LoginPage() {
                 border: '1px solid #3f3f46',
                 borderRadius: '6px',
                 color: 'white',
-                fontSize: '14px',
+                fontSize: '12px',
                 boxSizing: 'border-box'
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px', fontWeight: '500' }}>Password</label>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '10.5px', fontWeight: '500' }}>Password</label>
             <input
               type="password"
               value={password}
@@ -101,13 +101,13 @@ export default function LoginPage() {
                 border: '1px solid #3f3f46',
                 borderRadius: '6px',
                 color: 'white',
-                fontSize: '14px',
+                fontSize: '12px',
                 boxSizing: 'border-box'
               }}
             />
           </div>
 
-          {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: '12px' }}>{error}</p>}
+          {error && <p style={{ color: '#f87171', textAlign: 'center', fontSize: '10.5px' }}>{error}</p>}
 
           <button
             type="submit"
@@ -120,7 +120,7 @@ export default function LoginPage() {
               border: 'none',
               borderRadius: '6px',
               fontWeight: '600',
-              fontSize: '14px',
+              fontSize: '12px',
               cursor: loading ? 'not-allowed' : 'pointer'
             }}
           >

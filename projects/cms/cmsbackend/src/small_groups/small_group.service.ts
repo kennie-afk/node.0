@@ -9,7 +9,11 @@ const service = createCrudService<any>(db.SmallGroup, 'Small group', {
     { model: db.Ministry, as: 'parentMinistry', attributes: ['id', 'name'] },
     { model: db.Member, as: 'leader', attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber'] }
   ],
-  order: [['name', 'ASC'], ['id', 'ASC']]
+  order: [['name', 'ASC'], ['id', 'ASC']],
+  references: {
+    ministryId: { model: db.Ministry, label: 'Ministry' },
+    leaderId: { model: db.Member, label: 'Member' }
+  }
 });
 
 const memberships = new TenantRepository<any>(db.SmallGroupMember, 'Small group membership');

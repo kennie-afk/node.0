@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { clearSession, readSession } from './session';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4400';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,

@@ -33,10 +33,10 @@ export function SermonTable({ sermons, onDelete, onEdit, onView }: Props) {
                 {sermon.guestSpeakerName ? (
                   <span style={{
                     padding: '4px 12px',
-                    borderRadius: '9999px',
+                    borderRadius: '6px',
                     backgroundColor: '#166534',
                     color: '#86efac',
-                    fontSize: '13px'
+                    fontSize: '11.5px'
                   }}>
                     Guest: {sermon.guestSpeakerName}
                   </span>

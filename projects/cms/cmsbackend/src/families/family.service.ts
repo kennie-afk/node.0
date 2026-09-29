@@ -4,7 +4,10 @@ import { createCrudService } from '../common/crud-service';
 
 const service = createCrudService<Family>(db.Family, 'Family', {
   include: [{ model: db.Member, as: 'headOfFamily', attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber'] }],
-  order: [['familyName', 'ASC'], ['id', 'ASC']]
+  order: [['familyName', 'ASC'], ['id', 'ASC']],
+  references: {
+    headOfFamilyMemberId: { model: db.Member, label: 'Member' }
+  }
 });
 
 export const repository = service.repository;

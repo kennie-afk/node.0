@@ -5,7 +5,7 @@ export const createContributionSchema = z.object({
         memberId: z.number().int(),
         amount: z.number().positive(),
         date: z.string().datetime(),
-        contributionType: z.string().optional(),
+        contributionType: z.string().min(1).max(100).optional(),
     }),
 });
 

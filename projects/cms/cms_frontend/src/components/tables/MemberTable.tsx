@@ -75,7 +75,7 @@ export const MemberTable: React.FC<Props> = ({
                     onClick={() => onEdit(member)}
                     style={{ 
                       padding: '4px 10px', 
-                      fontSize: '12px',
+                      fontSize: '10.5px',
                       minWidth: '55px',
                       whiteSpace: 'nowrap'
                     }}
@@ -89,7 +89,7 @@ export const MemberTable: React.FC<Props> = ({
                     onClick={() => onViewContributions(member.id, `${member.firstName} ${member.lastName}`)}
                     style={{ 
                       padding: '4px 10px', 
-                      fontSize: '12px',
+                      fontSize: '10.5px',
                       minWidth: '95px',
                       whiteSpace: 'nowrap'
                     }}
@@ -104,7 +104,7 @@ export const MemberTable: React.FC<Props> = ({
                         background: 'transparent',
                         border: 'none',
                         color: '#4ade80',
-                        fontSize: '12px',
+                        fontSize: '10.5px',
                         fontWeight: '500',
                         cursor: 'pointer',
                         padding: '4px 10px',
@@ -135,7 +135,7 @@ export const MemberTable: React.FC<Props> = ({
                     onClick={() => onDelete(member.id)}
                     style={{ 
                       padding: '4px 10px', 
-                      fontSize: '12px',
+                      fontSize: '10.5px',
                       minWidth: '55px',
                       whiteSpace: 'nowrap'
                     }}

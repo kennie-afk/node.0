@@ -16,9 +16,9 @@ export const Button: React.FC<ButtonProps> = ({
       className={`button ${variant}`} 
       style={{
         padding: size === 'sm' ? '6px 16px' : '11px 24px',
-        fontSize: size === 'sm' ? '13px' : '14.5px',
+        fontSize: size === 'sm' ? '11.5px' : '13px',
         fontWeight: '600',
-        borderRadius: '8px',
+        borderRadius: '6px',
         cursor: 'pointer',
         transition: 'all 0.25s ease',
         border: '1px solid transparent',

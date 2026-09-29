@@ -6,7 +6,10 @@ import { BadRequestError } from '../utils/errors';
 
 const service = createCrudService<any>(db.Ministry, 'Ministry', {
   include: [{ model: db.Member, as: 'leader', attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber'] }],
-  order: [['name', 'ASC'], ['id', 'ASC']]
+  order: [['name', 'ASC'], ['id', 'ASC']],
+  references: {
+    leaderId: { model: db.Member, label: 'Member' }
+  }
 });
 
 const memberships = new TenantRepository<any>(db.MinistryMember, 'Ministry membership');

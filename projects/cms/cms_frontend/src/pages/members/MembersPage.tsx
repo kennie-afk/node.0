@@ -156,8 +156,8 @@ export default function MembersPage() {
         gap: '16px' 
       }}>
         <div>
-          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '700', margin: 0 }}>Members Management</h1>
-          <p style={{ color: '#a1a1aa', fontSize: 'clamp(13px, 3.5vw, 14px)' }}>Manage individual church members and their records</p>
+          <h1 style={{ fontSize: '16.5px', fontWeight: '700', margin: 0 }}>Members Management</h1>
+          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Manage individual church members and their records</p>
         </div>
 
         <button 
@@ -171,11 +171,11 @@ export default function MembersPage() {
             background: '#ec4899',
             color: 'white',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: '6px',
             fontWeight: '600',
             cursor: 'pointer',
             flexShrink: 0,
-            fontSize: 'clamp(13px, 3.5vw, 14px)'
+            fontSize: '11.5px'
           }}
         >
           {showAddForm ? 'Cancel' : '+ Add New Member'}
@@ -200,16 +200,16 @@ export default function MembersPage() {
             padding: '12px 16px',
             backgroundColor: '#27272a',
             border: '1px solid #3f3f46',
-            borderRadius: '8px',
+            borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px',
+            fontSize: '12px',
             boxSizing: 'border-box'
           }}
         />
       </div>
 
-      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{error}</div>}
-      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{success}</div>}
+      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
+      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
 
       {showAddForm && <AddMemberForm onMemberAdded={handleMemberAdded} onCancel={handleCancelForm} />}
 
@@ -265,7 +265,7 @@ export default function MembersPage() {
               flexWrap: 'wrap',
               gap: '12px'
             }}>
-              <h3 style={{ fontSize: 'clamp(16px, 4vw, 20px)' }}>Contributions for {selectedMemberName}</h3>
+              <h3 style={{ fontSize: '13px' }}>Contributions for {selectedMemberName}</h3>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button 
                   onClick={() => handleAddContribution(selectedMemberId, selectedMemberName)}
@@ -276,7 +276,7 @@ export default function MembersPage() {
                     padding: '6px 14px',
                     borderRadius: '6px',
                     cursor: 'pointer',
-                    fontSize: '12px',
+                    fontSize: '10.5px',
                     fontWeight: '500'
                   }}
                   onMouseOver={(e) => {
@@ -297,7 +297,7 @@ export default function MembersPage() {
                     padding: '6px 14px',
                     borderRadius: '6px',
                     cursor: 'pointer',
-                    fontSize: '12px'
+                    fontSize: '10.5px'
                   }}
                   onMouseOver={(e) => {
                     e.currentTarget.style.backgroundColor = 'rgba(248, 113, 113, 0.1)';

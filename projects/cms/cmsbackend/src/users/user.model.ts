@@ -33,7 +33,7 @@ export default (sequelize: Sequelize) => {
   return User.initModel({
     churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
-    username: { type: DataTypes.STRING(50), allowNull: false, unique: true },
+    username: { type: DataTypes.STRING(50), allowNull: false },
     email: { type: DataTypes.STRING(100), allowNull: false, unique: true, validate: { isEmail: true } },
     password_hash: { type: DataTypes.STRING(255), allowNull: false },
     isAdmin: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
@@ -42,5 +42,8 @@ export default (sequelize: Sequelize) => {
     timestamps: true,
     underscored: true,
     modelName: 'User',
+    indexes: [
+    { unique: true, fields: ['church_id', 'username'], name: 'users_church_username_unique' }
+    ],
   }, sequelize);
 };

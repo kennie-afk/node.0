@@ -109,7 +109,7 @@ export default function DashboardPage() {
     <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0' }}>
       <div style={{ marginBottom: '32px' }}>
         <h1 style={{ 
-          fontSize: 'clamp(24px, 5vw, 32px)', 
+          fontSize: '16.5px', 
           fontWeight: '700', 
           color: '#ffffff', 
           marginBottom: '8px' 
@@ -121,7 +121,7 @@ export default function DashboardPage() {
           <div 
             style={{
               backgroundColor: '#18181b',
-              borderRadius: '8px',
+              borderRadius: '6px',
               padding: '10px 20px',
               display: 'inline-block',
               transition: 'all 0.2s ease',
@@ -135,7 +135,7 @@ export default function DashboardPage() {
             }}
           >
             <p style={{
-              fontSize: 'clamp(14px, 3.5vw, 15px)',
+              fontSize: '12px',
               fontWeight: '500',
               color: '#ec4899',
               margin: 0
@@ -152,9 +152,9 @@ export default function DashboardPage() {
                 backgroundColor: 'transparent',
                 border: 'none',
                 color: '#f1f5f9',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 fontWeight: '500',
-                fontSize: '14px',
+                fontSize: '12px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -181,11 +181,10 @@ export default function DashboardPage() {
                 right: 0,
                 backgroundColor: '#18181b',
                 border: '1px solid #27272a',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 minWidth: '160px',
                 width: 'max-content',
                 maxWidth: 'calc(100vw - 32px)',
-                boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
                 zIndex: 10,
                 overflow: 'hidden',
                 marginTop: '4px'
@@ -200,7 +199,7 @@ export default function DashboardPage() {
                     style={{
                       padding: '10px 16px',
                       color: '#a1a1aa',
-                      fontSize: '13.5px',
+                      fontSize: '12px',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       whiteSpace: 'nowrap'
@@ -236,7 +235,7 @@ export default function DashboardPage() {
               onClick={() => navigate(module.path)}
               style={{
                 backgroundColor: '#18181b',
-                borderRadius: '12px',
+                borderRadius: '6px',
                 border: '1px solid #27272a',
                 padding: '32px 24px',
                 cursor: 'pointer',
@@ -244,18 +243,16 @@ export default function DashboardPage() {
                 textAlign: 'center'
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.borderColor = module.color;
+                                e.currentTarget.style.borderColor = module.color;
               }}
               onMouseOut={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.borderColor = '#27272a';
+                                e.currentTarget.style.borderColor = '#27272a';
               }}
             >
               <div style={{
                 width: '64px',
                 height: '64px',
-                borderRadius: '16px',
+                borderRadius: '6px',
                 background: `${module.color}15`,
                 display: 'flex',
                 alignItems: 'center',
@@ -266,11 +263,11 @@ export default function DashboardPage() {
               </div>
               
               <div>
-                <h3 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '6px', color: '#f1f5f9' }}>{module.title}</h3>
-                <p style={{ color: '#a1a1aa', fontSize: '13px' }}>{module.desc}</p>
+                <h3 style={{ fontSize: '14.5px', fontWeight: '600', marginBottom: '6px', color: '#f1f5f9' }}>{module.title}</h3>
+                <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>{module.desc}</p>
               </div>
 
-              <div style={{ fontSize: '48px', fontWeight: '700', color: module.color, margin: '16px 0' }}>
+              <div style={{ fontSize: '19px', fontWeight: '700', color: module.color, margin: '16px 0' }}>
                 {module.count}
               </div>
 
@@ -282,7 +279,7 @@ export default function DashboardPage() {
                   backgroundColor: '#f87171',
                   color: 'white',
                   borderRadius: '6px',
-                  fontSize: '12px',
+                  fontSize: '10.5px',
                   fontWeight: '500'
                 }}>
                   {module.badge} New
@@ -296,7 +293,7 @@ export default function DashboardPage() {
                   alignItems: 'center',
                   gap: '6px',
                   color: module.color,
-                  fontSize: '13px',
+                  fontSize: '11.5px',
                   fontWeight: '500',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',

@@ -68,8 +68,8 @@ export default (sequelize: Sequelize) => {
     middleName: { type: DataTypes.STRING(100), allowNull: true },
     gender: { type: DataTypes.ENUM('Male', 'Female', 'Other'), allowNull: true },
     dateOfBirth: { type: DataTypes.DATEONLY, allowNull: true },
-    email: { type: DataTypes.STRING(100), allowNull: true, unique: true, validate: { isEmail: true } },
-    phoneNumber: { type: DataTypes.STRING(20), allowNull: true, unique: true },
+    email: { type: DataTypes.STRING(100), allowNull: true, validate: { isEmail: true } },
+    phoneNumber: { type: DataTypes.STRING(20), allowNull: true },
     address: { type: DataTypes.STRING(255), allowNull: true },
     city: { type: DataTypes.STRING(100), allowNull: true },
     county: { type: DataTypes.STRING(100), allowNull: true },
@@ -85,5 +85,9 @@ export default (sequelize: Sequelize) => {
     timestamps: true,
     underscored: true,
     modelName: 'Member',
+    indexes: [
+    { unique: true, fields: ['church_id', 'email'], name: 'members_church_email_unique' },
+    { unique: true, fields: ['church_id', 'phone_number'], name: 'members_church_phone_number_unique' }
+    ],
   }, sequelize);
 };

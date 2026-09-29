@@ -34,7 +34,7 @@ export default (sequelize: Sequelize) => {
   return Ministry.initModel({
     churchId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: false },
     id: { type: DataTypes.INTEGER.UNSIGNED, autoIncrement: true, primaryKey: true },
-    name: { type: DataTypes.STRING(255), allowNull: false, unique: true },
+    name: { type: DataTypes.STRING(255), allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: true },
     leaderId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     isActive: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: true },
@@ -43,5 +43,8 @@ export default (sequelize: Sequelize) => {
     timestamps: true,
     underscored: true,
     modelName: 'Ministry',
+    indexes: [
+    { unique: true, fields: ['church_id', 'name'], name: 'ministries_church_name_unique' }
+    ],
   }, sequelize);
 };

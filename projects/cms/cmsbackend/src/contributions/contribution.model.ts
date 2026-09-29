@@ -54,15 +54,17 @@ export default (sequelize: Sequelize) => {
     },
     contributionType: { 
       type: DataTypes.STRING(100), 
-      allowNull: false 
+      allowNull: false,
+      defaultValue: 'Offering'
     },
     paymentMethod: { type: DataTypes.STRING(100), allowNull: true },
-    transactionId: { type: DataTypes.STRING(255), allowNull: true, unique: true },
+    transactionId: { type: DataTypes.STRING(255), allowNull: true },
     notes: { type: DataTypes.TEXT, allowNull: true },
   }, {
     tableName: 'contribution',
     timestamps: true,
     underscored: true,
     modelName: 'Contribution',
+    indexes: [{ unique: true, fields: ['church_id', 'transaction_id'], name: 'contribution_church_transaction_id_unique' }],
   }, sequelize);
 };

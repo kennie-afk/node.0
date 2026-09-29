@@ -44,7 +44,7 @@ export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit, onVie
                     onClick={() => onView(family)}
                     style={{ 
                       padding: '4px 10px', 
-                      fontSize: '12px',
+                      fontSize: '10.5px',
                       minWidth: '50px',
                       whiteSpace: 'nowrap'
                     }}
@@ -57,7 +57,7 @@ export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit, onVie
                     onClick={() => onEdit(family)}
                     style={{ 
                       padding: '4px 10px', 
-                      fontSize: '12px',
+                      fontSize: '10.5px',
                       minWidth: '50px',
                       whiteSpace: 'nowrap'
                     }}
@@ -70,7 +70,7 @@ export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit, onVie
                     onClick={() => onDelete(family.id)}
                     style={{ 
                       padding: '4px 10px', 
-                      fontSize: '12px',
+                      fontSize: '10.5px',
                       minWidth: '55px',
                       whiteSpace: 'nowrap'
                     }}

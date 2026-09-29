@@ -104,7 +104,7 @@ export default function AddAnnouncementForm({
 
   return (
     <div className="card" style={{ marginBottom: '28px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
-      <h3 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>
+      <h3 style={{ marginBottom: '20px', fontSize: '13px', fontWeight: '600' }}>
         {isEdit ? 'Edit Announcement' : 'Add New Announcement'}
       </h3>
 
@@ -130,7 +130,7 @@ export default function AddAnnouncementForm({
             border: '1px solid #3f3f46',
             borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px',
+            fontSize: '12px',
             minHeight: '120px',
             resize: 'vertical',
             boxSizing: 'border-box'
@@ -143,7 +143,7 @@ export default function AddAnnouncementForm({
           gap: '16px' 
         }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
               Publication Date
             </label>
             <input
@@ -158,14 +158,14 @@ export default function AddAnnouncementForm({
                 border: '1px solid #3f3f46',
                 borderRadius: '6px',
                 color: '#f1f5f9',
-                fontSize: '14px',
+                fontSize: '12px',
                 boxSizing: 'border-box'
               }}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
               Expiry Date (optional)
             </label>
             <input
@@ -180,7 +180,7 @@ export default function AddAnnouncementForm({
                 border: '1px solid #3f3f46',
                 borderRadius: '6px',
                 color: '#f1f5f9',
-                fontSize: '14px',
+                fontSize: '12px',
                 boxSizing: 'border-box'
               }}
             />
@@ -188,7 +188,7 @@ export default function AddAnnouncementForm({
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
             Target Audience
           </label>
           <select
@@ -202,7 +202,7 @@ export default function AddAnnouncementForm({
               border: '1px solid #3f3f46',
               borderRadius: '6px',
               color: '#f1f5f9',
-              fontSize: '14px',
+              fontSize: '12px',
               boxSizing: 'border-box'
             }}
           >
@@ -220,10 +220,10 @@ export default function AddAnnouncementForm({
             onChange={handleChange}
             style={{ accentColor: '#ec4899' }}
           />
-          <label style={{ color: '#d1d5db', fontSize: '14px' }}>Publish immediately</label>
+          <label style={{ color: '#d1d5db', fontSize: '12px' }}>Publish immediately</label>
         </div>
 
-        {error && <p style={{ color: '#f87171', fontSize: '14px' }}>{error}</p>}
+        {error && <p style={{ color: '#f87171', fontSize: '12px' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button

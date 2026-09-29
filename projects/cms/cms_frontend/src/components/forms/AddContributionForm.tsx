@@ -109,7 +109,7 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
 
   return (
     <div className="card" style={{ marginBottom: '30px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
-      <h3 style={{ fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>{isEdit ? 'Edit Contribution' : 'Record New Contribution'}</h3>
+      <h3 style={{ fontSize: '13px', fontWeight: '600' }}>{isEdit ? 'Edit Contribution' : 'Record New Contribution'}</h3>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <select 
@@ -125,7 +125,7 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
             border: '1px solid #3f3f46',
             borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px',
+            fontSize: '12px',
             boxSizing: 'border-box',
             opacity: preSelectedMemberId && !isEdit ? 0.7 : 1,
             cursor: preSelectedMemberId && !isEdit ? 'not-allowed' : 'pointer'
@@ -168,7 +168,7 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
             border: '1px solid #3f3f46',
             borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px',
+            fontSize: '12px',
             boxSizing: 'border-box'
           }}
         >

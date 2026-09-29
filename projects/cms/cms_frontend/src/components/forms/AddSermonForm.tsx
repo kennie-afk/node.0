@@ -128,7 +128,7 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
 
   return (
     <div className="card" style={{ marginBottom: '28px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
-      <h3 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>
+      <h3 style={{ marginBottom: '20px', fontSize: '13px', fontWeight: '600' }}>
         {isEdit ? 'Edit Sermon' : 'Add New Sermon'}
       </h3>
 
@@ -147,7 +147,7 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
             border: '1px solid #3f3f46',
             borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px',
+            fontSize: '12px',
             minHeight: '160px',
             resize: 'vertical',
             boxSizing: 'border-box'
@@ -176,20 +176,20 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
               onChange={handleChange}
               style={{ accentColor: '#ec4899' }}
             />
-            <label style={{ color: '#d1d5db', fontSize: '14px' }}>Guest Speaker</label>
+            <label style={{ color: '#d1d5db', fontSize: '12px' }}>Guest Speaker</label>
           </div>
         </div>
 
         {!formData.isGuestSpeaker ? (
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
               Speaker (Church Member)
             </label>
             <select
               name="speakerMemberId"
               value={formData.speakerMemberId}
               onChange={handleChange}
-              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '14px', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '12px', boxSizing: 'border-box' }}
             >
               <option value="">Select Speaker</option>
               {members.map((m: any) => (
@@ -223,7 +223,7 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
             border: '1px solid #3f3f46',
             borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px',
+            fontSize: '12px',
             minHeight: '100px',
             resize: 'vertical',
             boxSizing: 'border-box'

@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in your environment}
       POSTGRES_DB: ${POSTGRES_DB:-cms}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
@@ -27,8 +27,21 @@ services:
       timeout: 5s
       retries: 5
 
+  migrate:
+    build: .
+    image: cms-api
+    command: ["npx", "sequelize-cli", "db:migrate"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER:-cms}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cms}
+      DATABASE_SSL: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   api:
     build: .
+    image: cms-api
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -40,8 +53,10 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-info}
       REDIS_URL: redis://redis:6379
     ports:
-      - "4400:4400"
+      - "${API_HOST_PORT:-4400}:4400"
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       postgres:
         condition: service_healthy
       redis:
@@ -57,7 +72,7 @@ services:
       - "${WEB_PORT:-8080}:8080"
     depends_on:
       api:
-        condition: service_started
+        condition: service_healthy
 
 volumes:
   db_data:

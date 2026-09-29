@@ -83,8 +83,8 @@ export default function EventsPage() {
         gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '700', margin: 0 }}>Events Management</h1>
-          <p style={{ color: '#a1a1aa', fontSize: 'clamp(13px, 3.5vw, 14px)' }}>Manage church events and programs</p>
+          <h1 style={{ fontSize: '16.5px', fontWeight: '700', margin: 0 }}>Events Management</h1>
+          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Manage church events and programs</p>
         </div>
 
         <button 
@@ -98,11 +98,11 @@ export default function EventsPage() {
             background: '#ec4899',
             color: 'white',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: '6px',
             fontWeight: '600',
             cursor: 'pointer',
             flexShrink: 0,
-            fontSize: 'clamp(13px, 3.5vw, 14px)'
+            fontSize: '11.5px'
           }}
         >
           {showAddForm ? 'Cancel' : '+ Add New Event'}
@@ -114,9 +114,9 @@ export default function EventsPage() {
           color: '#f87171', 
           padding: '12px', 
           background: '#3f1e1e', 
-          borderRadius: '8px', 
+          borderRadius: '6px', 
           marginBottom: '20px',
-          fontSize: '14px'
+          fontSize: '12px'
         }}>
           {error}
         </div>
@@ -127,9 +127,9 @@ export default function EventsPage() {
           color: '#4ade80', 
           padding: '12px', 
           background: '#1f3a1f', 
-          borderRadius: '8px', 
+          borderRadius: '6px', 
           marginBottom: '20px',
-          fontSize: '14px'
+          fontSize: '12px'
         }}>
           {success}
         </div>

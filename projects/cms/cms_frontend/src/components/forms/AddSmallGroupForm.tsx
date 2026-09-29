@@ -127,7 +127,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
 
   return (
     <div className="card" style={{ marginBottom: '28px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
-      <h3 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>
+      <h3 style={{ marginBottom: '20px', fontSize: '13px', fontWeight: '600' }}>
         {isEdit ? 'Edit Small Group' : 'Add New Small Group'}
       </h3>
 
@@ -135,7 +135,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
         <Input placeholder="Small Group Name *" name="name" value={formData.name} onChange={handleChange} required />
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Ministry *</label>
+          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Ministry *</label>
           <select 
             name="ministryId" 
             value={formData.ministryId} 
@@ -151,7 +151,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Leader</label>
+          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Leader</label>
           <select 
             name="leaderId" 
             value={formData.leaderId} 
@@ -171,7 +171,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
           gap: '16px' 
         }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Meeting Day</label>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Meeting Day</label>
             <select 
               name="meetingDay" 
               value={formData.meetingDay} 
@@ -186,7 +186,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Meeting Time</label>
+            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Meeting Time</label>
             <input 
               type="time" 
               name="meetingTime" 

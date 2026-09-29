@@ -8,7 +8,12 @@ const service = createCrudService<Attendance>(db.Attendance, 'Attendance', {
     { model: db.Event, as: 'attendedEvent', attributes: ['id', 'name', 'startTime'] },
     { model: db.Sermon, as: 'attendedSermon', attributes: ['id', 'title', 'datePreached'] }
   ],
-  order: [['attendanceDate', 'DESC'], ['id', 'ASC']]
+  order: [['attendanceDate', 'DESC'], ['id', 'ASC']],
+  references: {
+    memberId: { model: db.Member, label: 'Member' },
+    eventId: { model: db.Event, label: 'Event' },
+    sermonId: { model: db.Sermon, label: 'Sermon' }
+  }
 });
 
 export const repository = service.repository;

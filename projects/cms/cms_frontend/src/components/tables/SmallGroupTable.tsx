@@ -44,8 +44,8 @@ export function SmallGroupTable({ smallGroups, onDelete, onEdit, onView }: Props
               <td>
                 <span style={{
                   padding: '4px 10px',
-                  borderRadius: '9999px',
-                  fontSize: '13px',
+                  borderRadius: '6px',
+                  fontSize: '11.5px',
                   backgroundColor: group.isActive ? '#166534' : '#450a0a',
                   color: group.isActive ? '#86efac' : '#f87171'
                 }}>

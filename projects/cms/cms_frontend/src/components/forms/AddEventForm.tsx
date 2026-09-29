@@ -68,7 +68,7 @@ export default function AddEventForm({ onEventAdded, initialData, isEdit = false
 
   return (
     <div className="card" style={{ marginBottom: '30px', maxWidth: '800px', marginLeft: 'auto', marginRight: 'auto' }}>
-      <h3 style={{ fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600' }}>{isEdit ? 'Edit Event' : 'Add New Event'}</h3>
+      <h3 style={{ fontSize: '13px', fontWeight: '600' }}>{isEdit ? 'Edit Event' : 'Add New Event'}</h3>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <Input 
@@ -91,7 +91,7 @@ export default function AddEventForm({ onEventAdded, initialData, isEdit = false
             border: '1px solid #3f3f46',
             borderRadius: '6px',
             color: 'white',
-            fontSize: '14px',
+            fontSize: '12px',
             minHeight: '80px',
             resize: 'vertical',
             boxSizing: 'border-box'

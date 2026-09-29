@@ -91,8 +91,8 @@ export default function MembershipPanel({
   return (
     <div style={{ marginTop: '24px', borderTop: '1px solid #27272a', paddingTop: '16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h4 style={{ fontSize: '15px', fontWeight: 600, color: '#f1f5f9', margin: 0 }}>{title}</h4>
-        <span style={{ color: '#a1a1aa', fontSize: '13px' }}>
+        <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9', margin: 0 }}>{title}</h4>
+        <span style={{ color: '#a1a1aa', fontSize: '11.5px' }}>
           {loading ? 'Loading' : `${roster.length} member${roster.length === 1 ? '' : 's'}`}
         </span>
       </div>
@@ -102,9 +102,9 @@ export default function MembershipPanel({
           style={{
             color: '#f87171',
             background: '#3f1e1e',
-            borderRadius: '8px',
+            borderRadius: '6px',
             padding: '10px',
-            fontSize: '13px',
+            fontSize: '11.5px',
             marginTop: '12px'
           }}
         >
@@ -123,9 +123,9 @@ export default function MembershipPanel({
             padding: '10px 12px',
             backgroundColor: '#27272a',
             border: '1px solid #3f3f46',
-            borderRadius: '8px',
+            borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '13px'
+            fontSize: '11.5px'
           }}
         >
           <option value="">
@@ -150,9 +150,9 @@ export default function MembershipPanel({
             padding: '10px 12px',
             backgroundColor: '#27272a',
             border: '1px solid #3f3f46',
-            borderRadius: '8px',
+            borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '13px'
+            fontSize: '11.5px'
           }}
         />
 
@@ -164,9 +164,9 @@ export default function MembershipPanel({
             background: busy || !selected ? '#3f3f46' : '#ec4899',
             color: 'white',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: '6px',
             fontWeight: 600,
-            fontSize: '13px',
+            fontSize: '11.5px',
             cursor: busy || !selected ? 'not-allowed' : 'pointer'
           }}
         >
@@ -175,7 +175,7 @@ export default function MembershipPanel({
       </div>
 
       {!loading && roster.length === 0 && (
-        <p style={{ color: '#a1a1aa', fontSize: '13px', marginTop: '16px' }}>
+        <p style={{ color: '#a1a1aa', fontSize: '11.5px', marginTop: '16px' }}>
           Nobody has been added yet. Choose a member above to build the roster.
         </p>
       )}
@@ -188,7 +188,7 @@ export default function MembershipPanel({
                 <td style={{ ...label, color: '#f1f5f9', fontWeight: 500 }}>
                   {entry.firstName} {entry.lastName}
                 </td>
-                <td style={{ ...label, fontSize: '13px' }}>{entry.role || '-'}</td>
+                <td style={{ ...label, fontSize: '11.5px' }}>{entry.role || '-'}</td>
                 <td style={{ padding: '12px 0', textAlign: 'right' }}>
                   <button
                     onClick={() => handleRemove(entry.id)}
@@ -200,7 +200,7 @@ export default function MembershipPanel({
                       padding: '4px 12px',
                       borderRadius: '6px',
                       cursor: busy ? 'not-allowed' : 'pointer',
-                      fontSize: '12px'
+                      fontSize: '10.5px'
                     }}
                   >
                     Remove

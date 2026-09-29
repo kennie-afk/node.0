@@ -106,8 +106,8 @@ export default function MinistriesPage() {
         gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '700', color: '#f1f5f9', margin: 0 }}>Ministries</h1>
-          <p style={{ color: '#a1a1aa', fontSize: 'clamp(13px, 3.5vw, 14px)' }}>Manage church ministries and departments</p>
+          <h1 style={{ fontSize: '16.5px', fontWeight: '700', color: '#f1f5f9', margin: 0 }}>Ministries</h1>
+          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Manage church ministries and departments</p>
         </div>
 
         <button 
@@ -120,10 +120,10 @@ export default function MinistriesPage() {
             background: '#ec4899',
             color: 'white',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: '6px',
             fontWeight: '600',
             cursor: 'pointer',
-            fontSize: 'clamp(13px, 3.5vw, 14px)',
+            fontSize: '11.5px',
             flexShrink: 0
           }}
         >
@@ -149,22 +149,22 @@ export default function MinistriesPage() {
             padding: '12px 16px',
             backgroundColor: '#27272a',
             border: '1px solid #3f3f46',
-            borderRadius: '8px',
+            borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px',
+            fontSize: '12px',
             boxSizing: 'border-box'
           }}
         />
       </div>
 
       {error && (
-        <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>
+        <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
           {error}
         </div>
       )}
 
       {success && (
-        <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>
+        <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
           {success}
         </div>
       )}
@@ -218,7 +218,7 @@ export default function MinistriesPage() {
               borderBottom: '1px solid #27272a',
               paddingBottom: '12px'
             }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Ministry Details</h3>
+              <h3 style={{ fontSize: '14.5px', fontWeight: '600' }}>Ministry Details</h3>
               <button 
                 onClick={closeViewModal}
                 style={{
@@ -228,7 +228,7 @@ export default function MinistriesPage() {
                   padding: '6px 16px',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '13px'
+                  fontSize: '11.5px'
                 }}
               >
                 Close

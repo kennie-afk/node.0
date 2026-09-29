@@ -15,7 +15,7 @@ export default function BackButton() {
         backgroundColor: '#27272a',
         border: '1px solid #3f3f46',
         color: '#f1f5f9',
-        borderRadius: '8px',
+        borderRadius: '6px',
         fontWeight: '500',
         cursor: 'pointer',
         transition: 'all 0.2s',

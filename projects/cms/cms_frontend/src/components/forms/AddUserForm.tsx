@@ -75,44 +75,44 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
     <div style={{ 
       backgroundColor: '#18181b', 
       padding: 'clamp(16px, 4vw, 24px)', 
-      borderRadius: '8px', 
+      borderRadius: '6px', 
       marginBottom: '28px',
       border: '1px solid #27272a',
       maxWidth: '800px',
       marginLeft: 'auto',
       marginRight: 'auto'
     }}>
-      <h2 style={{ marginBottom: '20px', fontSize: 'clamp(18px, 4vw, 20px)', fontWeight: '600', color: '#f1f5f9' }}>
+      <h2 style={{ marginBottom: '20px', fontSize: '13px', fontWeight: '600', color: '#f1f5f9' }}>
         {isEdit ? 'Edit User' : 'Add New User'}
       </h2>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Username</label>
+          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Username</label>
           <input 
             type="text" 
             name="username" 
             value={formData.username} 
             onChange={handleChange} 
             required 
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '14px', boxSizing: 'border-box' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '12px', boxSizing: 'border-box' }} 
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>Email Address</label>
+          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Email Address</label>
           <input 
             type="email" 
             name="email" 
             value={formData.email} 
             onChange={handleChange} 
             required 
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '14px', boxSizing: 'border-box' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '12px', boxSizing: 'border-box' }} 
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '13.5px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
             {isEdit ? 'New Password (leave blank to keep current)' : 'Password'}
           </label>
           <input 
@@ -121,7 +121,7 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
             value={formData.password} 
             onChange={handleChange} 
             required={!isEdit}
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '14px', boxSizing: 'border-box' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '12px', boxSizing: 'border-box' }} 
           />
         </div>
 
@@ -133,10 +133,10 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
             onChange={handleChange} 
             style={{ accentColor: '#ec4899' }} 
           />
-          <label style={{ color: '#d1d5db', fontSize: '14px' }}>Grant Administrator privileges</label>
+          <label style={{ color: '#d1d5db', fontSize: '12px' }}>Grant Administrator privileges</label>
         </div>
 
-        {error && <p style={{ color: '#f87171', fontSize: '14px' }}>{error}</p>}
+        {error && <p style={{ color: '#f87171', fontSize: '12px' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <button 
@@ -150,7 +150,7 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
               border: 'none',
               borderRadius: '6px',
               fontWeight: '600',
-              fontSize: '14.5px',
+              fontSize: '13px',
               cursor: loading ? 'not-allowed' : 'pointer',
               flex: 1
             }}
@@ -172,7 +172,7 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
               color: '#f1f5f9',
               borderRadius: '6px',
               fontWeight: '600',
-              fontSize: '14.5px',
+              fontSize: '13px',
               cursor: 'pointer',
               flex: 1
             }}

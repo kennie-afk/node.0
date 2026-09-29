@@ -107,8 +107,8 @@ export default function UsersPage() {
         gap: '16px' 
       }}>
         <div>
-          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '700', marginBottom: '4px' }}>Users Management</h1>
-          <p style={{ color: '#a1a1aa', fontSize: 'clamp(13px, 3.5vw, 14px)' }}>Manage church administrators and staff</p>
+          <h1 style={{ fontSize: '16.5px', fontWeight: '700', marginBottom: '4px' }}>Users Management</h1>
+          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Manage church administrators and staff</p>
         </div>
 
         <button 
@@ -122,19 +122,19 @@ export default function UsersPage() {
             background: '#ec4899',
             color: 'white',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: '6px',
             fontWeight: '600',
             cursor: 'pointer',
             flexShrink: 0,
-            fontSize: 'clamp(13px, 3.5vw, 14px)'
+            fontSize: '11.5px'
           }}
         >
           {showAddForm ? 'Cancel' : '+ Add New User'}
         </button>
       </div>
 
-      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{error}</div>}
-      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{success}</div>}
+      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
+      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
 
       {showAddForm && <AddUserForm onUserAdded={handleUserAdded} onCancel={handleCancelForm} />}
 
@@ -167,9 +167,9 @@ export default function UsersPage() {
                 padding: '12px 16px',
                 backgroundColor: '#27272a',
                 border: '1px solid #3f3f46',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 color: '#f1f5f9',
-                fontSize: '14px',
+                fontSize: '12px',
                 boxSizing: 'border-box'
               }}
             />
@@ -179,7 +179,7 @@ export default function UsersPage() {
                 background: '#ec4899',
                 color: 'white',
                 border: 'none',
-                borderRadius: '8px',
+                borderRadius: '6px',
                 fontWeight: '600',
                 cursor: 'pointer',
                 flexShrink: 0,

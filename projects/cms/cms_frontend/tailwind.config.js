@@ -18,7 +18,7 @@ export default {
         error: '#f87171',
       },
       borderRadius: {
-        card: '12px',
+        card: "6px",
       },
       animation: {
         'fade-in': 'fadeIn 0.2s ease-in-out',

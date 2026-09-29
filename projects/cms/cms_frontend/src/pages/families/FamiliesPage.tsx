@@ -119,8 +119,8 @@ export default function FamiliesPage() {
         gap: '16px' 
       }}>
         <div>
-          <h1 style={{ fontSize: 'clamp(24px, 6vw, 32px)', fontWeight: '700', margin: 0 }}>Families Management</h1>
-          <p style={{ color: '#a1a1aa', fontSize: 'clamp(13px, 3.5vw, 14px)' }}>Manage church families</p>
+          <h1 style={{ fontSize: '16.5px', fontWeight: '700', margin: 0 }}>Families Management</h1>
+          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Manage church families</p>
         </div>
 
         <button 
@@ -134,11 +134,11 @@ export default function FamiliesPage() {
             background: '#ec4899',
             color: 'white',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: '6px',
             fontWeight: '600',
             cursor: 'pointer',
             flexShrink: 0,
-            fontSize: 'clamp(13px, 3.5vw, 14px)'
+            fontSize: '11.5px'
           }}
         >
           {showAddForm ? 'Cancel' : '+ Add New Family'}
@@ -163,16 +163,16 @@ export default function FamiliesPage() {
             padding: '12px 16px',
             backgroundColor: '#27272a',
             border: '1px solid #3f3f46',
-            borderRadius: '8px',
+            borderRadius: '6px',
             color: '#f1f5f9',
-            fontSize: '14px',
+            fontSize: '12px',
             boxSizing: 'border-box'
           }}
         />
       </div>
 
-      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{error}</div>}
-      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '8px', marginBottom: '20px', fontSize: '14px' }}>{success}</div>}
+      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
+      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
 
       {showAddForm && <AddFamilyForm onFamilyAdded={handleFamilyAdded} onCancel={handleCancelForm} />}
 
@@ -225,7 +225,7 @@ export default function FamiliesPage() {
               borderBottom: '1px solid #27272a',
               paddingBottom: '12px'
             }}>
-              <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Family Details</h3>
+              <h3 style={{ fontSize: '14.5px', fontWeight: '600' }}>Family Details</h3>
               <button 
                 onClick={closeViewModal}
                 style={{
@@ -235,7 +235,7 @@ export default function FamiliesPage() {
                   padding: '6px 16px',
                   borderRadius: '6px',
                   cursor: 'pointer',
-                  fontSize: '13px'
+                  fontSize: '11.5px'
                 }}
               >
                 Close

@@ -45,10 +45,10 @@ export function AttendanceTable({
                 ) : (
                   <span style={{
                     padding: '4px 12px',
-                    borderRadius: '9999px',
+                    borderRadius: '6px',
                     backgroundColor: '#166534',
                     color: '#86efac',
-                    fontSize: '13px',
+                    fontSize: '11.5px',
                     fontWeight: '600'
                   }}>
                     Guest
@@ -65,23 +65,23 @@ export function AttendanceTable({
               )}
               <td>
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  <Button variant="primary" size="sm" onClick={() => onEdit(record)} style={{ padding: '4px 10px', fontSize: '12px' }}>
+                  <Button variant="primary" size="sm" onClick={() => onEdit(record)} style={{ padding: '4px 10px', fontSize: '10.5px' }}>
                     Edit
                   </Button>
 
                   {record.eventId && activeTab !== 'sermon' && (
-                    <Button variant="primary" size="sm" onClick={() => onViewEvent(record.eventId!)} style={{ padding: '4px 10px', fontSize: '12px' }}>
+                    <Button variant="primary" size="sm" onClick={() => onViewEvent(record.eventId!)} style={{ padding: '4px 10px', fontSize: '10.5px' }}>
                       View
                     </Button>
                   )}
 
                   {record.sermonId && activeTab !== 'event' && (
-                    <Button variant="primary" size="sm" onClick={() => onViewSermon(record.sermonId!)} style={{ padding: '4px 10px', fontSize: '12px' }}>
+                    <Button variant="primary" size="sm" onClick={() => onViewSermon(record.sermonId!)} style={{ padding: '4px 10px', fontSize: '10.5px' }}>
                       View
                     </Button>
                   )}
 
-                  <Button variant="danger" size="sm" onClick={() => onDelete(record.id)} style={{ padding: '4px 10px', fontSize: '12px' }}>
+                  <Button variant="danger" size="sm" onClick={() => onDelete(record.id)} style={{ padding: '4px 10px', fontSize: '10.5px' }}>
                     Delete
                   </Button>
                 </div>
