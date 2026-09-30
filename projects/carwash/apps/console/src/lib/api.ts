@@ -50,6 +50,9 @@ async function request<T>(path: string, init?: RequestInit, token?: string): Pro
     );
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
   return (await response.json()) as T;
 }
 
@@ -81,6 +84,12 @@ export interface SignupResult {
 export const api = {
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string) => request<T>(path, { method: "POST" }),
+  send: <T>(method: "POST" | "PUT" | "DELETE", path: string, body?: unknown) =>
+    request<T>(path, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body === undefined ? undefined : JSON.stringify(body)
+    }),
   login: (credentials: Credentials) =>
     request<LoginResult>(
       "/v1/auth/login",

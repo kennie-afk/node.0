@@ -6,7 +6,8 @@ import { logger } from '../common/logger';
 import { closePool, pool } from '../persistence/pool';
 import { requestContext, errorHandler, notFound } from '../api/middleware';
 import { parseBatch } from './batch';
-import { ingestBatch } from './service';
+import { ingestBatch, ingestPlates } from './service';
+import { parsePlateBatch } from './plates';
 
 export function createIngestionApp() {
   const app = express();
@@ -63,6 +64,19 @@ export function createIngestionApp() {
         minutesFolded: outcome.minutesFolded,
         missingSequences: outcome.sequences.missing
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  app.post('/v1/plates', async (req, res, next) => {
+    try {
+      const outcome = await ingestPlates(
+        req.header('x-device-id'),
+        req.header('x-device-secret'),
+        parsePlateBatch(req.body)
+      );
+      res.status(202).json(outcome);
     } catch (error) {
       next(error);
     }

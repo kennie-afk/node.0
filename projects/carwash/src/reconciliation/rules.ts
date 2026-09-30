@@ -16,15 +16,38 @@ export type Rule = (input: ReconciliationInput) => Discrepancy[];
 const PAID_STATES = new Set(['paid', 'closed']);
 const COUNTED_STATES = new Set(['in_progress', 'awaiting_payment', 'paid', 'closed']);
 
-function minuteOfDay(at: Date): number {
-  return at.getUTCHours() * 60 + at.getUTCMinutes();
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const formatters = new Map<string, Intl.DateTimeFormat>();
+
+/** Minute of the day and weekday as the site's clock shows them, not UTC's. */
+function localClock(at: Date, timezone: string): { minute: number; weekday: number } {
+  let formatter = formatters.get(timezone);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat('en-GB', {
+      timeZone: timezone,
+      hourCycle: 'h23',
+      weekday: 'short',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+    formatters.set(timezone, formatter);
+  }
+  const parts = formatter.formatToParts(at);
+  const pick = (type: string) => parts.find((part) => part.type === type)?.value ?? '0';
+  return {
+    minute: Number(pick('hour')) * 60 + Number(pick('minute')),
+    weekday: Math.max(0, WEEKDAYS.indexOf(pick('weekday')))
+  };
 }
 
-function withinOperatingHours(at: Date, hours: OperatingHours): boolean {
-  if (!hours.daysOpen.includes(at.getUTCDay())) {
+// Opening hours are stored as local minutes (06:00 is 360), so they are compared against the
+// site's local clock. Comparing them with UTC made a Nairobi site look open from 09:00 and
+// flagged every morning wash between 06:00 and 09:00 as after-hours.
+function withinOperatingHours(at: Date, hours: OperatingHours, timezone: string): boolean {
+  const { minute, weekday } = localClock(at, timezone);
+  if (!hours.daysOpen.includes(weekday)) {
     return false;
   }
-  const minute = minuteOfDay(at);
   return minute >= hours.opensMinute && minute < hours.closesMinute;
 }
 
@@ -161,7 +184,7 @@ export const underquoting: Rule = (input) => {
 export const afterHoursOperation: Rule = (input) => {
   const outside = input.telemetry.filter(
     (window) =>
-      window.litres > 0 && !withinOperatingHours(window.from, input.operatingHours)
+      window.litres > 0 && !withinOperatingHours(window.from, input.operatingHours, input.timezone)
   );
 
   if (outside.length === 0) {

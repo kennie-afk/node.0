@@ -30,7 +30,7 @@ export default async function OverviewPage() {
         title="Overview"
         subtitle={`${data.organisation}. How much money should have come in against how much did, and where the gap is.`}
         actions={
-          <Link href="/report" className={secondaryButtonClass}>
+          <Link href="/console/report" className={secondaryButtonClass}>
             Daily report
           </Link>
         }

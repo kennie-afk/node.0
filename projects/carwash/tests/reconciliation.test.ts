@@ -190,7 +190,8 @@ describe('fraud 5: after-hours operation', () => {
     const result = reconcile(
       input({
         jobs: [job()],
-        telemetry: [window(120, '2026-10-14T03:00:00Z')]
+        // 00:00Z is 03:00 in Nairobi, three hours before the site opens at 06:00 local
+        telemetry: [window(120, '2026-10-14T00:00:00Z')]
       })
     );
 

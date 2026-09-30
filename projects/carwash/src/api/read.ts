@@ -105,16 +105,21 @@ router.get("/payments", authenticate, async (req, res, next) => {
 
 router.get("/discrepancies", authenticate, async (req, res, next) => {
   try {
+    // `state` filters the queue (open by default in the console); `all` returns every state.
+    const state = typeof req.query.state === "string" ? req.query.state : "all";
+    const siteId = typeof req.query.siteId === "string" ? req.query.siteId : "";
     const rows = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(
         `SELECT d.id, d.type, d.severity, d.est_value_cents, d.summary, d.evidence,
-                d.state, d.business_day, s.name AS site
+                d.state, d.business_day, d.resolution_note, s.name AS site
            FROM discrepancies d
            JOIN sites s ON s.id = d.site_id
+          WHERE ($1 = 'all' OR d.state = $1) AND ($2 = '' OR d.site_id::text = $2)
           ORDER BY
             CASE d.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
-            d.est_value_cents DESC
-          LIMIT 100`
+            d.est_value_cents DESC, d.business_day DESC
+          LIMIT 100`,
+        [state, siteId]
       );
       return rows;
     });
@@ -129,7 +134,8 @@ router.get("/discrepancies", authenticate, async (req, res, next) => {
         evidence: row.evidence,
         state: row.state,
         businessDay: row.business_day,
-        site: row.site
+        site: row.site,
+        resolutionNote: row.resolution_note
       }))
     );
   } catch (error) {

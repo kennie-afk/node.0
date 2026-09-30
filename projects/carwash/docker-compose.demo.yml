@@ -1,0 +1,41 @@
+# Demo overlay. Adds the demo organisation (seeded once, idempotent) and, on request, a live
+# simulator. NEVER use this in a real deployment: it creates accounts that share a published PIN.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build
+#   docker compose -f docker-compose.yml -f docker-compose.demo.yml --profile live up -d simulator
+#
+x-app-env: &app-env
+  DATABASE_URL: postgres://forecourt_app:${FORECOURT_APP_PASSWORD}@postgres:5432/${POSTGRES_DB:-forecourt}
+  DATABASE_MIGRATION_URL: postgres://${POSTGRES_USER:-forecourt}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-forecourt}
+  FORECOURT_APP_PASSWORD: ${FORECOURT_APP_PASSWORD}
+  JWT_SECRET: ${JWT_SECRET}
+  MPESA_CALLBACK_SECRET: ${MPESA_CALLBACK_SECRET}
+
+services:
+  demo-seed:
+    build: .
+    command: ["node", "dist/demo/seed.js"]
+    restart: "no"
+    environment:
+      <<: *app-env
+      FORECOURT_ALLOW_DEMO_SEED: "true"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  simulator:
+    build: .
+    profiles: ["live"]
+    command: ["node", "dist/demo/simulate.js"]
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:4000
+      INGESTION_URL: http://ingestion:4100
+      MPESA_CALLBACK_SECRET: ${MPESA_CALLBACK_SECRET}
+    depends_on:
+      demo-seed:
+        condition: service_completed_successfully
+      ingestion:
+        condition: service_healthy
+      api:
+        condition: service_healthy

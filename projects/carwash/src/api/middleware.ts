@@ -91,6 +91,17 @@ export const errorHandler = (
       .json({ code: error.code, message: error.message, requestId: req.id });
   }
 
+  // Constraint violations are the caller's doing (a duplicate till number, a row still in use).
+  const pg = error as { code?: string; constraint?: string };
+  if (pg.code === '23505' || pg.code === '23503') {
+    const message = pg.code === '23505' ? 'That value is already in use.' : 'That record is still referred to by other records.';
+    logger.warn('request rejected', { requestId: req.id, code: pg.code, constraint: pg.constraint });
+    return res.status(409).json({ code: 'conflict', message, requestId: req.id });
+  }
+  if (pg.code === '22P02') {
+    return res.status(400).json({ code: 'bad-request', message: 'A value had the wrong format.', requestId: req.id });
+  }
+
   logger.error('unhandled error', {
     requestId: req.id,
     path: req.originalUrl,

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { api, describeError } from "@/lib/api";
 import { ksh, type Discrepancy } from "@/lib/types";
 import { Badge, Card, EmptyState, Notice, PageHeader, Stat } from "@/components/ui";
@@ -14,12 +15,27 @@ const EXPLAIN: Record<string, string> = {
   abandoned_job_pattern: "One worker keeps opening and abandoning jobs."
 };
 
-export default async function FlagsPage() {
+const TABS = [
+  { key: "open", label: "Open" },
+  { key: "resolved", label: "Resolved" },
+  { key: "all", label: "All" }
+];
+
+export default async function FlagsPage({
+  searchParams
+}: {
+  searchParams: Promise<{ state?: string; siteId?: string }>;
+}) {
+  const query = await searchParams;
+  const tab = TABS.some((item) => item.key === query.state) ? (query.state as string) : "open";
+  const siteId = query.siteId ?? "";
   let flags: Discrepancy[] = [];
   let error: string | null = null;
 
   try {
-    flags = await api.get<Discrepancy[]>("/v1/discrepancies");
+    const all = await api.get<Discrepancy[]>(`/v1/discrepancies?state=all${siteId ? `&siteId=${siteId}` : ""}`);
+    flags =
+      tab === "all" ? all : tab === "open" ? all.filter((flag) => flag.state === "open") : all.filter((flag) => flag.state !== "open");
   } catch (caught) {
     error = describeError(caught);
   }
@@ -36,6 +52,22 @@ export default async function FlagsPage() {
 
       {error ? <Notice tone="danger">{error}</Notice> : null}
 
+      <nav className="mb-5 flex items-center gap-1">
+        {TABS.map((item) => (
+          <Link
+            key={item.key}
+            href={`/console/flags?state=${item.key}${siteId ? `&siteId=${siteId}` : ""}`}
+            className={`rounded-lg px-3 py-1.5 text-[0.8125rem] font-medium transition-colors ${
+              item.key === tab
+                ? "bg-[var(--color-ink)] text-white"
+                : "text-[var(--color-muted)] hover:bg-[var(--color-raised)] hover:text-[var(--color-ink)]"
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+
       {flags.length > 0 ? (
         <div className="mb-5 grid gap-3 sm:grid-cols-3">
           <Stat label="Open flags" value={String(flags.length)} tone="warn" />
@@ -47,8 +79,8 @@ export default async function FlagsPage() {
       {!error && flags.length === 0 ? (
         <Card>
           <EmptyState
-            message="Nothing is flagged"
-            detail="Demand, work and money agree for every site and day held so far."
+            message={tab === "open" ? "Nothing is flagged" : "Nothing here"}
+            detail={tab === "open" ? "Demand, work and money agree for every site and day held so far." : "No flags in this view."}
           />
         </Card>
       ) : null}
@@ -60,16 +92,17 @@ export default async function FlagsPage() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge value={flag.severity} />
-                  <span className="text-[0.8125rem] font-medium">
+                  <Link href={`/console/flags/${flag.id}`} className="text-[0.8125rem] font-medium underline-offset-2 hover:underline">
                     {flag.type.replaceAll("_", " ")}
-                  </span>
+                  </Link>
+                  {flag.state !== "open" ? <Badge value={flag.state} /> : null}
                   <span className="text-[0.75rem] text-[var(--color-faint)]">
                     {flag.site} · {String(flag.businessDay).slice(0, 10)}
                   </span>
                 </div>
                 <p className="mt-1.5 text-[0.8125rem] text-[var(--color-muted)]">{flag.summary}</p>
                 <p className="mt-1 text-[0.75rem] text-[var(--color-faint)]">
-                  {EXPLAIN[flag.type] ?? ""}
+                  {flag.resolutionNote ? `“${flag.resolutionNote}”` : EXPLAIN[flag.type] ?? ""}
                 </p>
               </div>
               {flag.estimatedCents > 0 ? (

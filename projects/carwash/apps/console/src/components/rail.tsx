@@ -33,7 +33,7 @@ export function Rail({ items, displayName, role }: RailProps) {
         <Image src="/mark.svg" alt="Forecourt" width={256} height={256} className="h-7 w-7" priority />
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-2.5">
+      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2.5">
         {items.map((item) => {
           const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
           return (
@@ -41,7 +41,7 @@ export function Rail({ items, displayName, role }: RailProps) {
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
-              className={`flex flex-col items-center gap-1 rounded-lg px-1 py-2.5 text-[0.625rem] font-medium transition-colors ${
+              className={`flex flex-col items-center gap-1 rounded-lg px-1 py-2 text-[0.625rem] font-medium transition-colors ${
                 active
                   ? "bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
                   : "text-[var(--color-muted)] hover:bg-[var(--color-raised)] hover:text-[var(--color-ink)]"

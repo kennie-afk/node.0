@@ -100,8 +100,9 @@ The console serves a public landing page, `/pricing` and `/signup`. `POST /v1/si
 (5 requests per hour per IP) writes to `signup_requests`, a table with no `org_id` and
 no row-level security because it exists before any organisation does. Verified live:
 201 on a valid request, 400 on a missing field, 429 on the sixth request in an hour.
-This is intake, not provisioning: someone still turns a request into an organisation,
-site and user by hand. The prices on `/pricing` are introductory and provisional.
+This is intake; turning a request into a tenant is one operator command, see
+[Onboarding a customer](#onboarding-a-customer). The prices on `/pricing` are
+introductory and provisional.
 
 ### Devices are credentials, not addresses
 
@@ -125,6 +126,111 @@ The Daraja webhook has to find which organisation a till belongs to before it
 knows the organisation, which no tenant-scoped query can do. `resolve_till` is
 a `SECURITY DEFINER` function granted only to the application role, so that is
 the single deliberate hole rather than an accidental one.
+
+
+## Onboarding a customer
+
+An operator converts a signup request into a working tenant (organisation, first site and
+bay, a starter price list, and an owner who can sign in). The command runs through the
+application's own restricted database role, so row-level security authorises every insert.
+The owner's PIN is random, printed once, and stored only as a bcrypt hash.
+
+```
+npm run admin -- signups                        # what is waiting
+npm run admin -- provision latest --site "Westlands" --till 5110001
+npm run admin -- create-org --business "Amina Car Wash" --owner "Amina Wanjiru" --phone 0712345678
+# in the container image:  docker compose run --rm api node dist/admin/cli.js signups
+```
+
+A phone number can belong to one account in the whole system (sign-in finds a user by phone
+alone), so provisioning refuses a number that is already taken. After sign-in the owner
+adds sites, bays, prices and people from the console (Sites, Prices, Team).
+
+## Demo
+
+A complete, believable world in two commands: three sites, a team, a price list, fourteen
+days of trading (about 1,400 jobs, 1,400 payments, 80,000 telemetry readings, 2,800 plate
+captures) and ten frauds planted on known days. The flags in the console were not typed
+in: the seed writes the raw ledgers and then runs the real reconciliation engine over every
+day, so each flag is something the product found.
+
+```
+cp .env.example .env            # then set POSTGRES_PASSWORD and FORECOURT_APP_PASSWORD (12+ chars)
+docker compose -f docker-compose.yml -f docker-compose.demo.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.demo.yml --profile live up -d simulator   # optional live feed
+```
+
+Open http://localhost:3300/login (set `CONSOLE_PORT` / `API_PORT` / `POSTGRES_PORT` if those
+ports are taken).
+
+| Who | Phone | PIN |
+| --- | --- | --- |
+| Owner, all sites (Amina Wanjiru) | `254700000001` | `246810` |
+| Manager, Westlands (Brian Otieno) | `254700000002` | `246810` |
+| Manager, Kilimani (Grace Njeri) | `254700000003` | `246810` |
+| Manager, Thika Road (Peter Kamau) | `254700000004` | `246810` |
+| Worker, Westlands (Samuel Kiptoo) | `254700000011` | `246810` |
+
+**These accounts share a published PIN. They exist only when `FORECOURT_ALLOW_DEMO_SEED=true`
+is set, which only the demo overlay does, and must never exist in a real deployment.**
+
+Without Docker: `npm run migrate`, then
+`FORECOURT_ALLOW_DEMO_SEED=true npm run demo:seed` (add `-- --reset` to rebuild), start the API and
+ingestion (`npm run dev:api`, `npm run dev:ingestion`) and run `npm run demo:simulate`.
+
+### What to show, in order
+
+1. **Overview** - expected against received, the gap, and what is flagged.
+2. **Flags** - worst first. Open `ghost wash` at Kilimani (7 washes' worth of water, no jobs),
+   `underquoting` at Thika Road (one worker charging 70% with no authorisation), `after hours
+   operation` at Westlands, `cash ratio spike` at Westlands. Resolve one with a note; the
+   Resolved tab shows three already closed the way a manager would (explained, confirmed,
+   dismissed).
+3. **Jobs** then a job - the server-stamped timeline and the payment that matched it.
+4. **Water** and **Devices** - the non-human witnesses; Thika Road's pump monitor has gone quiet.
+5. **Sites / Prices / Team** - add a site, change a price, add a worker, suspend someone.
+6. **Live**: start the simulator and watch Overview move. It drives the real services over HTTP:
+   a camera posts plates, a worker records jobs, flow meters post water, customers pay by
+   Daraja callback (mock mode, no real money) or cash; about one visit in seven misbehaves
+   (an unrecorded wash, an under-quote, a wash never paid, a payment with no job) and the flags
+   update every 45 seconds.
+
+### The planted days (seed is deterministic; days are relative to today)
+
+| Site | Days ago | Planted | Flag it raises |
+| --- | --- | --- | --- |
+| Westlands | 2 | water running at 22:10, outside opening hours | after_hours_operation |
+| Westlands | 4 | 3 washes never paid | job_without_payment |
+| Westlands | 6 | 88% of jobs settled in cash | cash_ratio_spike |
+| Westlands | 9 | 3 M-Pesa payments with no job | payment_without_job |
+| Kilimani | 3 | 7 washes of water, no jobs | ghost_wash |
+| Kilimani | 8 | 4 washes never paid | job_without_payment |
+| Kilimani | 12 | one worker opens and abandons 4 jobs | abandoned_job_pattern |
+| Thika Road | 1 | 6 vehicles and washes, no jobs | ghost_wash (water and camera) |
+| Thika Road | 5 | one worker charges 70% of list, no authorisation | underquoting |
+| Thika Road | 10 | 88% cash | cash_ratio_spike |
+
+`tests/demo-plan.test.ts` proves each of these is caught by the real engine and that every other
+day is clean, so nothing in the demo is a false alarm.
+
+## Testing
+
+```
+npm test                          # unit tests, no database
+FORECOURT_INTEGRATION=1 ...       # against a real migrated Postgres, as the restricted role (RLS on):
+                                  # provisioning, the write API, job lifecycle, Daraja matching,
+                                  # cross-organisation isolation, demo seed
+```
+
+See the header of `tests/integration.test.ts` for the exact environment.
+
+### Known limits of the demo data
+
+`supply_pilferage` needs a per-wash consumable baseline that the reconciliation service does not
+yet load (it passes an empty one), so the inventory movements are stored but never flagged.
+`device_silent` is a defined flag type with no rule behind it, so a quiet device appears on
+Devices but not on Flags. Business days are UTC calendar days; opening hours are compared with
+the site's local clock.
 
 ## Not built yet
 

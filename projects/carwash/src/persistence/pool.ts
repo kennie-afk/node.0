@@ -1,6 +1,11 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool, PoolClient, types } from 'pg';
 import { env, isProduction } from '../config/env';
 import { logger } from '../common/logger';
+
+// A DATE column has no time zone. node-postgres turns it into a JS Date at local midnight, so on a
+// host that is not on UTC a business day of 2026-09-27 came back as 2026-09-26T21:00:00Z and the
+// console showed the wrong day. Keep dates as the plain YYYY-MM-DD strings they are.
+types.setTypeParser(1082, (value: string) => value);
 
 function databaseTls(): { rejectUnauthorized: boolean; ca?: string } | undefined {
   if (!env.DATABASE_SSL) {

@@ -30,13 +30,13 @@ export async function closeDay(
       throw new NotFoundError(`Site ${siteId} was not found for this organisation`);
     }
 
-    const [jobs, payments, telemetry, observations, consumables] = await Promise.all([
-      jobsForDay(client, siteId, day),
-      paymentsForDay(client, siteId, day),
-      telemetryForDay(client, siteId, day),
-      observationsForDay(client, siteId, day),
-      consumablesForDay(client, siteId, day)
-    ]);
+    // One client runs one query at a time; issuing them together relied on pg queueing them
+    // internally, which pg 9 removes.
+    const jobs = await jobsForDay(client, siteId, day);
+    const payments = await paymentsForDay(client, siteId, day);
+    const telemetry = await telemetryForDay(client, siteId, day);
+    const observations = await observationsForDay(client, siteId, day);
+    const consumables = await consumablesForDay(client, siteId, day);
 
     const result = reconcile({
       siteId,

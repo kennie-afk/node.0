@@ -7,6 +7,7 @@ import { pool } from '../persistence/pool';
 import { errorHandler, notFound, requestContext } from './middleware';
 import routes from './routes';
 import readRoutes from './read';
+import manageRoutes from './manage';
 
 export function createApiApp(): Express {
   const app = express();
@@ -46,6 +47,7 @@ export function createApiApp(): Express {
 
   app.use('/v1', routes);
   app.use('/v1', readRoutes);
+  app.use('/v1', manageRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

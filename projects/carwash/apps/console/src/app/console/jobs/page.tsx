@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { api, describeError } from "@/lib/api";
 import { ksh, type Job } from "@/lib/types";
 import { Badge, Card, EmptyState, Notice, PageHeader, Table, rowClass } from "@/components/ui";
@@ -37,7 +38,11 @@ export default async function JobsPage() {
               const undercharged = job.quotedCents < job.listCents;
               return (
                 <tr key={job.id} className={rowClass}>
-                  <td className="px-3.5 py-2.5 font-mono text-[0.75rem]">{job.plate ?? "—"}</td>
+                  <td className="px-3.5 py-2.5 font-mono text-[0.75rem]">
+                    <Link href={`/console/jobs/${job.id}`} className="underline-offset-2 hover:underline">
+                      {job.plate ?? "open"}
+                    </Link>
+                  </td>
                   <td className="px-3.5 py-2.5 text-[0.8125rem] text-[var(--color-muted)]">
                     {job.worker ?? "—"}
                   </td>
