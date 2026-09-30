@@ -2,7 +2,10 @@ import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { CustomJwtPayload } from '../types/auth.types';
-import { runWithTenant } from '../common/tenant-context';
+import { runWithTenant, currentTenantOrNull } from '../common/tenant-context';
+import { bindTransactionToResponse, createTenantTx } from '../common/tenant-db';
+import db from '@models';
+import { can, effectiveRole, Permission } from '../auth/permissions';
 import { ForbiddenError, UnauthorizedError } from '../utils/errors';
 
 function bearer(req: Request): string | null {
@@ -32,21 +35,36 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     return next(new UnauthorizedError('Token does not identify a church.'));
   }
 
-  req.user = claims;
+  const role = effectiveRole(claims.role, Boolean(claims.isAdmin));
+  req.user = { ...claims, role, isAdmin: role === 'ADMIN' };
 
-  runWithTenant(
-    {
-      churchId: claims.churchId,
-      userId: claims.id,
-      isAdmin: Boolean(claims.isAdmin),
-      requestId: req.id
-    },
-    () => next()
-  );
+  const context = {
+    churchId: claims.churchId,
+    userId: claims.id,
+    isAdmin: role === 'ADMIN',
+    role,
+    requestId: req.id,
+    tenantTx: createTenantTx(db.sequelize, claims.churchId)
+  };
+  bindTransactionToResponse(res, context);
+  runWithTenant(context, () => next());
 };
 
+/** Gate a route on a named permission rather than a role. */
+export const requirePermission =
+  (...permissions: Permission[]) =>
+  (req: Request, _res: Response, next: NextFunction) => {
+    const role = effectiveRole(req.user?.role, Boolean(req.user?.isAdmin));
+    if (permissions.some((permission) => can(role, permission))) {
+      return next();
+    }
+    next(new ForbiddenError(`You do not have permission to do that (${permissions.join(' or ')}).`));
+  };
+
+export const tenantActive = () => currentTenantOrNull() !== null;
+
 export const authorizeAdmin = (req: Request, _res: Response, next: NextFunction) => {
-  if (!req.user?.isAdmin) {
+  if (req.user?.role !== 'ADMIN') {
     return next(new ForbiddenError('Admin access required.'));
   }
   next();
@@ -65,7 +83,7 @@ export const authorizeSelfOrAdmin = (req: Request, _res: Response, next: NextFun
 
 /** Blocks non-admins from changing privilege, even on their own account. */
 export const forbidSelfPromotion = (req: Request, _res: Response, next: NextFunction) => {
-  if (!req.user?.isAdmin && req.body && 'isAdmin' in req.body) {
+  if (!req.user?.isAdmin && req.body && ('isAdmin' in req.body || 'role' in req.body)) {
     return next(new ForbiddenError('Only an administrator can change admin access.'));
   }
   next();

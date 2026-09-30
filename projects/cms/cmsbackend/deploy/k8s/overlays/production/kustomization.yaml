@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cms
+resources:
+  - ../../base
+  - cnpg-cluster.yaml
+  - external-secret.yaml
+  - cluster-issuer.yaml
+  - monitoring.yaml
+  - keda-worker.yaml
+# Pin by digest in your release pipeline: `kustomize edit set image cms-api=registry/cms-api@sha256:...`
+images:
+  - name: cms-api
+    newName: registry.example.org/cms/api
+    newTag: "1.0.0"
+  - name: cms-web
+    newName: registry.example.org/cms/web
+    newTag: "1.0.0"
+patches:
+  # CloudNativePG exposes the primary as <cluster>-rw.
+  - target: {kind: Deployment, name: cms-pgbouncer}
+    patch: |-
+      - {op: replace, path: /spec/template/spec/containers/0/env/0/value, value: cms-postgres-rw}
+  - target: {kind: Deployment, name: cms-api}
+    patch: |-
+      - {op: replace, path: /spec/replicas, value: 4}
+  - target: {kind: Ingress}
+    patch: |-
+      - {op: replace, path: /spec/rules/0/host, value: cms.example.org}

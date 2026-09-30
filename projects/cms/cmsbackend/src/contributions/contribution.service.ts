@@ -1,27 +1,46 @@
-import db from '@models';
-import { Contribution } from './contribution.model';
-import { createCrudService } from '../common/crud-service';
+import { currentTenant } from '../common/tenant-context';
+import { requestTx } from '../common/http';
+import { ensureGivingSetup } from '../modules/giving/types.service';
+import {
+  ContributionChanges,
+  ContributionFilter,
+  deleteContribution as removeContribution,
+  getContribution as loadContribution,
+  listContributionsPaged,
+  recordContribution,
+  RecordInput,
+  updateContribution as changeContribution
+} from '../modules/giving/contributions.service';
 
-const service = createCrudService<Contribution>(db.Contribution, 'Contribution', {
-  include: [
-    {
-      model: db.Member,
-      as: 'member',
-      attributes: ['id', 'firstName', 'lastName', 'email', 'phoneNumber']
-    }
-  ],
-  order: [['date', 'DESC'], ['id', 'ASC']],
-  references: {
-    memberId: { model: db.Member, label: 'Member' }
-  }
-});
+/** Tenant-scoped entry points for the /contributions routes; all the work lives in the giving module. */
+async function scope() {
+  const t = await requestTx();
+  const { churchId, userId } = currentTenant();
+  await ensureGivingSetup(t, churchId);
+  return { t, churchId, userId };
+}
 
-export const repository = service.repository;
+export const createContribution = async (input: RecordInput) => {
+  const { t, churchId, userId } = await scope();
+  return recordContribution(t, churchId, userId, input);
+};
 
-export const createContribution = service.create;
-export const getAllContributions = service.list;
-export const getContributionById = service.findById;
-export const updateContribution = service.update;
-export const deleteContribution = service.remove;
+export const getAllContributions = async (filter: ContributionFilter, page: number, pageSize: number) => {
+  const { t, churchId } = await scope();
+  return listContributionsPaged(t, churchId, filter, page, pageSize);
+};
 
-export default service;
+export const getContributionById = async (id: number) => {
+  const { t, churchId } = await scope();
+  return loadContribution(t, churchId, id);
+};
+
+export const updateContribution = async (id: number, changes: ContributionChanges) => {
+  const { t, churchId, userId } = await scope();
+  return changeContribution(t, churchId, userId, id, changes);
+};
+
+export const deleteContribution = async (id: number) => {
+  const { t, churchId } = await scope();
+  return removeContribution(t, churchId, id);
+};

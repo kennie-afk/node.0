@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ROLES } from '../auth/permissions';
 
 export const createUserSchema = z.object({
     body: z.object({
@@ -6,6 +7,7 @@ export const createUserSchema = z.object({
         email: z.string().email('Invalid email address.'),
         password: z.string().min(8, 'Password must be at least 8 characters long.'),
         isAdmin: z.boolean().optional(),
+        role: z.enum(ROLES).optional(),
     }),
 });
 
@@ -18,6 +20,7 @@ export const updateUserSchema = z.object({
         email: z.string().email().optional(),
         password: z.string().min(8).optional(),
         isAdmin: z.boolean().optional(),
+        role: z.enum(ROLES).optional(),
     }).strict(),
 });
 

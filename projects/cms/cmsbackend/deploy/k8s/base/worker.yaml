@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cms-worker
+  labels: {app.kubernetes.io/name: worker, app.kubernetes.io/part-of: church-cms}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app.kubernetes.io/name: worker}
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: worker, app.kubernetes.io/part-of: church-cms}
+    spec:
+      automountServiceAccountToken: false
+      # Long enough for in-flight jobs to finish; the worker stops claiming on SIGTERM.
+      terminationGracePeriodSeconds: 45
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      initContainers:
+        - name: wait-for-schema
+          image: cms-api
+          imagePullPolicy: IfNotPresent
+          command: ["node", "scripts/wait-for-migrations.js"]
+          envFrom:
+            - secretRef: {name: cms-secrets}
+          resources:
+            requests: {cpu: 10m, memory: 64Mi}
+            limits: {cpu: 200m, memory: 128Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+      containers:
+        - name: worker
+          image: cms-api
+          imagePullPolicy: IfNotPresent
+          command: ["node", "-r", "module-alias/register", "dist/worker.js"]
+          ports:
+            - {name: metrics, containerPort: 9100}
+          envFrom:
+            - configMapRef: {name: cms-config}
+            - secretRef: {name: cms-secrets}
+          livenessProbe:
+            httpGet: {path: /metrics, port: metrics}
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            failureThreshold: 4
+          readinessProbe:
+            httpGet: {path: /metrics, port: metrics}
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 192Mi}
+            limits: {cpu: "1", memory: 384Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: tmp, emptyDir: {}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cms-worker
+  labels: {app.kubernetes.io/name: worker}
+spec:
+  selector: {app.kubernetes.io/name: worker}
+  ports: [{name: metrics, port: 9100, targetPort: metrics}]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cms-worker
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels: {app.kubernetes.io/name: worker}

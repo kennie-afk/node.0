@@ -8,9 +8,11 @@ export interface UserAttributes {
   email: string;
   password_hash: string;
   isAdmin: boolean;
+  role: string;
+  memberId?: number | null;
 }
 
-export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'isAdmin'> {}
+export interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'isAdmin' | 'role' | 'memberId'> {}
 
 export class User extends BaseModel<UserAttributes, UserCreationAttributes> implements UserAttributes {
   public churchId!: number;
@@ -19,6 +21,8 @@ export class User extends BaseModel<UserAttributes, UserCreationAttributes> impl
   public email!: string;
   public password_hash!: string;
   public isAdmin!: boolean;
+  public role!: string;
+  public memberId!: number | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -37,6 +41,8 @@ export default (sequelize: Sequelize) => {
     email: { type: DataTypes.STRING(100), allowNull: false, unique: true, validate: { isEmail: true } },
     password_hash: { type: DataTypes.STRING(255), allowNull: false },
     isAdmin: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+    role: { type: DataTypes.STRING(20), allowNull: false, defaultValue: 'MEMBER' },
+    memberId: { type: DataTypes.INTEGER, allowNull: true },
   }, {
     tableName: 'users',
     timestamps: true,

@@ -1,6 +1,7 @@
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import db from '@models';
+import { prepareDatabase, truncateAll } from './harness';
 import { createApp } from '../src/app';
 
 const app = createApp();
@@ -11,7 +12,7 @@ const payload = {
 };
 
 beforeAll(async () => {
-  await db.sequelize.sync({ force: true });
+  await prepareDatabase();
 });
 
 afterAll(async () => {
@@ -19,19 +20,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  const models = [
-    db.SmallGroupMember,
-    db.SmallGroup,
-    db.MinistryMember,
-    db.Ministry,
-    db.Member,
-    db.Family,
-    db.User,
-    db.Church
-  ];
-  for (const model of models) {
-    await model.destroy({ where: {}, truncate: true, cascade: true });
-  }
+  await truncateAll();
 });
 
 async function signIn() {

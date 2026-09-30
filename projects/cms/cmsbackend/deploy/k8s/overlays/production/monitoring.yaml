@@ -1,0 +1,50 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cms
+  labels: {release: kube-prometheus-stack}
+spec:
+  selector:
+    matchExpressions:
+      - {key: app.kubernetes.io/name, operator: In, values: [api, worker]}
+  endpoints:
+    - {port: metrics, interval: 15s, path: /metrics}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cms
+  labels: {release: kube-prometheus-stack}
+spec:
+  groups:
+    - name: cms
+      rules:
+        - alert: CmsHighErrorRate
+          expr: sum(rate(cms_http_request_duration_seconds_count{status="5xx"}[5m])) / sum(rate(cms_http_request_duration_seconds_count[5m])) > 0.02
+          for: 5m
+          labels: {severity: page}
+          annotations: {summary: "More than 2% of requests are failing with 5xx"}
+        - alert: CmsSlowRequests
+          expr: histogram_quantile(0.95, sum by (le) (rate(cms_http_request_duration_seconds_bucket[5m]))) > 1
+          for: 10m
+          labels: {severity: warn}
+          annotations: {summary: "p95 request latency above 1s"}
+        - alert: CmsJobBacklog
+          expr: cms_jobs_oldest_queued_age_seconds > 600
+          for: 5m
+          labels: {severity: warn}
+          annotations: {summary: "Oldest queued job has waited over 10 minutes"}
+        - alert: CmsDeadJobs
+          expr: max(cms_jobs_queue_depth{status="dead"}) > 0
+          for: 15m
+          labels: {severity: warn}
+          annotations: {summary: "Dead-lettered jobs need attention"}
+        - alert: CmsDbPoolExhausted
+          expr: max by (pod) (cms_db_pool_connections{state="waiting"}) > 0
+          for: 5m
+          labels: {severity: warn}
+          annotations: {summary: "Requests are waiting for a database connection"}
+        - alert: CmsLedgerIntegrityFailed
+          expr: increase(cms_jobs_processed_total{type="ledger.verify",outcome="dead"}[1d]) > 0
+          labels: {severity: page}
+          annotations: {summary: "Nightly ledger verification is failing; follow RUNBOOK 'verifyLedger fails'"}

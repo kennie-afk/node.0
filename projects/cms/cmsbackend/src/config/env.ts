@@ -29,6 +29,23 @@ const schema = z.object({
   LOGIN_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
   LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
   REDIS_URL: z.string().url().optional(),
+  DATABASE_REPLICA_URLS: z
+    .string()
+    .default('')
+    .transform((value) =>
+      value
+        .split(',')
+        .map((url) => url.trim())
+        .filter(Boolean)
+    ),
+  DB_POOL_MAX: z.coerce.number().int().positive().default(20),
+  DB_STATEMENT_TIMEOUT_MS: z.coerce.number().int().nonnegative().default(15000),
+  METRICS_PORT: z.coerce.number().int().nonnegative().default(0),
+  CACHE_TTL_SECONDS: z.coerce.number().int().nonnegative().default(30),
+  WORKER_CONCURRENCY: z.coerce.number().int().positive().default(4),
+  MPESA_MODE: z.enum(['mock', 'daraja']).default('mock'),
+  MPESA_CALLBACK_SECRET: z.string().min(16).optional(),
+  SMS_MODE: z.enum(['mock', 'africastalking']).default('mock'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   SHUTDOWN_GRACE_MS: z.coerce.number().int().nonnegative().default(10000)
 });

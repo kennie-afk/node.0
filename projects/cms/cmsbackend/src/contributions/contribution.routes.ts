@@ -4,18 +4,17 @@ import {
   getAllContributions,
   getContributionById,
   updateContribution,
-  deleteContribution,
+  deleteContribution
 } from './contribution.controller';
-import { validate } from '../middleware/validation.middleware';
-import { createContributionSchema, updateContributionSchema } from './contribution.schemas';
-import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware';
+import { authenticateToken, requirePermission } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.post('/', authenticateToken, authorizeAdmin, validate(createContributionSchema), createContribution);
-router.get('/', authenticateToken, authorizeAdmin, getAllContributions);
-router.get('/:id', authenticateToken, authorizeAdmin, getContributionById);
-router.put('/:id', authenticateToken, authorizeAdmin, validate(updateContributionSchema), updateContribution);
-router.delete('/:id', authenticateToken, authorizeAdmin, deleteContribution);
+// Individual giving stays restricted: treasurers and admins write, pastors and auditors may read.
+router.post('/', authenticateToken, requirePermission('giving:write'), createContribution);
+router.get('/', authenticateToken, requirePermission('giving:read'), getAllContributions);
+router.get('/:id', authenticateToken, requirePermission('giving:read'), getContributionById);
+router.put('/:id', authenticateToken, requirePermission('giving:write'), updateContribution);
+router.delete('/:id', authenticateToken, requirePermission('giving:write'), deleteContribution);
 
 export default router;

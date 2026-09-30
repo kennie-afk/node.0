@@ -1,0 +1,44 @@
+# One host: the console at /, the API under /api (the prefix is stripped before it reaches the pods).
+# TLS comes from cert-manager (overlays/production/cluster-issuer.yaml).
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cms
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/proxy-body-size: 2m
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [cms.example.org]
+      secretName: cms-tls
+  rules:
+    - host: cms.example.org
+      http:
+        paths:
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend: {service: {name: cms-api, port: {name: http}}}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cms-web
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts: [cms.example.org]
+      secretName: cms-tls
+  rules:
+    - host: cms.example.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: cms-web, port: {name: http}}}

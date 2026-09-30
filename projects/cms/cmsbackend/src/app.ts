@@ -6,6 +6,7 @@ import cors from 'cors';
 import { env } from './config/env';
 import { generalLimiter, loginLimiter } from './middleware/rate-limit.middleware';
 import { requestContext } from './middleware/request-context.middleware';
+import { metricsMiddleware } from './common/metrics';
 import { errorHandler, notFound } from './middleware/error.middleware';
 import healthRoutes from './health/health.routes';
 import churchRoutes from './churches/church.routes';
@@ -21,6 +22,7 @@ import contributionRoutes from '@contributions/contribution.routes';
 import attendanceRoutes from '@attendance/attendance.routes';
 import ministryRoutes from '@ministries/ministry.routes';
 import smallGroupRoutes from '@small_groups/small_group.routes';
+import { routeMounts } from './modules/route-registry';
 
 export function createApp(): Express {
   const app = express();
@@ -29,6 +31,7 @@ export function createApp(): Express {
   app.disable('x-powered-by');
 
   app.use(requestContext);
+  app.use(metricsMiddleware);
   app.use(helmet());
   app.use(express.json({ limit: '1mb' }));
 
@@ -48,7 +51,8 @@ export function createApp(): Express {
 
   app.use('/', healthRoutes);
 
-  app.use(generalLimiter);
+  // Safaricom callbacks come from a few shared IPs in bursts; they authenticate by signed path.
+  app.use((req, res, next) => (req.path.startsWith('/mpesa/') ? next() : generalLimiter(req, res, next)));
 
   app.use('/churches', churchRoutes);
   app.use('/auth/login', loginLimiter);
@@ -63,6 +67,9 @@ export function createApp(): Express {
   app.use('/attendance', attendanceRoutes);
   app.use('/ministries', ministryRoutes);
   app.use('/small-groups', smallGroupRoutes);
+  for (const mount of routeMounts) {
+    app.use(mount.path, mount.router);
+  }
 
   app.use(notFound);
   app.use(errorHandler);

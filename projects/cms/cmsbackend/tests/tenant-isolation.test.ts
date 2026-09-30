@@ -1,6 +1,7 @@
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
 import db from '@models';
-import { runWithTenant } from '../src/common/tenant-context';
+import { prepareDatabase, truncateAll } from './harness';
+import { runAsTenant } from '../src/common/tenant-run';
 import * as memberService from '../src/members/member.service';
 import * as familyService from '../src/families/family.service';
 import { paginationSchema } from '../src/common/pagination';
@@ -12,11 +13,11 @@ let alpha: number;
 let beta: number;
 
 function asChurch<T>(churchId: number, run: () => Promise<T>): Promise<T> {
-  return runWithTenant({ churchId, userId: 1, isAdmin: true, requestId: 'test' }, run);
+  return runAsTenant(churchId, run, { userId: 1 });
 }
 
 beforeAll(async () => {
-  await db.sequelize.sync({ force: true });
+  await prepareDatabase();
 });
 
 afterAll(async () => {
@@ -24,9 +25,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  for (const model of [db.Member, db.Family, db.Church]) {
-    await model.destroy({ where: {}, truncate: true, cascade: true });
-  }
+  await truncateAll();
   alpha = (await db.Church.create({ name: 'Alpha Chapel', slug: 'alpha' })).id;
   beta = (await db.Church.create({ name: 'Beta Fellowship', slug: 'beta' })).id;
 });

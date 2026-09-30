@@ -1,0 +1,17 @@
+# Scale workers on queue depth instead of CPU: a backlog of quick jobs barely moves CPU.
+# Requires KEDA. Remove the worker replicas field from the Deployment when this is in use.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: cms-worker
+spec:
+  scaleTargetRef: {name: cms-worker}
+  minReplicaCount: 2
+  maxReplicaCount: 12
+  cooldownPeriod: 120
+  triggers:
+    - type: prometheus
+      metadata:
+        serverAddress: http://kube-prometheus-stack-prometheus.monitoring:9090
+        query: max(cms_jobs_queue_depth{status="queued"})
+        threshold: "200"

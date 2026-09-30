@@ -1,26 +1,89 @@
+# Production-shaped stack: Postgres -> PgBouncer (transaction pooling) -> N stateless API replicas,
+# a worker pool, Redis, the web console, and optional profiles:
+#   --profile edge           nginx in front: load-balances api replicas, serves the console same-origin
+#   --profile observability  Prometheus (discovers every api/worker replica) + Grafana with a dashboard
+#
+#   docker compose up -d --build
+#   docker compose up -d --scale api=3 --scale worker=2
+#
+# Two database roles, on purpose: the OWNER (POSTGRES_USER) runs migrations only; the API and
+# worker connect as APP_DB_USER, a non-owner, non-superuser role, because superusers and owners
+# bypass row-level security. The API refuses to start in production if it is given a privileged role.
+name: cms
+
+x-api-env: &api-env
+  NODE_ENV: production
+  PORT: 4400
+  METRICS_PORT: 9100
+  # Through PgBouncer, as the application role. Statement timeouts are set on the role itself
+  # (migration 20260930120000) because PgBouncer does not forward startup parameters.
+  DATABASE_URL: postgres://${APP_DB_USER:-cms_app}:${APP_DB_PASSWORD:?set APP_DB_PASSWORD}@pgbouncer:5432/${POSTGRES_DB:-cms}
+  DATABASE_SSL: "false"
+  DB_STATEMENT_TIMEOUT_MS: "0"
+  DB_POOL_MAX: ${DB_POOL_MAX:-10}
+  JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET to at least 32 characters}
+  JWT_TTL_MINUTES: ${JWT_TTL_MINUTES:-60}
+  CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:8088,http://localhost:5173}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  REDIS_URL: redis://redis:6379
+  RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+  LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-5}
+  WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+
 services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-cms}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in your environment}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB:-cms}
+    # Bound to loopback only; the app reaches it over the compose network.
     ports:
-      - "${POSTGRES_HOST_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
+    command: ["postgres", "-c", "max_connections=200", "-c", "shared_buffers=256MB", "-c", "log_min_duration_statement=500"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cms}"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cms} -d ${POSTGRES_DB:-cms}"]
+      interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 20s
+      retries: 12
+      start_period: 10s
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.23.1-p2
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-cms}
+      DB_USER: ${APP_DB_USER:-cms_app}
+      DB_PASSWORD: ${APP_DB_PASSWORD}
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "2000"
+      DEFAULT_POOL_SIZE: ${PGBOUNCER_POOL_SIZE:-25}
+      MAX_PREPARED_STATEMENTS: "200"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "no", "--maxmemory-policy", "allkeys-lru"]
+    command: ["redis-server", "--appendonly", "no", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -30,11 +93,16 @@ services:
   migrate:
     build: .
     image: cms-api
-    command: ["npx", "sequelize-cli", "db:migrate"]
+    command: ["node", "scripts/migrate-locked.js"]
+    <<: *hardening
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://${POSTGRES_USER:-cms}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cms}
+      # Direct to Postgres as the OWNER: migrations take a session advisory lock, which does not
+      # survive transaction pooling, and they create roles and row-level-security policies.
+      MIGRATE_DATABASE_URL: postgres://${POSTGRES_USER:-cms}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cms}
       DATABASE_SSL: "false"
+      APP_DB_USER: ${APP_DB_USER:-cms_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,24 +111,41 @@ services:
     build: .
     image: cms-api
     restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 4400
-      DATABASE_URL: postgres://${POSTGRES_USER:-cms}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-cms}
-      DATABASE_SSL: "false"
-      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET to at least 32 characters}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
-      REDIS_URL: redis://redis:6379
+    <<: *hardening
+    environment: *api-env
+    # A host PORT RANGE (not a single port) lets `--scale api=N` give every replica its own port.
     ports:
-      - "${API_HOST_PORT:-4400}:4400"
+      - "127.0.0.1:${API_HOST_PORT_RANGE:-4400-4409}:4400"
     depends_on:
-      migrate:
-        condition: service_completed_successfully
-      postgres:
+      pgbouncer:
         condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:4400/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    stop_grace_period: 20s
+
+  worker:
+    image: cms-api
+    restart: unless-stopped
+    <<: *hardening
+    command: ["node", "-r", "module-alias/register", "dist/worker.js"]
+    environment: *api-env
+    # The image's HEALTHCHECK probes the API port, which a worker does not serve.
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9100/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    stop_grace_period: 30s
 
   web:
     build:
@@ -68,11 +153,52 @@ services:
       args:
         VITE_API_URL: ${PUBLIC_API_URL:-http://localhost:4400}
     restart: unless-stopped
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
     ports:
-      - "${WEB_PORT:-8080}:8080"
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
     depends_on:
       api:
         condition: service_healthy
+
+  edge:
+    profiles: [edge]
+    image: nginxinc/nginx-unprivileged:1.27-alpine
+    restart: unless-stopped
+    volumes:
+      - ./deploy/compose/nginx-edge.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "127.0.0.1:${EDGE_PORT:-8088}:8080"
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+  prometheus:
+    profiles: [observability]
+    image: prom/prometheus:v2.51.0
+    restart: unless-stopped
+    volumes:
+      - ./deploy/compose/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/alerts/cms-alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+
+  grafana:
+    profiles: [observability]
+    image: grafana/grafana:10.4.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-change-me-now}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./deploy/compose/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/compose/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3001}:3000"
+    depends_on: [prometheus]
 
 volumes:
   db_data:

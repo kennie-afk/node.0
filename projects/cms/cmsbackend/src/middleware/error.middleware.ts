@@ -1,4 +1,5 @@
 import { NextFunction, Request, Response } from 'express';
+import { ZodError } from 'zod';
 import { ApiError } from '../utils/errors';
 import { MissingTenantError } from '../common/tenant-context';
 import { logger } from '../common/logger';
@@ -17,7 +18,14 @@ function translateDatabaseError(error: unknown): { status: number; message: stri
       .join(', ');
 
   if (name === 'SequelizeUniqueConstraintError') {
-    const which = fields();
+    // With row-level security on, Postgres withholds the "Key (...)=(...)" detail, so the field
+    // list Sequelize would normally parse is empty. The index name still carries the columns.
+    const constraint = (error as { parent?: { constraint?: string } }).parent?.constraint ?? '';
+    const fromName =
+      constraint.match(/_church_id_(.+?)(?:_key|_unique)?$/)?.[1] ??
+      constraint.match(/_church_(.+?)_unique$/)?.[1] ??
+      '';
+    const which = fields() || fromName;
     return { status: 409, message: which ? `${which} is already in use` : 'that record already exists' };
   }
   if (name === 'SequelizeForeignKeyConstraintError') {
@@ -26,6 +34,11 @@ function translateDatabaseError(error: unknown): { status: number; message: stri
   if (name === 'SequelizeValidationError') {
     const which = fields();
     return { status: 400, message: which ? `invalid value for ${which}` : 'the record is not valid' };
+  }
+  // Triggers and CHECK constraints in the finance schema raise these on purpose.
+  const code = (error as { parent?: { code?: string; message?: string } }).parent?.code;
+  if (name === 'SequelizeDatabaseError' && (code === '23514' || code === '55000' || code === '42501')) {
+    return { status: 409, message: (error as { parent?: { message?: string } }).parent?.message ?? 'rejected by a database integrity rule' };
   }
   return null;
 }
@@ -47,6 +60,17 @@ export const errorHandler = (
       reason: error.message
     });
     return res.status(error.statusCode).json({ message: error.message, requestId: req.id });
+  }
+
+  if (error instanceof ZodError) {
+    return res.status(400).json({
+      success: false,
+      errors: error.issues.map((issue) => ({
+        field: issue.path.length > 0 ? issue.path.join('.') : 'body',
+        message: issue.message
+      })),
+      requestId: req.id
+    });
   }
 
   const database = translateDatabaseError(error);

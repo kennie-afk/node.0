@@ -1,0 +1,78 @@
+name: church-cms
+
+on:
+  push:
+    paths: ['projects/cms/**', '.github/workflows/cms.yml']
+  pull_request:
+    paths: ['projects/cms/**', '.github/workflows/cms.yml']
+
+defaults:
+  run:
+    working-directory: projects/cms/cmsbackend
+
+jobs:
+  test-sqlite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm, cache-dependency-path: projects/cms/cmsbackend/package-lock.json}
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+
+  # The same suite again against a real, migrated Postgres, connected as the least-privilege
+  # application role: this is where row-level security, triggers, partitioning and real
+  # concurrency are exercised.
+  test-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: {POSTGRES_USER: cms, POSTGRES_PASSWORD: ci-owner-pw, POSTGRES_DB: cms}
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U cms" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      MIGRATE_DATABASE_URL: postgres://cms:ci-owner-pw@localhost:5432/cms
+      APP_DB_USER: cms_app
+      APP_DB_PASSWORD: ci-app-pw
+      DATABASE_SSL: 'false'
+      TEST_DATABASE_URL: postgres://cms_app:ci-app-pw@localhost:5432/cms
+      TEST_OWNER_DATABASE_URL: postgres://cms:ci-owner-pw@localhost:5432/cms
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm, cache-dependency-path: projects/cms/cmsbackend/package-lock.json}
+      - run: npm ci
+      - name: Migrate as owner (twice: must be idempotent), then undo and redo the last migration
+        run: |
+          node scripts/migrate-locked.js
+          node scripts/migrate-locked.js
+          node scripts/migrate-locked.js db:migrate:undo
+          node scripts/migrate-locked.js
+      - run: npm test
+
+  images:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: api image
+        run: docker build -t cms-api:ci .
+      - name: web image
+        run: docker build -t cms-web:ci ../cms_frontend
+      - name: image runs as non-root
+        run: test "$(docker run --rm --entrypoint id cms-api:ci -u)" = "10001"
+
+  manifests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: kubeconform
+        run: |
+          curl -sL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar xz kubeconform
+          for overlay in kind-dev production; do
+            kubectl kustomize deploy/k8s/overlays/$overlay | ./kubeconform -strict -ignore-missing-schemas -summary -kubernetes-version 1.30.0
+          done
+      - name: compose file is valid
+        run: POSTGRES_PASSWORD=x APP_DB_PASSWORD=x JWT_SECRET=0123456789abcdef0123456789abcdef docker compose config -q

@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: cms
+    folder: Church CMS
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

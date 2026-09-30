@@ -15,15 +15,27 @@ export interface CreateUserInput {
   email: string;
   password: string;
   isAdmin?: boolean;
+  role?: string;
+}
+
+/** isAdmin and role describe the same thing; keep the two columns from ever disagreeing. */
+function reconcileRole<T extends { isAdmin?: boolean; role?: string }>(input: T): T {
+  if (input.role === undefined && input.isAdmin === undefined) return input;
+  if (input.role !== undefined) {
+    return { ...input, isAdmin: input.role === 'ADMIN' };
+  }
+  return { ...input, role: input.isAdmin ? 'ADMIN' : 'MEMBER' };
 }
 
 export const createUser = async (input: CreateUserInput): Promise<InstanceType<typeof User>> => {
   try {
+    const reconciled = reconcileRole({ isAdmin: input.isAdmin ?? false, role: input.role });
     const created = await users.create({
       username: input.username,
       email: input.email,
       password_hash: await bcrypt.hash(input.password, PASSWORD_ROUNDS),
-      isAdmin: input.isAdmin ?? false
+      isAdmin: reconciled.isAdmin ?? false,
+      role: reconciled.role ?? (reconciled.isAdmin ? 'ADMIN' : 'MEMBER')
     });
     return users.findByIdOrFail(created.id, { attributes: PUBLIC_ATTRIBUTES });
   } catch (error: any) {
@@ -53,7 +65,7 @@ export const updateUser = async (
   changes: Partial<CreateUserInput>
 ) => {
   const { password, ...rest } = changes;
-  const payload: Record<string, unknown> = { ...rest };
+  const payload: Record<string, unknown> = { ...reconcileRole(rest) };
 
   if (password) {
     payload.password_hash = await bcrypt.hash(password, PASSWORD_ROUNDS);

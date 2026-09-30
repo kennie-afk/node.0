@@ -1,0 +1,70 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cms
+resources:
+  - ../../base
+  - postgres.yaml
+images:
+  - name: cms-api
+    newName: cms-api
+    newTag: local
+  - name: cms-web
+    newName: cms-web
+    newTag: local
+# Development credentials only. Never reuse these anywhere real.
+secretGenerator:
+  - name: cms-secrets
+    options: {disableNameSuffixHash: true}
+    literals:
+      - JWT_SECRET=kind-dev-only-jwt-secret-0123456789abcdef0123456789
+      - POSTGRES_PASSWORD=kind-owner-pw
+      - APP_DB_PASSWORD=kind-app-pw
+      - DATABASE_URL=postgres://cms_app:kind-app-pw@cms-pgbouncer:5432/cms
+      - MIGRATE_DATABASE_URL=postgres://cms:kind-owner-pw@cms-postgres:5432/cms
+patches:
+  # No ingress controller, cert-manager or metrics-server in the dev cluster.
+  - target: {kind: Ingress}
+    patch: |-
+      $patch: delete
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata: {name: ignored}
+  - target: {kind: HorizontalPodAutoscaler}
+    patch: |-
+      $patch: delete
+      apiVersion: autoscaling/v2
+      kind: HorizontalPodAutoscaler
+      metadata: {name: ignored}
+  - target: {kind: PodDisruptionBudget, name: cms-api}
+    patch: |-
+      $patch: delete
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
+      metadata: {name: cms-api}
+  - target: {kind: ResourceQuota}
+    patch: |-
+      $patch: delete
+      apiVersion: v1
+      kind: ResourceQuota
+      metadata: {name: cms}
+  - target: {kind: Deployment, name: cms-api}
+    patch: |-
+      - {op: replace, path: /spec/replicas, value: 2}
+      - {op: replace, path: /spec/template/spec/containers/0/resources/requests, value: {cpu: 50m, memory: 128Mi}}
+      - {op: replace, path: /spec/template/spec/containers/0/resources/limits, value: {cpu: 500m, memory: 384Mi}}
+  - target: {kind: Deployment, name: cms-worker}
+    patch: |-
+      - {op: replace, path: /spec/replicas, value: 1}
+      - {op: replace, path: /spec/template/spec/containers/0/resources/requests, value: {cpu: 25m, memory: 128Mi}}
+  - target: {kind: Deployment, name: cms-web}
+    patch: |-
+      - {op: replace, path: /spec/replicas, value: 1}
+  - target: {kind: Deployment, name: cms-pgbouncer}
+    patch: |-
+      - {op: replace, path: /spec/replicas, value: 1}
+  - target: {kind: PodDisruptionBudget, name: cms-pgbouncer}
+    patch: |-
+      $patch: delete
+      apiVersion: policy/v1
+      kind: PodDisruptionBudget
+      metadata: {name: cms-pgbouncer}

@@ -1,12 +1,13 @@
 import { beforeAll, afterAll, beforeEach, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import db from '@models';
+import { prepareDatabase, truncateAll } from './harness';
 import { createApp } from '../src/app';
 
 const app = createApp();
 
 beforeAll(async () => {
-  await db.sequelize.sync({ force: true });
+  await prepareDatabase();
 });
 
 afterAll(async () => {
@@ -14,9 +15,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  for (const model of [db.Member, db.Family, db.User, db.Church]) {
-    await model.destroy({ where: {}, truncate: true, cascade: true });
-  }
+  await truncateAll();
 });
 
 const payload = {

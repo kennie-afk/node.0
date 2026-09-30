@@ -1,0 +1,49 @@
+# Runs every migration in the image once per release, holding a Postgres advisory lock so a
+# re-run or a second release cannot race it. Jobs are immutable: on a new image, delete the old Job
+# first (`kubectl -n cms delete job cms-migrate --ignore-not-found`) or let the ArgoCD hook do it.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cms-migrate
+  labels: {app.kubernetes.io/name: migrate, app.kubernetes.io/part-of: church-cms}
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 6
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels: {app.kubernetes.io/name: migrate, app.kubernetes.io/part-of: church-cms}
+    spec:
+      restartPolicy: OnFailure
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: migrate
+          image: cms-api
+          imagePullPolicy: IfNotPresent
+          command: ["node", "scripts/migrate-locked.js"]
+          env:
+            - {name: NODE_ENV, value: production}
+            - {name: DATABASE_SSL, value: "false"}
+            - {name: APP_DB_USER, value: cms_app}
+            - name: APP_DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: cms-secrets, key: APP_DB_PASSWORD}}
+            - name: MIGRATE_DATABASE_URL
+              valueFrom: {secretKeyRef: {name: cms-secrets, key: MIGRATE_DATABASE_URL}}
+          resources:
+            requests: {cpu: 50m, memory: 128Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          volumeMounts:
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - {name: tmp, emptyDir: {}}

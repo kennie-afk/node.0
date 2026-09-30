@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: cms
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - pgbouncer.yaml
+  - redis.yaml
+  - migrate-job.yaml
+  - api.yaml
+  - worker.yaml
+  - web.yaml
+  - ingress.yaml
+  - networkpolicies.yaml
+  - quota.yaml
+images:
+  - name: cms-api
+    newName: cms-api
+    newTag: latest
+  - name: cms-web
+    newName: cms-web
+    newTag: latest
