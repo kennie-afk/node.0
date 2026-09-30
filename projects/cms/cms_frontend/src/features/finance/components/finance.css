@@ -1,0 +1,41 @@
+/* Finance screens: only things the shared kit does not already provide. Same house rules. */
+.fin-neg { color: var(--error); }
+.fin-muted { color: var(--text-muted); }
+.fin-strong { font-weight: 600; }
+.fin-kv { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px 16px; margin: 0; }
+.fin-kv dt { font-size: var(--fs-2xs, 9.5px); text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); }
+.fin-kv dd { margin: 2px 0 0; font-size: var(--fs-sm, 11.5px); }
+.fin-form-error { border: 1px solid var(--error); border-radius: 6px; padding: 8px 12px; font-size: var(--fs-xs, 10.5px); color: var(--error); }
+.fin-form-error ul { margin: 4px 0 0; padding-left: 16px; }
+.fin-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.fin-lines { width: 100%; border-collapse: collapse; }
+.fin-lines th { text-align: left; font-size: var(--fs-2xs, 9.5px); text-transform: uppercase; color: var(--text-muted); padding: 4px; font-weight: 600; }
+.fin-lines td { padding: 4px; vertical-align: top; }
+.fin-balance { display: flex; gap: 16px; flex-wrap: wrap; font-size: var(--fs-xs, 10.5px); padding: 8px 0; }
+.fin-balance .ok { color: var(--success); }
+.fin-balance .bad { color: var(--error); }
+.fin-stepper { display: flex; flex-wrap: wrap; gap: 4px; padding: 0; margin: 0; list-style: none; }
+.fin-step { border: 1px solid var(--border-light); border-radius: 6px; padding: 4px 10px; font-size: var(--fs-xs, 10.5px); color: var(--text-muted); }
+.fin-step.done { color: var(--success); border-color: var(--success); }
+.fin-step.current { color: var(--text-primary); border-color: var(--primary); font-weight: 600; }
+.fin-progress { height: 6px; border-radius: 3px; background: var(--border-light); overflow: hidden; min-width: 80px; }
+.fin-progress > span { display: block; height: 100%; background: var(--primary); }
+.fin-progress.ok > span { background: var(--success); }
+.fin-progress.bad > span { background: var(--error); }
+.fin-tree-indent { display: inline-block; }
+.fin-warn { border: 1px solid var(--warning); border-radius: 6px; padding: 8px 12px; font-size: var(--fs-xs, 10.5px); color: var(--warning); }
+.fin-ok { border: 1px solid var(--success); border-radius: 6px; padding: 8px 12px; font-size: var(--fs-xs, 10.5px); color: var(--success); }
+.fin-doc { max-width: 720px; margin: 0 auto; }
+.fin-grid-cells input { width: 84px; text-align: right; }
+.fin-scroll-x { overflow-x: auto; }
+.fin-pre { white-space: pre-wrap; word-break: break-word; font-family: ui-monospace, monospace; font-size: var(--fs-xs, 10.5px); }
+
+@media print {
+  .ui-side, .ui-topbar, .ui-scrim, .no-print, .ui-toasts { display: none !important; }
+  .ui-main, .ui-page { margin: 0 !important; padding: 0 !important; max-width: none !important; }
+  body, .ui-shell { background: #fff !important; color: #000 !important; }
+  .ui-card { border: 1px solid #ccc !important; break-inside: avoid; }
+  .ui-table th, .ui-table td { color: #000 !important; }
+  a { color: inherit !important; text-decoration: none !important; }
+  .fin-neg { color: #b00000 !important; }
+}

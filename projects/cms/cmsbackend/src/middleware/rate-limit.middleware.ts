@@ -1,6 +1,7 @@
 import rateLimit, { ipKeyGenerator, Options, Store } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import { createClient, RedisClientType } from 'redis';
+import jwt from 'jsonwebtoken';
 import { env, isTest } from '../config/env';
 import { logger } from '../common/logger';
 
@@ -36,8 +37,29 @@ function limiter(prefix: string, options: Partial<Options>) {
   });
 }
 
+/**
+ * A whole congregation shares one wifi address, so keying on IP alone would throttle every
+ * tablet and phone in the building together. A request with a valid token is counted against
+ * that user; only the signature-checked identity is trusted, anything else falls back to IP.
+ */
+function generalKey(req: { headers: { authorization?: string }; ip?: string }): string {
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    try {
+      const claims = jwt.verify(header.slice(7).trim(), env.JWT_SECRET) as { id?: number; churchId?: number };
+      if (typeof claims.id === 'number' && typeof claims.churchId === 'number') {
+        return `u:${claims.churchId}:${claims.id}`;
+      }
+    } catch {
+      // an invalid token is treated like no token
+    }
+  }
+  return `ip:${ipKeyGenerator(req.ip ?? 'unknown')}`;
+}
+
 export const generalLimiter = limiter('rl:general:', {
   windowMs: env.RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
+  keyGenerator: generalKey,
   limit: env.RATE_LIMIT_MAX
 });
 

@@ -39,9 +39,7 @@ export const createUser = async (input: CreateUserInput): Promise<InstanceType<t
     });
     return users.findByIdOrFail(created.id, { attributes: PUBLIC_ATTRIBUTES });
   } catch (error: any) {
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      throw new BadRequestError(`${error.errors?.[0]?.path ?? 'field'} already exists.`);
-    }
+    // The error handler turns a unique violation into a 409 naming the field.
     throw error;
   }
 };

@@ -130,7 +130,7 @@ export async function checkIn(t: Transaction, churchId: number, userId: number, 
 }
 
 export interface CheckOutInput {
-  code: string;
+  code?: string;
   guardianId: number;
   overrideReason?: string | null;
 }
@@ -156,7 +156,7 @@ export async function checkOut(t: Transaction, churchId: number, userId: number,
   if (locked && !override) return refuse('this pickup is locked after repeated wrong codes; an administrator must verify the guardian in person', 423);
 
   const expected = Buffer.from(String(session.pickup_code_hash), 'hex');
-  const given = Buffer.from(codeHash(churchId, childId, i.code), 'hex');
+  const given = Buffer.from(codeHash(churchId, childId, i.code ?? ''), 'hex');
   const codeOk = expected.length === given.length && timingSafeEqual(expected, given);
   if (!codeOk && !override) return refuse('the pickup code does not match', 403);
 

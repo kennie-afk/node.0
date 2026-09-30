@@ -1,15 +1,9 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { login as apiLogin } from '../api/authApi';
 import { clearSession, onSessionChange, readSession, writeSession } from '../api/session';
-
-interface AuthContextType {
-  token: string | null;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  isAuthenticated: boolean;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+import { decodeClaims } from '../auth/jwt';
+import { can as roleCan, permissionsOf } from '../auth/permissions';
+import { AuthContext, type AuthContextType } from './auth-context';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setTokenState] = useState<string | null>(() => readSession()?.token ?? null);
@@ -26,24 +20,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => window.clearTimeout(timer);
   }, [token]);
 
-  const login = async (email: string, password: string) => {
-    const session = await apiLogin(email, password);
-    writeSession(session.token, session.expiresInSeconds, session.churchId);
-  };
+  const value = useMemo<AuthContextType>(() => {
+    const claims = decodeClaims(token);
+    return {
+      token,
+      isAuthenticated: !!token,
+      role: claims.role,
+      email: claims.email,
+      userId: claims.id,
+      churchId: claims.churchId,
+      permissions: permissionsOf(claims.role),
+      can: (permission) => roleCan(claims.role, permission),
+      login: async (email: string, password: string) => {
+        const session = await apiLogin(email, password);
+        writeSession(session.token, session.expiresInSeconds, session.churchId);
+      },
+      logout: () => clearSession()
+    };
+  }, [token]);
 
-  const logout = () => {
-    clearSession();
-  };
-
-  return (
-    <AuthContext.Provider value={{ token, login, logout, isAuthenticated: !!token }}>
-      {children}
-    </AuthContext.Provider>
-  );
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

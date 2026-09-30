@@ -25,7 +25,7 @@ const schema = z.object({
         .filter(Boolean)
     ),
   RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
-  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(100),
+  RATE_LIMIT_MAX: z.coerce.number().int().positive().default(600),
   LOGIN_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
   LOGIN_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
   REDIS_URL: z.string().url().optional(),

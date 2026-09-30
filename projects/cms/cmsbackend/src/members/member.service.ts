@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import db from '@models';
 import { Member } from './member.model';
 import { TenantRepository } from '../common/tenant-repository';
@@ -31,11 +32,21 @@ export const createMember = async (memberData: Partial<Member>): Promise<Member>
 
 export const getAllMembers = async (
   pagination: Pagination,
-  filters: Record<string, unknown> = {}
+  filters: Record<string, unknown> = {},
+  search = ''
 ): Promise<Page<Member>> => {
+  // Search is done in the query so the picker never has to fetch everyone and filter locally.
+  const like = db.sequelize.getDialect() === 'postgres' ? Op.iLike : Op.like;
+  const term = `%${search.replace(/[%_\\]/g, '')}%`;
+  const where: any = search
+    ? {
+        ...filters,
+        [Op.or]: ['firstName', 'lastName', 'email', 'phoneNumber'].map((column) => ({ [column]: { [like]: term } }))
+      }
+    : filters;
   return members.list({
     pagination,
-    where: filters,
+    where,
     include: withFamily,
     order: [
       ['firstName', 'ASC'],

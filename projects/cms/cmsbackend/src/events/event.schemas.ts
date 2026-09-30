@@ -13,7 +13,7 @@ export const createEventSchema = z.object({
       "End time must be in YYYY-MM-DDTHH:MM format"
     ).optional(),
     location: z.string().optional(),
-  }),
+  }).refine((v) => !v.endTime || v.endTime > v.startTime, { message: 'End time must be after the start time', path: ['endTime'] }),
 });
 
 export const updateEventSchema = z.object({
@@ -32,5 +32,5 @@ export const updateEventSchema = z.object({
       "End time must be in YYYY-MM-DDTHH:MM format"
     ).optional(),
     location: z.string().optional(),
-  }).strict(),
+  }).strict().refine((v) => !v.startTime || !v.endTime || v.endTime > v.startTime, { message: 'End time must be after the start time', path: ['endTime'] }),
 });

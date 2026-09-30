@@ -42,7 +42,7 @@ router.post('/sessions', requirePermission('members:write'), route(async (req) =
   return svc.checkIn(await tx(), me().churchId, me().userId, body);
 }, 201));
 router.post('/sessions/:id/checkout', requirePermission('members:write'), route(async (req) => {
-  const { params, body } = input(z.object({ params: idParam, body: z.object({ code: z.string().regex(/^\d{6}$/, 'the pickup code is six digits'), guardianId: pos, overrideReason: z.string().min(5).max(300).nullish() }) }), req);
+  const { params, body } = input(z.object({ params: idParam, body: z.object({ code: z.string().regex(/^\d{6}$/, 'the pickup code is six digits').optional(), guardianId: pos, overrideReason: z.string().min(5).max(300).nullish() }).refine((v) => v.code || v.overrideReason, { message: 'enter the pickup code, or an override reason', path: ['code'] }) }), req);
   const { churchId, userId, isAdmin } = me();
   return svc.checkOut(await tx(), churchId, userId, isAdmin, params.id, body);
 }));

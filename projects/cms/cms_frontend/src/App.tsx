@@ -1,5 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './context/AuthContext';
+import { useAuth } from './context/auth-context';
 
 import LoginPage from './pages/auth/LoginPage';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -16,6 +16,15 @@ import EventAttendancePage from './pages/attendance/EventAttendancePage';
 import SermonAttendancePage from './pages/attendance/SermonAttendancePage';
 import MinistriesPage from './pages/ministries/MinistriesPage';
 import SmallGroupsPage from './pages/small-groups/SmallGroupsPage';
+import { financeRoutes } from './routes/finance.routes';
+import { opsRoutes } from './routes/ops.routes';
+import { lazyPage } from './routes/lazy';
+
+/** Members land on their own portal; staff land on the dashboard. */
+function Home() {
+  const { role } = useAuth();
+  return <Navigate to={role === 'MEMBER' ? '/me' : '/dashboard'} replace />;
+}
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -24,7 +33,7 @@ function App() {
     <Routes>
       <Route 
         path="/login" 
-        element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />} 
+        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} 
       />
 
       <Route 
@@ -44,9 +53,13 @@ function App() {
         <Route path="/attendance" element={<AttendancePage />} />
         <Route path="/attendance/event" element={<EventAttendancePage />} />
         <Route path="/attendance/sermon" element={<SermonAttendancePage />} />
+
+        {financeRoutes}
+        {opsRoutes}
+        {import.meta.env.DEV && <Route path="/ui-kit" element={lazyPage(() => import('./ui/UIKitPage'))} />}
       </Route>
 
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Home />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

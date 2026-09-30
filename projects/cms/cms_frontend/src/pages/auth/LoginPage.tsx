@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 import { useNavigate } from 'react-router-dom';
 import { describeError } from '../../api/errors';
 
@@ -19,7 +19,7 @@ export default function LoginPage() {
 
     try {
       await login(email, password);
-      navigate('/dashboard');
+      navigate('/');
     } catch (err: any) {
       setError(describeError(err, 'Login failed'));
     } finally {

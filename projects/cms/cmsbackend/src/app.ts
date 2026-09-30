@@ -44,7 +44,8 @@ export function createApp(): Express {
         return callback(new Error('Not allowed by CORS'));
       },
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'Idempotency-Key'],
+      exposedHeaders: ['Idempotent-Replayed', 'Content-Disposition', 'X-Request-Id', 'RateLimit-Remaining'],
       credentials: true
     })
   );

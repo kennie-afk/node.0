@@ -3,8 +3,9 @@ ARG NGINX_IMAGE=nginxinc/nginx-unprivileged:1.27-alpine
 
 FROM ${NODE_IMAGE} AS build
 WORKDIR /app
-# VITE_API_URL is baked in at build time; the edge profile sets it to the edge URL + /api.
-ARG VITE_API_URL=http://localhost:4400
+# Empty means "same origin, under /api": nginx forwards /api to the API (see nginx.conf), so one
+# image works in every environment. Set it only to point at an API on another origin.
+ARG VITE_API_URL=
 ENV VITE_API_URL=$VITE_API_URL
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -15,6 +16,7 @@ RUN npm run build
 # so the container runs with a read-only root filesystem.
 FROM ${NGINX_IMAGE} AS runtime
 COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --chmod=755 docker/30-api-upstream.sh /docker-entrypoint.d/30-api-upstream.sh
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=5 \

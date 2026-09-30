@@ -151,7 +151,7 @@ services:
     build:
       context: ../cms_frontend
       args:
-        VITE_API_URL: ${PUBLIC_API_URL:-http://localhost:4400}
+        VITE_API_URL: ${PUBLIC_API_URL:-}
     restart: unless-stopped
     read_only: true
     tmpfs: [/tmp]

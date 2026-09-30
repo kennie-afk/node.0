@@ -14,7 +14,8 @@ export const createMember = async (req: Request, res: Response, next: NextFuncti
 export const getAllMembers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const pagination = paginationSchema.parse(req.query);
-    res.status(200).json(await memberService.getAllMembers(pagination));
+    const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 80) : '';
+    res.status(200).json(await memberService.getAllMembers(pagination, {}, q));
   } catch (error) {
     next(error);
   }
