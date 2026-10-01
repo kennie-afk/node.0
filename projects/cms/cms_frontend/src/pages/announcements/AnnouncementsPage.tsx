@@ -84,7 +84,7 @@ export default function AnnouncementsPage() {
       }}>
         <div>
           <h1 style={{ fontSize: '16.5px', fontWeight: '700', margin: 0 }}>Announcements Management</h1>
-          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Manage church announcements and notices</p>
+          <p style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>Manage church announcements and notices</p>
         </div>
 
         <button 
@@ -95,7 +95,7 @@ export default function AnnouncementsPage() {
           }}
           style={{
             padding: '10px 20px',
-            background: '#ec4899',
+            background: 'var(--c-accent)',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -111,9 +111,9 @@ export default function AnnouncementsPage() {
 
       {error && (
         <div style={{ 
-          color: '#f87171', 
+          color: 'var(--c-bad)', 
           padding: '12px', 
-          background: '#3f1e1e', 
+          background: 'var(--c-bad-bg)', 
           borderRadius: '6px', 
           marginBottom: '20px',
           fontSize: '12px'
@@ -124,9 +124,9 @@ export default function AnnouncementsPage() {
 
       {success && (
         <div style={{ 
-          color: '#4ade80', 
+          color: 'var(--c-ok)', 
           padding: '12px', 
-          background: '#1f3a1f', 
+          background: 'var(--c-ok-bg)', 
           borderRadius: '6px', 
           marginBottom: '20px',
           fontSize: '12px'
@@ -149,7 +149,7 @@ export default function AnnouncementsPage() {
       {!showAddForm && !showEditForm && (
         <>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading announcements...</div>
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--c-muted)' }}>Loading announcements...</div>
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <AnnouncementTable 

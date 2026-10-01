@@ -10,7 +10,7 @@ import {
   getMembersOfSmallGroup
 } from './small_group.controller';
 import { validate } from '../middleware/validation.middleware';
-import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware';
+import { authenticateToken, requirePermission } from '../middleware/auth.middleware';
 import {
   createSmallGroupSchema,
   updateSmallGroupSchema,
@@ -22,14 +22,14 @@ import {
 
 const router = Router();
 
-router.post('/', authenticateToken, authorizeAdmin, validate(createSmallGroupSchema), createSmallGroup);
-router.get('/', authenticateToken, getAllSmallGroups);
-router.get('/:id', authenticateToken, validate(smallGroupParamSchema), getSmallGroupById);
-router.put('/:id', authenticateToken, authorizeAdmin, validate(updateSmallGroupSchema), updateSmallGroup);
-router.delete('/:id', authenticateToken, authorizeAdmin, validate(smallGroupParamSchema), deleteSmallGroup);
+router.post('/', authenticateToken, requirePermission('members:write'), validate(createSmallGroupSchema), createSmallGroup);
+router.get('/', authenticateToken, requirePermission('members:read'), getAllSmallGroups);
+router.get('/:id', authenticateToken, requirePermission('members:read'), validate(smallGroupParamSchema), getSmallGroupById);
+router.put('/:id', authenticateToken, requirePermission('members:write'), validate(updateSmallGroupSchema), updateSmallGroup);
+router.delete('/:id', authenticateToken, requirePermission('members:write'), validate(smallGroupParamSchema), deleteSmallGroup);
 
-router.post('/:smallGroupId/members/:memberId', authenticateToken, authorizeAdmin, validate(smallGroupMemberParamSchema), validate(smallGroupMemberBodySchema), addMemberToSmallGroup);
-router.delete('/:smallGroupId/members/:memberId', authenticateToken, authorizeAdmin, validate(smallGroupMemberParamSchema), removeMemberFromSmallGroup);
-router.get('/:smallGroupId/members', authenticateToken, validate(smallGroupRosterParamSchema), getMembersOfSmallGroup);
+router.post('/:smallGroupId/members/:memberId', authenticateToken, requirePermission('members:write'), validate(smallGroupMemberParamSchema), validate(smallGroupMemberBodySchema), addMemberToSmallGroup);
+router.delete('/:smallGroupId/members/:memberId', authenticateToken, requirePermission('members:write'), validate(smallGroupMemberParamSchema), removeMemberFromSmallGroup);
+router.get('/:smallGroupId/members', authenticateToken, requirePermission('members:read'), validate(smallGroupRosterParamSchema), getMembersOfSmallGroup);
 
 export default router;

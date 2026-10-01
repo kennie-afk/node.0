@@ -23,7 +23,7 @@ export function AnnouncementTable({ announcements, onDelete, onEdit }: Props) {
         <tbody>
           {announcements.length === 0 ? (
             <tr>
-              <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: '#a1a1aa' }}>
+              <td colSpan={5} style={{ padding: '40px', textAlign: 'center', color: 'var(--c-muted)' }}>
                 No announcements found
               </td>
             </tr>
@@ -39,7 +39,7 @@ export function AnnouncementTable({ announcements, onDelete, onEdit }: Props) {
                 <td>{new Date(ann.publicationDate).toLocaleDateString()}</td>
                 <td>
                   <span style={{ 
-                    color: ann.isPublished ? '#4ade80' : '#f87171',
+                    color: ann.isPublished ? 'var(--c-ok)' : 'var(--c-bad)',
                     padding: '4px 10px',
                     borderRadius: '6px',
                     background: ann.isPublished ? 'rgba(74, 222, 128, 0.1)' : 'rgba(248, 113, 113, 0.1)'

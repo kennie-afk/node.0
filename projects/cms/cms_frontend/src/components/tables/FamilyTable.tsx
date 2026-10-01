@@ -10,7 +10,7 @@ interface Props {
 
 export const FamilyTable: React.FC<Props> = ({ families, onDelete, onEdit, onView }) => {
   if (families.length === 0) {
-    return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No families found.</p>;
+    return <p style={{ textAlign: 'center', padding: '40px', color: 'var(--c-muted)' }}>No families found.</p>;
   }
 
   const sortedFamilies = [...families].sort((a, b) => b.id - a.id);

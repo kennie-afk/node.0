@@ -1,4 +1,4 @@
-import { Bell, BookOpen, Calendar, CheckSquare, DollarSign, Home, LayoutDashboard, Users, Users2 } from 'lucide-react';
+import { Bell, BookOpen, Calendar, CheckSquare, DollarSign, Home, KeyRound, LayoutDashboard, Users, Users2 } from 'lucide-react';
 import { canAny, type Permission } from '../auth/permissions';
 import { financeNav } from './finance.nav';
 import { opsNav } from './ops.nav';
@@ -37,7 +37,8 @@ const BASE_ITEMS: NavItem[] = [
 
   { label: 'Contributions', path: '/contributions', icon: DollarSign, group: 'giving', order: 10, permission: ['giving:read', 'giving:write'] },
 
-  { label: 'Users', path: '/users', icon: Users, group: 'admin', order: 10, permission: 'users:manage' }
+  { label: 'Users', path: '/users', icon: Users, group: 'admin', order: 10, permission: 'users:manage' },
+  { label: 'Roles', path: '/roles', icon: KeyRound, group: 'admin', order: 11, permission: 'users:manage' }
 ];
 
 const ALL_ITEMS: NavItem[] = [...BASE_ITEMS, ...financeNav, ...opsNav];
@@ -46,17 +47,17 @@ export function allNavItems(): readonly NavItem[] {
   return ALL_ITEMS;
 }
 
-function permitted(item: NavItem, role: Parameters<typeof canAny>[0]): boolean {
+function permitted(item: NavItem, granted: readonly string[]): boolean {
   if (!item.permission) return true;
   const needed: readonly Permission[] = Array.isArray(item.permission) ? (item.permission as readonly Permission[]) : [item.permission as Permission];
-  return canAny(role, needed);
+  return canAny(granted, needed);
 }
 
 /** Groups and items the signed-in role may see, in display order. */
-export function navFor(role: Parameters<typeof canAny>[0]): NavGroup[] {
+export function navFor(granted: readonly string[]): NavGroup[] {
   return GROUPS.map((group) => ({
     ...group,
-    items: ALL_ITEMS.filter((item) => item.group === group.id && permitted(item, role)).sort(
+    items: ALL_ITEMS.filter((item) => item.group === group.id && permitted(item, granted)).sort(
       (a, b) => (a.order ?? 100) - (b.order ?? 100) || a.label.localeCompare(b.label)
     )
   })).filter((group) => group.items.length > 0);

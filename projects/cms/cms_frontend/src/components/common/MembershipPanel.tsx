@@ -16,7 +16,7 @@ interface MembershipPanelProps {
   removeMember: (memberId: number) => Promise<void>;
 }
 
-const label = { padding: '12px 0', fontWeight: 600, color: '#a1a1aa' } as const;
+const label = { padding: '12px 0', fontWeight: 600, color: 'var(--c-muted)' } as const;
 
 export default function MembershipPanel({
   title,
@@ -89,10 +89,10 @@ export default function MembershipPanel({
   };
 
   return (
-    <div style={{ marginTop: '24px', borderTop: '1px solid #27272a', paddingTop: '16px' }}>
+    <div style={{ marginTop: '24px', borderTop: '1px solid var(--c-border)', paddingTop: '16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h4 style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9', margin: 0 }}>{title}</h4>
-        <span style={{ color: '#a1a1aa', fontSize: '11.5px' }}>
+        <h4 style={{ fontSize: '13px', fontWeight: 600, color: 'var(--c-text)', margin: 0 }}>{title}</h4>
+        <span style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>
           {loading ? 'Loading' : `${roster.length} member${roster.length === 1 ? '' : 's'}`}
         </span>
       </div>
@@ -100,8 +100,8 @@ export default function MembershipPanel({
       {error && (
         <div
           style={{
-            color: '#f87171',
-            background: '#3f1e1e',
+            color: 'var(--c-bad)',
+            background: 'var(--c-bad-bg)',
             borderRadius: '6px',
             padding: '10px',
             fontSize: '11.5px',
@@ -121,10 +121,10 @@ export default function MembershipPanel({
             flex: 2,
             minWidth: '160px',
             padding: '10px 12px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '11.5px'
           }}
         >
@@ -148,10 +148,10 @@ export default function MembershipPanel({
             flex: 1,
             minWidth: '120px',
             padding: '10px 12px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '11.5px'
           }}
         />
@@ -161,7 +161,7 @@ export default function MembershipPanel({
           disabled={busy || !selected}
           style={{
             padding: '10px 18px',
-            background: busy || !selected ? '#3f3f46' : '#ec4899',
+            background: busy || !selected ? 'var(--c-fill-strong)' : 'var(--c-accent)',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -175,7 +175,7 @@ export default function MembershipPanel({
       </div>
 
       {!loading && roster.length === 0 && (
-        <p style={{ color: '#a1a1aa', fontSize: '11.5px', marginTop: '16px' }}>
+        <p style={{ color: 'var(--c-muted)', fontSize: '11.5px', marginTop: '16px' }}>
           Nobody has been added yet. Choose a member above to build the roster.
         </p>
       )}
@@ -184,8 +184,8 @@ export default function MembershipPanel({
         <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '12px' }}>
           <tbody>
             {roster.map((entry) => (
-              <tr key={entry.id} style={{ borderBottom: '1px solid #27272a' }}>
-                <td style={{ ...label, color: '#f1f5f9', fontWeight: 500 }}>
+              <tr key={entry.id} style={{ borderBottom: '1px solid var(--c-border)' }}>
+                <td style={{ ...label, color: 'var(--c-text)', fontWeight: 500 }}>
                   {entry.firstName} {entry.lastName}
                 </td>
                 <td style={{ ...label, fontSize: '11.5px' }}>{entry.role || '-'}</td>
@@ -195,8 +195,8 @@ export default function MembershipPanel({
                     disabled={busy}
                     style={{
                       background: 'transparent',
-                      border: '1px solid #f87171',
-                      color: '#f87171',
+                      border: '1px solid var(--c-bad)',
+                      color: 'var(--c-bad)',
                       padding: '4px 12px',
                       borderRadius: '6px',
                       cursor: busy ? 'not-allowed' : 'pointer',

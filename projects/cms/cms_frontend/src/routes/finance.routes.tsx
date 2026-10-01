@@ -61,7 +61,7 @@ export const financeRoutes: ReactElement[] = [
   page('fin-periods', '/finance/periods', () => import('../pages/finance/PeriodsPage'), FIN_READ),
   page('fin-close-year', '/finance/periods/close-year/:id', () => import('../pages/finance/CloseYearPage'), 'finance:close'),
   page('fin-settings', '/finance/settings', () => import('../pages/finance/SettingsPage'), FIN_READ),
-  page('fin-audit', '/finance/audit', () => import('../pages/finance/AuditPage'), [FIN_READ, 'audit:read']),
+  page('fin-audit', '/finance/audit', () => import('../pages/finance/AuditPage'), 'audit:read'),
 
   // ---- Payables
   <Route key="pay-index" path="/payables" element={<Navigate to="/payables/bills" replace />} />,

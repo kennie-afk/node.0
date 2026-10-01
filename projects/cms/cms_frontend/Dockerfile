@@ -6,6 +6,8 @@ WORKDIR /app
 # Empty means "same origin, under /api": nginx forwards /api to the API (see nginx.conf), so one
 # image works in every environment. Set it only to point at an API on another origin.
 ARG VITE_API_URL=
+ARG VITE_DEMO_LOGINS=false
+ENV VITE_DEMO_LOGINS=$VITE_DEMO_LOGINS
 ENV VITE_API_URL=$VITE_API_URL
 COPY package.json package-lock.json ./
 RUN npm ci

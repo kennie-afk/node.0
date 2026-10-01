@@ -4,6 +4,7 @@ import { ConflictError } from '../utils/errors';
 import { OnboardChurchInput } from './church.schemas';
 import { setTenantLocal } from '../common/tenant-db';
 import { emailExists } from '../auth/auth.service';
+import { ensureDefaultRoles } from '../modules/roles/roles.service';
 import { ensureFinanceSetup } from '../modules/finance/setup.service';
 
 const PASSWORD_ROUNDS = 12;
@@ -48,6 +49,7 @@ export const onboardChurch = async (input: OnboardChurchInput): Promise<OnboardR
       { transaction }
     );
 
+    await ensureDefaultRoles(transaction, church.id);
     await ensureFinanceSetup(transaction, church.id);
 
     return {

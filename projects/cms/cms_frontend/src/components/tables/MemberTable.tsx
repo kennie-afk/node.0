@@ -18,7 +18,7 @@ export const MemberTable: React.FC<Props> = ({
   onAddContribution
 }) => {
   if (members.length === 0) {
-    return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No members found.</p>;
+    return <p style={{ textAlign: 'center', padding: '40px', color: 'var(--c-muted)' }}>No members found.</p>;
   }
 
   return (
@@ -103,7 +103,7 @@ export const MemberTable: React.FC<Props> = ({
                       style={{
                         background: 'transparent',
                         border: 'none',
-                        color: '#4ade80',
+                        color: 'var(--c-ok)',
                         fontSize: '10.5px',
                         fontWeight: '500',
                         cursor: 'pointer',
@@ -121,7 +121,7 @@ export const MemberTable: React.FC<Props> = ({
                       }}
                       onMouseOut={(e) => {
                         e.currentTarget.style.backgroundColor = 'transparent';
-                        e.currentTarget.style.color = '#4ade80';
+                        e.currentTarget.style.color = 'var(--c-ok)';
                       }}
                     >
                       <PlusCircle size={12} />

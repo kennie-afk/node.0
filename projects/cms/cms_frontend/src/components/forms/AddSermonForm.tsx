@@ -143,10 +143,10 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
           style={{
             width: '100%',
             padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '12px',
             minHeight: '160px',
             resize: 'vertical',
@@ -174,22 +174,22 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
               name="isGuestSpeaker" 
               checked={formData.isGuestSpeaker} 
               onChange={handleChange}
-              style={{ accentColor: '#ec4899' }}
+              style={{ accentColor: 'var(--c-accent)' }}
             />
-            <label style={{ color: '#d1d5db', fontSize: '12px' }}>Guest Speaker</label>
+            <label style={{ color: 'var(--c-text-2)', fontSize: '12px' }}>Guest Speaker</label>
           </div>
         </div>
 
         {!formData.isGuestSpeaker ? (
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>
               Speaker (Church Member)
             </label>
             <select
               name="speakerMemberId"
               value={formData.speakerMemberId}
               onChange={handleChange}
-              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '12px', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', fontSize: '12px', boxSizing: 'border-box' }}
             >
               <option value="">Select Speaker</option>
               {members.map((m: any) => (
@@ -219,10 +219,10 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
           style={{
             width: '100%',
             padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '12px',
             minHeight: '100px',
             resize: 'vertical',
@@ -241,13 +241,13 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
 
         <Input placeholder="Notes (optional)" name="notes" value={formData.notes} onChange={handleChange} />
 
-        {error && <p style={{ color: '#f87171' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--c-bad)' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}
-            style={{ background: 'linear-gradient(135deg, #ec4899, #c026d3)', flex: 1 }}
+            style={{ background: 'var(--c-accent)', flex: 1 }}
           >
             {loading ? (isEdit ? 'Updating...' : 'Adding Sermon...') : (isEdit ? 'Update Sermon' : 'Add Sermon')}
           </Button>
@@ -255,7 +255,7 @@ export default function AddSermonForm({ onSermonAdded, initialData, isEdit = fal
           <Button 
             type="button"
             onClick={handleCancel}
-            style={{ background: 'transparent', border: '1px solid #f1f5f9', color: '#f1f5f9', flex: 1 }}
+            style={{ background: 'transparent', border: '1px solid var(--c-text)', color: 'var(--c-text)', flex: 1 }}
           >
             Cancel
           </Button>

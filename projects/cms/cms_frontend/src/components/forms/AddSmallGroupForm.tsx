@@ -135,12 +135,12 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
         <Input placeholder="Small Group Name *" name="name" value={formData.name} onChange={handleChange} required />
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Ministry *</label>
+          <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>Ministry *</label>
           <select 
             name="ministryId" 
             value={formData.ministryId} 
             onChange={handleChange} 
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', boxSizing: 'border-box' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', boxSizing: 'border-box' }} 
             required
           >
             <option value="">Select Ministry</option>
@@ -151,12 +151,12 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Leader</label>
+          <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>Leader</label>
           <select 
             name="leaderId" 
             value={formData.leaderId} 
             onChange={handleChange} 
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', boxSizing: 'border-box' }}
           >
             <option value="">Select Leader (optional)</option>
             {members.map((m: any) => (
@@ -171,12 +171,12 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
           gap: '16px' 
         }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Meeting Day</label>
+            <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>Meeting Day</label>
             <select 
               name="meetingDay" 
               value={formData.meetingDay} 
               onChange={handleChange} 
-              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', boxSizing: 'border-box' }}
             >
               <option value="">Select Day</option>
               {DAYS_OF_WEEK.map(day => (
@@ -186,13 +186,13 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Meeting Time</label>
+            <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>Meeting Time</label>
             <input 
               type="time" 
               name="meetingTime" 
               value={formData.meetingTime} 
               onChange={handleChange}
-              style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', boxSizing: 'border-box' }}
+              style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', boxSizing: 'border-box' }}
             />
           </div>
         </div>
@@ -204,23 +204,23 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
           value={formData.description}
           onChange={handleChange}
           placeholder="Description (optional)"
-          style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box' }}
+          style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box' }}
         />
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#d1d5db' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--c-text-2)' }}>
           <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} />
           Group is Active
         </label>
 
         <Input placeholder="Notes (optional)" name="notes" value={formData.notes} onChange={handleChange} />
 
-        {error && <p style={{ color: '#f87171', marginTop: '4px' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--c-bad)', marginTop: '4px' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}
-            style={{ background: 'linear-gradient(135deg, #ec4899, #c026d3)', flex: 1 }}
+            style={{ background: 'var(--c-accent)', flex: 1 }}
           >
             {loading ? (isEdit ? 'Updating...' : 'Adding...') : (isEdit ? 'Update Small Group' : 'Add Small Group')}
           </Button>
@@ -228,7 +228,7 @@ export default function AddSmallGroupForm({ onSmallGroupAdded, initialData, isEd
           <Button 
             type="button"
             onClick={handleCancel}
-            style={{ background: 'transparent', border: '1px solid #f1f5f9', color: '#f1f5f9', flex: 1 }}
+            style={{ background: 'transparent', border: '1px solid var(--c-text)', color: 'var(--c-text)', flex: 1 }}
           >
             Cancel
           </Button>

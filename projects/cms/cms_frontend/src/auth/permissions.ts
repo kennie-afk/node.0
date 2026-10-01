@@ -1,70 +1,35 @@
 /**
- * Mirror of cmsbackend/src/auth/permissions.ts. The server is the authority and enforces every
- * rule; this copy exists only so the console can hide what a role cannot use. If the two drift,
- * the worst outcome is a menu item that answers 403, never a bypass. Keep them in step.
+ * The vocabulary of permission names, as TYPES ONLY, so a typo in a route guard or menu entry
+ * fails to compile. Who holds which permission is not decided here: the server sends the signed-in
+ * user's permissions with the sign-in response and the role list from GET /auth/roles. Adding or
+ * changing a role is a backend change alone.
  */
-export const ROLES = ['ADMIN', 'TREASURER', 'APPROVER', 'AUDITOR', 'PASTOR', 'SECRETARY', 'MEMBER'] as const;
-export type Role = (typeof ROLES)[number];
+export type Permission =
+  | 'members:read' | 'members:write'
+  | 'giving:read' | 'giving:write'
+  | 'finance:read' | 'finance:post' | 'finance:approve' | 'finance:close' | 'finance:settings'
+  | 'payroll:read' | 'payroll:run' | 'payroll:approve'
+  | 'audit:read'
+  | 'care:read' | 'care:write'
+  | 'comms:send'
+  | 'users:manage';
 
-export const PERMISSIONS = [
-  'members:read',
-  'members:write',
-  'giving:read',
-  'giving:write',
-  'finance:read',
-  'finance:post',
-  'finance:approve',
-  'finance:close',
-  'finance:settings',
-  'payroll:read',
-  'payroll:run',
-  'payroll:approve',
-  'audit:read',
-  'care:read',
-  'care:write',
-  'comms:send',
-  'users:manage'
-] as const;
-export type Permission = (typeof PERMISSIONS)[number];
-
-const MATRIX: Record<Role, readonly Permission[]> = {
-  ADMIN: PERMISSIONS,
-  TREASURER: ['members:read', 'giving:read', 'giving:write', 'finance:read', 'finance:post', 'finance:close', 'payroll:read', 'payroll:run'],
-  APPROVER: ['members:read', 'giving:read', 'finance:read', 'finance:approve', 'payroll:read', 'payroll:approve'],
-  AUDITOR: ['members:read', 'giving:read', 'finance:read', 'payroll:read', 'audit:read'],
-  PASTOR: ['members:read', 'members:write', 'giving:read', 'finance:read', 'care:read', 'care:write', 'comms:send'],
-  SECRETARY: ['members:read', 'members:write', 'care:read', 'comms:send'],
-  MEMBER: []
-};
-
-export function isRole(value: unknown): value is Role {
-  return typeof value === 'string' && (ROLES as readonly string[]).includes(value);
-}
+/** A role is a name the server defines; the console never lists them itself. */
+export type Role = string;
 
 /** A token issued before roles existed only carries isAdmin. */
 export function effectiveRole(role: unknown, isAdmin: boolean): Role {
   if (isAdmin) return 'ADMIN';
-  return isRole(role) ? role : 'MEMBER';
+  return typeof role === 'string' && role.length > 0 ? role : 'MEMBER';
 }
 
-export function can(role: Role, permission: Permission): boolean {
-  return MATRIX[role].includes(permission);
+export function can(granted: readonly string[], permission: Permission): boolean {
+  return granted.includes(permission);
 }
 
-export function canAny(role: Role, permissions: readonly Permission[]): boolean {
-  return permissions.some((permission) => can(role, permission));
+export function canAny(granted: readonly string[], permissions: readonly Permission[]): boolean {
+  return permissions.some((permission) => can(granted, permission));
 }
 
-export function permissionsOf(role: Role): readonly Permission[] {
-  return MATRIX[role];
-}
-
-export const ROLE_LABELS: Record<Role, string> = {
-  ADMIN: 'Administrator',
-  TREASURER: 'Treasurer',
-  APPROVER: 'Approver',
-  AUDITOR: 'Auditor',
-  PASTOR: 'Pastor',
-  SECRETARY: 'Secretary',
-  MEMBER: 'Member'
-};
+/** A readable name for a role key the console has no label for (the server normally sends the label). */
+export const roleLabelFallback = (role: string): string => role.charAt(0) + role.slice(1).toLowerCase().replace(/_/g, ' ');

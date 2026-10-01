@@ -7,13 +7,21 @@ import { AuthProvider } from '../../context/AuthContext';
 import { writeSession } from '../../api/session';
 import { RequirePermission } from '../../auth/RequirePermission';
 
+// The server owns roles and what they may do; these stand in for its sign-in response.
+const ALL = ['members:read', 'members:write', 'giving:read', 'giving:write', 'finance:read', 'finance:post', 'finance:approve', 'finance:close', 'finance:settings', 'payroll:read', 'payroll:run', 'payroll:approve', 'audit:read', 'care:read', 'care:write', 'comms:send', 'users:manage'];
+const LABELS: Record<string, string> = { ADMIN: 'Administrator', TREASURER: 'Treasurer' };
+const GRANTS: Record<string, string[]> = {
+  ADMIN: ALL,
+  TREASURER: ['members:read', 'giving:read', 'giving:write', 'finance:read', 'finance:post', 'finance:close', 'payroll:read', 'payroll:run']
+};
+
 function tokenFor(claims: object): string {
   const b64 = (o: object) => btoa(JSON.stringify(o)).replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
   return `${b64({ alg: 'HS256' })}.${b64(claims)}.sig`;
 }
 
 function mount(role: string, path = '/dashboard') {
-  writeSession(tokenFor({ id: 1, email: `${role.toLowerCase()}@church.test`, churchId: 1, role, isAdmin: role === 'ADMIN' }), 3600, 1);
+  writeSession(tokenFor({ id: 1, email: `${role.toLowerCase()}@church.test`, churchId: 1, role, isAdmin: role === 'ADMIN' }), 3600, 1, GRANTS[role] ?? [], LABELS[role]);
   return render(
     <MemoryRouter initialEntries={[path]}>
       <AuthProvider>

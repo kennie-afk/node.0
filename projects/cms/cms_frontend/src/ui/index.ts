@@ -28,3 +28,5 @@ export { LineChart } from './charts/LineChart';
 export { Donut } from './charts/Donut';
 export { StackedBar } from './charts/StackedBar';
 export { CHART_COLORS, colorAt } from './charts/palette';
+export { ThemeSwitch } from './ThemeSwitch';
+export { useTheme, setTheme, type Theme } from './theme';

@@ -1,0 +1,59 @@
+/*
+ * One palette, two themes. Everything in the app reads these tokens; nothing should hard-code a
+ * colour. Dark is the default; `data-theme="light"` on <html> (set by the theme switch, restored
+ * before first paint by /theme-init.js) swaps the whole set.
+ */
+:root {
+  color-scheme: dark;
+  --c-bg: #0a0a0f;
+  --c-surface: #18181b;
+  --c-raised: #1f1f25;
+  --c-input: #141418;
+  --c-fill: #27272a;
+  --c-fill-strong: #3f3f46;
+  --c-border: #27272a;
+  --c-border-strong: #3f3f46;
+  --c-text: #f1f5f9;
+  --c-text-2: #cbd5e1;
+  --c-muted: #a1a1aa;
+  /* Brand accent: a muted burnt orange. Change these three lines (and the light ones below) to re-brand. */
+  --c-accent: #d4763a;
+  --c-accent-rgb: 212, 118, 58;
+  --c-accent-hover: #e08d55;
+  --c-on-accent: #ffffff;
+  --c-accent-soft: rgba(var(--c-accent-rgb), 0.14);
+  --c-ok: #4ade80;
+  --c-warn: #fbbf24;
+  --c-bad: #f87171;
+  --c-info: #22d3ee;
+  --c-ok-bg: #1f3a1f;
+  --c-bad-bg: #3f1e1e;
+  --c-scrollbar: #3f3f46;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --c-bg: #f4f5f8;
+  --c-surface: #ffffff;
+  --c-raised: #f1f2f6;
+  --c-input: #ffffff;
+  --c-fill: #eceef3;
+  --c-fill-strong: #dde0e8;
+  --c-border: #dfe2ea;
+  --c-border-strong: #c3c8d3;
+  --c-text: #0f172a;
+  --c-text-2: #334155;
+  --c-muted: #5b6678;
+  --c-accent: #b4521a;
+  --c-accent-rgb: 180, 82, 26;
+  --c-accent-hover: #963f10;
+  --c-on-accent: #ffffff;
+  --c-accent-soft: rgba(var(--c-accent-rgb), 0.1);
+  --c-ok: #15803d;
+  --c-warn: #b45309;
+  --c-bad: #b91c1c;
+  --c-info: #0e7490;
+  --c-ok-bg: #dcfce7;
+  --c-bad-bg: #fee2e2;
+  --c-scrollbar: #c3c8d3;
+}

@@ -157,7 +157,7 @@ export default function MembersPage() {
       }}>
         <div>
           <h1 style={{ fontSize: '16.5px', fontWeight: '700', margin: 0 }}>Members Management</h1>
-          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Manage individual church members and their records</p>
+          <p style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>Manage individual church members and their records</p>
         </div>
 
         <button 
@@ -168,7 +168,7 @@ export default function MembersPage() {
           }}
           style={{
             padding: '10px 20px',
-            background: '#ec4899',
+            background: 'var(--c-accent)',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -198,18 +198,18 @@ export default function MembersPage() {
             flex: 1,
             minWidth: '200px',
             padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '12px',
             boxSizing: 'border-box'
           }}
         />
       </div>
 
-      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
-      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
+      {error && <div style={{ color: 'var(--c-bad)', padding: '12px', background: 'var(--c-bad-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
+      {success && <div style={{ color: 'var(--c-ok)', padding: '12px', background: 'var(--c-ok-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
 
       {showAddForm && <AddMemberForm onMemberAdded={handleMemberAdded} onCancel={handleCancelForm} />}
 
@@ -225,7 +225,7 @@ export default function MembersPage() {
       {!showAddForm && !showEditForm && (
         <>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading members...</div>
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--c-muted)' }}>Loading members...</div>
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <MemberTable 
@@ -260,7 +260,7 @@ export default function MembersPage() {
               justifyContent: 'space-between', 
               alignItems: 'center', 
               marginBottom: '24px',
-              borderBottom: '1px solid #27272a',
+              borderBottom: '1px solid var(--c-border)',
               paddingBottom: '16px',
               flexWrap: 'wrap',
               gap: '12px'
@@ -271,8 +271,8 @@ export default function MembersPage() {
                   onClick={() => handleAddContribution(selectedMemberId, selectedMemberName)}
                   style={{
                     background: 'transparent',
-                    border: '1px solid #4ade80',
-                    color: '#4ade80',
+                    border: '1px solid var(--c-ok)',
+                    color: 'var(--c-ok)',
                     padding: '6px 14px',
                     borderRadius: '6px',
                     cursor: 'pointer',
@@ -292,8 +292,8 @@ export default function MembersPage() {
                   onClick={closeContributionsModal}
                   style={{
                     background: 'transparent',
-                    border: '1px solid #f87171',
-                    color: '#f87171',
+                    border: '1px solid var(--c-bad)',
+                    color: 'var(--c-bad)',
                     padding: '6px 14px',
                     borderRadius: '6px',
                     cursor: 'pointer',
@@ -312,9 +312,9 @@ export default function MembersPage() {
             </div>
 
             {loadingContributions ? (
-              <p style={{ textAlign: 'center', padding: '60px', color: '#a1a1aa' }}>Loading contributions...</p>
+              <p style={{ textAlign: 'center', padding: '60px', color: 'var(--c-muted)' }}>Loading contributions...</p>
             ) : memberContributions.length === 0 ? (
-              <p style={{ textAlign: 'center', padding: '60px', color: '#a1a1aa' }}>
+              <p style={{ textAlign: 'center', padding: '60px', color: 'var(--c-muted)' }}>
                 No contributions recorded for this member yet.
               </p>
             ) : (
@@ -333,7 +333,7 @@ export default function MembersPage() {
                       <tr key={contrib.id}>
                         <td>{new Date(contrib.date || '').toLocaleDateString()}</td>
                         <td>{contrib.contributionType || 'General'}</td>
-                        <td style={{ fontWeight: '600', color: '#4ade80' }}>
+                        <td style={{ fontWeight: '600', color: 'var(--c-ok)' }}>
                           {Number(contrib.amount).toLocaleString()}
                         </td>
                         <td>{contrib.notes || '-'}</td>

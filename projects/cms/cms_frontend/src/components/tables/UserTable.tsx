@@ -1,5 +1,6 @@
 import type { User } from '../../api/userApi';
 import { Button } from '../common/Button';
+import { useRoles } from '../../api/rolesApi';
 
 interface Props {
   users: User[];
@@ -8,8 +9,9 @@ interface Props {
 }
 
 export const UserTable: React.FC<Props> = ({ users, onDelete, onEdit }) => {
+  const { labelOf } = useRoles();
   if (users.length === 0) {
-    return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No users found.</p>;
+    return <p style={{ textAlign: 'center', padding: '40px', color: 'var(--c-muted)' }}>No users found.</p>;
   }
 
   const sortedUsers = [...users].sort((a, b) => b.id - a.id);
@@ -37,13 +39,13 @@ export const UserTable: React.FC<Props> = ({ users, onDelete, onEdit }) => {
                 <span style={{
                   padding: '4px 12px',
                   borderRadius: '6px',
-                  background: user.isAdmin ? 'rgba(34, 197, 94, 0.1)' : 'rgba(241, 245, 249, 0.1)',
-                  color: user.isAdmin ? '#22c55e' : '#f1f5f9',
+                  background: user.isAdmin ? 'var(--c-ok-bg)' : 'var(--c-fill)',
+                  color: user.isAdmin ? 'var(--c-ok)' : 'var(--c-text)',
                   fontSize: '11.5px',
                   fontWeight: '500',
                   whiteSpace: 'nowrap'
                 }}>
-                  {user.isAdmin ? 'Admin' : 'User'}
+                  {labelOf(user.role ?? (user.isAdmin ? 'ADMIN' : 'MEMBER'))}
                 </span>
               </td>
               <td>{new Date(user.createdAt).toLocaleDateString()}</td>

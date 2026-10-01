@@ -8,14 +8,14 @@ import {
 } from './member.controller';
 import { validate } from '../middleware/validation.middleware';
 import { createMemberSchema, updateMemberSchema } from './member.schemas';
-import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware';
+import { authenticateToken, requirePermission } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.post('/', authenticateToken, authorizeAdmin, validate(createMemberSchema), createMember);
-router.get('/', authenticateToken, getAllMembers);
-router.get('/:id', authenticateToken, getMemberById);
-router.put('/:id', authenticateToken, authorizeAdmin, validate(updateMemberSchema), updateMember);
-router.delete('/:id', authenticateToken, authorizeAdmin, deleteMember);
+router.post('/', authenticateToken, requirePermission('members:write'), validate(createMemberSchema), createMember);
+router.get('/', authenticateToken, requirePermission('members:read'), getAllMembers);
+router.get('/:id', authenticateToken, requirePermission('members:read'), getMemberById);
+router.put('/:id', authenticateToken, requirePermission('members:write'), validate(updateMemberSchema), updateMember);
+router.delete('/:id', authenticateToken, requirePermission('members:write'), deleteMember);
 
 export default router;

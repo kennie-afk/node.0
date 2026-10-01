@@ -10,7 +10,7 @@ const LABEL: Record<SecurityEventType, string> = { CHECK_IN: 'Check-in', CHECK_O
 
 const columns: Array<Column<SecurityEvent>> = [
   { key: 'at', header: 'When', render: (e) => formatDateTime(e.createdAt) },
-  { key: 'type', header: 'Event', render: (e) => <Badge tone={TONE[e.type]} dot>{LABEL[e.type]}</Badge> },
+  { key: 'type', header: 'Event', render: (e) => <Badge tone={TONE[e.type]}>{LABEL[e.type]}</Badge> },
   { key: 'child', header: 'Child', render: (e) => (e.childId ? <Link to={`/checkin/children/${e.childId}`}>Child #{e.childId}</Link> : '') },
   { key: 'detail', header: 'Detail', render: (e) => e.detail ?? '' },
   { key: 'actor', header: 'By user', numeric: true, render: (e) => e.actorUserId ?? '' }

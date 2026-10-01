@@ -22,7 +22,7 @@ export function EventTable({ events, onDelete, onEdit }: Props) {
         <tbody>
           {events.length === 0 ? (
             <tr>
-              <td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: '#a1a1aa' }}>
+              <td colSpan={4} style={{ padding: '40px', textAlign: 'center', color: 'var(--c-muted)' }}>
                 No events found
               </td>
             </tr>

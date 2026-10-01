@@ -120,7 +120,7 @@ export default function AttendancePage() {
       }}>
         <div>
           <h1 style={{ fontSize: '16.5px', fontWeight: '700', margin: 0 }}>General Attendance</h1>
-          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Record and manage all church attendance</p>
+          <p style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>Record and manage all church attendance</p>
         </div>
 
         <button 
@@ -130,7 +130,7 @@ export default function AttendancePage() {
           }}
           style={{
             padding: '10px 20px',
-            background: '#ec4899',
+            background: 'var(--c-accent)',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -160,18 +160,18 @@ export default function AttendancePage() {
             flex: 1,
             minWidth: '200px',
             padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '12px',
             boxSizing: 'border-box'
           }}
         />
       </div>
 
-      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
-      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
+      {error && <div style={{ color: 'var(--c-bad)', padding: '12px', background: 'var(--c-bad-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
+      {success && <div style={{ color: 'var(--c-ok)', padding: '12px', background: 'var(--c-ok-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
 
       {showAddForm && (
         <AddAttendanceForm 
@@ -186,7 +186,7 @@ export default function AttendancePage() {
       {!showAddForm && (
         <>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading attendance records...</div>
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--c-muted)' }}>Loading attendance records...</div>
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <AttendanceTable 
@@ -205,39 +205,39 @@ export default function AttendancePage() {
       {showEventModal && selectedEvent && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '85vh', overflow: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--c-border)', paddingBottom: '12px' }}>
               <h3 style={{ fontSize: '14.5px', fontWeight: '600' }}>Event Details</h3>
-              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '11.5px' }}>
+              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid var(--c-bad)', color: 'var(--c-bad)', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '11.5px' }}>
                 Close
               </button>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa', width: '100px' }}>Event Name</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedEvent.name}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)', width: '100px' }}>Event Name</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{selectedEvent.name}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Date & Time</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{new Date(selectedEvent.startTime).toLocaleString()}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Date & Time</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{new Date(selectedEvent.startTime).toLocaleString()}</td>
                   </tr>
                   {selectedEvent.endTime && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>End Time</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{new Date(selectedEvent.endTime).toLocaleString()}</td>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>End Time</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{new Date(selectedEvent.endTime).toLocaleString()}</td>
                     </tr>
                   )}
                   {selectedEvent.location && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Location</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedEvent.location}</td>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Location</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{selectedEvent.location}</td>
                     </tr>
                   )}
                   {selectedEvent.description && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Description</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedEvent.description}</td>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Description</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{selectedEvent.description}</td>
                     </tr>
                   )}
                 </tbody>
@@ -250,39 +250,39 @@ export default function AttendancePage() {
       {showSermonModal && selectedSermon && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
           <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '85vh', overflow: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid #27272a', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--c-border)', paddingBottom: '12px' }}>
               <h3 style={{ fontSize: '14.5px', fontWeight: '600' }}>Sermon Details</h3>
-              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid #f87171', color: '#f87171', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '11.5px' }}>
+              <button onClick={closeModals} style={{ background: 'transparent', border: '1px solid var(--c-bad)', color: 'var(--c-bad)', padding: '6px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '11.5px' }}>
                 Close
               </button>
             </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa', width: '100px' }}>Title</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedSermon.title}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)', width: '100px' }}>Title</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{selectedSermon.title}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Date Preached</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{new Date(selectedSermon.datePreached).toLocaleDateString()}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Date Preached</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{new Date(selectedSermon.datePreached).toLocaleDateString()}</td>
                   </tr>
                   {selectedSermon.speaker && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Speaker</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedSermon.speaker.firstName} {selectedSermon.speaker.lastName}</td>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Speaker</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{selectedSermon.speaker.firstName} {selectedSermon.speaker.lastName}</td>
                     </tr>
                   )}
                   {selectedSermon.guestSpeakerName && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Guest Speaker</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedSermon.guestSpeakerName}</td>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Guest Speaker</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{selectedSermon.guestSpeakerName}</td>
                     </tr>
                   )}
                   {selectedSermon.content && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Content</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{selectedSermon.content}</td>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Content</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{selectedSermon.content}</td>
                     </tr>
                   )}
                 </tbody>

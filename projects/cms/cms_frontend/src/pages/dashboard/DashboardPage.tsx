@@ -84,12 +84,12 @@ export default function DashboardPage() {
   }, []);
 
   const modules = [
-    { title: "Members", count: stats.members, path: "/members", desc: "Manage church members", icon: Users, color: "#ec4899" },
+    { title: "Members", count: stats.members, path: "/members", desc: "Manage church members", icon: Users, color: "var(--c-accent)" },
     { title: "Ministries", count: stats.ministries, path: "/ministries", desc: "Departments & ministries", icon: Users2, color: "#a855f7" },
     { title: "Small Groups", count: stats.smallGroups, path: "/small-groups", desc: "Cell groups", icon: UserCircle, color: "#06b6d4" },
     { title: "Sermons", count: stats.sermons, path: "/sermons", desc: "Teachings & sermons", icon: BookOpen, color: "#eab308" },
-    { title: "Announcements", count: stats.announcements, path: "/announcements", desc: "Church notices", icon: Megaphone, color: "#f87171", badge: newAnnCount > 0 ? newAnnCount : null },
-    { title: "Events", count: stats.events, path: "/events", desc: "Upcoming events", icon: Calendar, color: "#22d3ee" },
+    { title: "Announcements", count: stats.announcements, path: "/announcements", desc: "Church notices", icon: Megaphone, color: "var(--c-bad)", badge: newAnnCount > 0 ? newAnnCount : null },
+    { title: "Events", count: stats.events, path: "/events", desc: "Upcoming events", icon: Calendar, color: "var(--c-info)" },
   ];
 
   const quickActions = [
@@ -102,7 +102,7 @@ export default function DashboardPage() {
   ];
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading dashboard...</div>;
+    return <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--c-muted)' }}>Loading dashboard...</div>;
   }
 
   return (
@@ -111,7 +111,7 @@ export default function DashboardPage() {
         <h1 style={{ 
           fontSize: '16.5px', 
           fontWeight: '700', 
-          color: '#ffffff', 
+          color: 'var(--c-text)', 
           marginBottom: '8px' 
         }}>
           Church Dashboard
@@ -120,7 +120,7 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
           <div 
             style={{
-              backgroundColor: '#18181b',
+              backgroundColor: 'var(--c-surface)',
               borderRadius: '6px',
               padding: '10px 20px',
               display: 'inline-block',
@@ -128,16 +128,16 @@ export default function DashboardPage() {
               cursor: 'default'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)';
+              e.currentTarget.style.backgroundColor = 'rgba(var(--c-accent-rgb), 0.1)';
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = '#18181b';
+              e.currentTarget.style.backgroundColor = 'var(--c-surface)';
             }}
           >
             <p style={{
               fontSize: '12px',
               fontWeight: '500',
-              color: '#ec4899',
+              color: 'var(--c-accent)',
               margin: 0
             }}>
               {currentDate}
@@ -151,7 +151,7 @@ export default function DashboardPage() {
                 padding: '10px 20px',
                 backgroundColor: 'transparent',
                 border: 'none',
-                color: '#f1f5f9',
+                color: 'var(--c-text)',
                 borderRadius: '6px',
                 fontWeight: '500',
                 fontSize: '12px',
@@ -162,12 +162,12 @@ export default function DashboardPage() {
                 transition: 'all 0.2s ease'
               }}
               onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)';
-                e.currentTarget.style.color = '#ec4899';
+                e.currentTarget.style.backgroundColor = 'rgba(var(--c-accent-rgb), 0.1)';
+                e.currentTarget.style.color = 'var(--c-accent)';
               }}
               onMouseOut={(e) => {
                 e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = '#f1f5f9';
+                e.currentTarget.style.color = 'var(--c-text)';
               }}
             >
               Quick Actions
@@ -179,8 +179,8 @@ export default function DashboardPage() {
                 position: 'absolute',
                 top: '100%',
                 right: 0,
-                backgroundColor: '#18181b',
-                border: '1px solid #27272a',
+                backgroundColor: 'var(--c-surface)',
+                border: '1px solid var(--c-border)',
                 borderRadius: '6px',
                 minWidth: '160px',
                 width: 'max-content',
@@ -198,19 +198,19 @@ export default function DashboardPage() {
                     }}
                     style={{
                       padding: '10px 16px',
-                      color: '#a1a1aa',
+                      color: 'var(--c-muted)',
                       fontSize: '12px',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       whiteSpace: 'nowrap'
                     }}
                     onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(236, 72, 153, 0.1)';
-                      e.currentTarget.style.color = '#ec4899'; 
+                      e.currentTarget.style.backgroundColor = 'rgba(var(--c-accent-rgb), 0.1)';
+                      e.currentTarget.style.color = 'var(--c-accent)'; 
                     }}
                     onMouseOut={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = '#a1a1aa';
+                      e.currentTarget.style.color = 'var(--c-muted)';
                     }}
                   >
                     {action.label}
@@ -234,9 +234,9 @@ export default function DashboardPage() {
               key={i}
               onClick={() => navigate(module.path)}
               style={{
-                backgroundColor: '#18181b',
+                backgroundColor: 'var(--c-surface)',
                 borderRadius: '6px',
-                border: '1px solid #27272a',
+                border: '1px solid var(--c-border)',
                 padding: '32px 24px',
                 cursor: 'pointer',
                 transition: 'all 0.2s ease',
@@ -246,7 +246,7 @@ export default function DashboardPage() {
                                 e.currentTarget.style.borderColor = module.color;
               }}
               onMouseOut={(e) => {
-                                e.currentTarget.style.borderColor = '#27272a';
+                                e.currentTarget.style.borderColor = 'var(--c-fill)';
               }}
             >
               <div style={{
@@ -263,8 +263,8 @@ export default function DashboardPage() {
               </div>
               
               <div>
-                <h3 style={{ fontSize: '14.5px', fontWeight: '600', marginBottom: '6px', color: '#f1f5f9' }}>{module.title}</h3>
-                <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>{module.desc}</p>
+                <h3 style={{ fontSize: '14.5px', fontWeight: '600', marginBottom: '6px', color: 'var(--c-text)' }}>{module.title}</h3>
+                <p style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>{module.desc}</p>
               </div>
 
               <div style={{ fontSize: '19px', fontWeight: '700', color: module.color, margin: '16px 0' }}>
@@ -276,7 +276,7 @@ export default function DashboardPage() {
                   marginTop: '8px',
                   display: 'inline-block',
                   padding: '3px 10px',
-                  backgroundColor: '#f87171',
+                  backgroundColor: 'var(--c-bad)',
                   color: 'white',
                   borderRadius: '6px',
                   fontSize: '10.5px',

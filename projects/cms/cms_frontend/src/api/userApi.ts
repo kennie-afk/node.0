@@ -6,6 +6,7 @@ export interface User {
   username: string;
   email: string;
   isAdmin: boolean;
+  role?: string;
   createdAt: string;
 }
 
@@ -18,7 +19,7 @@ export const createUser = async (userData: {
   username: string;
   email: string;
   password: string;
-  isAdmin?: boolean;
+  role?: string;
 }) => {
   const response = await axiosInstance.post('/users', userData);
   return response.data;
@@ -29,7 +30,7 @@ export const updateUser = async (id: number, userData: Partial<{
   username: string;
   email: string;
   password?: string;
-  isAdmin?: boolean;
+  role?: string;
 }>) => {
   const response = await axiosInstance.put(`/users/${id}`, userData);
   return response.data;

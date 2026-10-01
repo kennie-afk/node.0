@@ -10,7 +10,7 @@ interface Props {
 
 export function MinistryTable({ ministries, onDelete, onEdit, onView }: Props) {
   if (ministries.length === 0) {
-    return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No ministries found</p>;
+    return <p style={{ textAlign: 'center', padding: '40px', color: 'var(--c-muted)' }}>No ministries found</p>;
   }
 
   return (

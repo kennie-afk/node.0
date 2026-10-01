@@ -39,3 +39,42 @@
   a { color: inherit !important; text-decoration: none !important; }
   .fin-neg { color: #b00000 !important; }
 }
+
+/* ---- receipt ------------------------------------------------------------------------ */
+.receipt-sheet { max-width: 520px; display: flex; flex-direction: column; gap: 10px; }
+.receipt-head { text-align: center; border-bottom: 1px solid var(--ui-border); padding-bottom: 8px; }
+.receipt-church { font-size: var(--fs-2xl); font-weight: 700; }
+.receipt-kind { font-size: var(--fs-xs); color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.receipt-no { display: flex; justify-content: space-between; font-weight: 700; font-size: var(--fs-lg); }
+.receipt-void { color: var(--ui-bad); }
+.receipt-rows { margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.receipt-rows > div { display: flex; gap: 12px; font-size: var(--fs-base); }
+.receipt-rows dt { width: 110px; flex: none; color: var(--ui-muted); }
+.receipt-rows dd { margin: 0; font-weight: 600; }
+.receipt-total { border-top: 1px solid var(--ui-border); padding-top: 8px; }
+.receipt-amount { font-size: var(--fs-2xl); font-weight: 700; font-variant-numeric: tabular-nums; }
+.receipt-words { font-size: var(--fs-sm); font-style: italic; color: var(--ui-text-2); }
+.receipt-actions { display: flex; gap: 8px; }
+
+@media print {
+  html, body, #root { height: auto !important; width: auto !important; overflow: visible !important; }
+  .receipt-sheet { max-width: none; border: 1px solid #999 !important; }
+  .receipt-sheet * { color: #000 !important; }
+}
+
+/* ---- roles editor ------------------------------------------------------------------- */
+.roles-layout { display: grid; grid-template-columns: minmax(220px, 300px) 1fr; gap: 12px; align-items: start; }
+@media (max-width: 800px) { .roles-layout { grid-template-columns: 1fr; } }
+.roles-list { list-style: none; margin: 0; padding: 0; }
+.roles-list li { display: flex; align-items: center; gap: 8px; padding: 0 12px 0 0; border-bottom: 1px solid var(--ui-border); }
+.roles-list li.is-active { background: var(--ui-accent-soft); }
+.roles-pick { flex: 1; text-align: left; background: none; border: 0; color: inherit; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; font: inherit; }
+.roles-name { font-weight: 600; }
+.roles-meta { font-size: var(--fs-xs); color: var(--ui-muted); }
+.roles-perms { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.roles-perms fieldset { border: 1px solid var(--ui-border); border-radius: var(--ui-radius); padding: 8px 10px; margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.roles-perms legend { font-size: var(--fs-xs); font-weight: 600; color: var(--ui-muted); text-transform: uppercase; letter-spacing: 0.05em; padding: 0 4px; }
+.roles-perms label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+.roles-perms label.is-muted { opacity: 0.5; cursor: not-allowed; }
+.roles-perms label span { display: flex; flex-direction: column; min-width: 0; }
+.roles-perms label em { font-style: normal; font-size: var(--fs-xs); color: var(--ui-muted); }

@@ -5,6 +5,8 @@ export interface LoginResponse {
   expiresInSeconds: number;
   churchId: number;
   role?: string;
+  permissions?: string[];
+  roleLabel?: string;
 }
 
 export const login = async (email: string, password: string): Promise<LoginResponse> => {

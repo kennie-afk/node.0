@@ -11,18 +11,18 @@ import {
 } from './ministry.controller';
 import { validate } from '../middleware/validation.middleware';
 import { createMinistrySchema, updateMinistrySchema, addMemberSchema, removeMemberSchema } from './ministry.schemas';
-import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware';
+import { authenticateToken, requirePermission } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.post('/', authenticateToken, authorizeAdmin, validate(createMinistrySchema), createMinistry);
-router.get('/', authenticateToken, getAllMinistries);
-router.get('/:id', authenticateToken, getMinistryById);
-router.put('/:id', authenticateToken, authorizeAdmin, validate(updateMinistrySchema), updateMinistry);
-router.delete('/:id', authenticateToken, authorizeAdmin, deleteMinistry);
+router.post('/', authenticateToken, requirePermission('members:write'), validate(createMinistrySchema), createMinistry);
+router.get('/', authenticateToken, requirePermission('members:read'), getAllMinistries);
+router.get('/:id', authenticateToken, requirePermission('members:read'), getMinistryById);
+router.put('/:id', authenticateToken, requirePermission('members:write'), validate(updateMinistrySchema), updateMinistry);
+router.delete('/:id', authenticateToken, requirePermission('members:write'), deleteMinistry);
 
-router.post('/:ministryId/members', authenticateToken, authorizeAdmin, validate(addMemberSchema), addMemberToMinistry);
-router.delete('/:ministryId/members', authenticateToken, authorizeAdmin, validate(removeMemberSchema), removeMemberFromMinistry);
-router.get('/:ministryId/members', authenticateToken, getMembersOfMinistry);
+router.post('/:ministryId/members', authenticateToken, requirePermission('members:write'), validate(addMemberSchema), addMemberToMinistry);
+router.delete('/:ministryId/members', authenticateToken, requirePermission('members:write'), validate(removeMemberSchema), removeMemberFromMinistry);
+router.get('/:ministryId/members', authenticateToken, requirePermission('members:read'), getMembersOfMinistry);
 
 export default router;

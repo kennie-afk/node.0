@@ -1,7 +1,8 @@
 import { Transaction } from 'sequelize';
 import { BadRequestError, ConflictError, NotFoundError } from '../../utils/errors';
 import { camel, columnExists, getRow, idCursor, idNext, normalisePhone, requireLinkedMember, select, selectOne, tableExists, updateRow } from '../ops-kit';
-import { permissionsOf, effectiveRole } from '../../auth/permissions';
+import { effectiveRole } from '../../auth/permissions';
+import { resolvePermissions } from '../roles/roles.service';
 import { fromMinor } from '../../common/money';
 import { recordAudit } from '../finance/audit.service';
 
@@ -12,7 +13,7 @@ export async function profile(t: Transaction, churchId: number, userId: number) 
   const member = user.member_id ? await selectOne<any>(t, `SELECT id, first_name, middle_name, last_name, gender, date_of_birth, email, phone_number, address, city, county, postal_code, status, baptism_date, membership_date, family_id FROM members WHERE church_id = ? AND id = ?`, [churchId, user.member_id]) : null;
   return {
     user: { id: Number(user.id), username: user.username, email: user.email, role },
-    permissions: permissionsOf(role),
+    permissions: [...(await resolvePermissions(churchId, role))],
     member: member ? camel(member, { days: ['date_of_birth', 'baptism_date', 'membership_date'] }) : null
   };
 }

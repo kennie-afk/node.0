@@ -17,6 +17,7 @@ import checkinRoutes from './checkin/routes';
 import facilitiesRoutes from './facilities/routes';
 import visitorsRoutes from './visitors/routes';
 import careRoutes from './care/routes';
+import rolesRoutes from './roles/routes';
 import selfserviceRoutes from './selfservice/routes';
 import dataopsRoutes from './dataops/routes';
 
@@ -35,6 +36,7 @@ export const routeMounts: RouteMount[] = [
   ...facilitiesRoutes,
   ...visitorsRoutes,
   ...careRoutes,
+  ...rolesRoutes,
   ...selfserviceRoutes,
   ...dataopsRoutes
 ];

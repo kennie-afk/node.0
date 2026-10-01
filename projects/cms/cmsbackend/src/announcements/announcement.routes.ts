@@ -8,14 +8,14 @@ import {
 } from './announcement.controller';
 import { validate } from '../middleware/validation.middleware';
 import { createAnnouncementSchema, updateAnnouncementSchema } from './announcement.schemas';
-import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware';
+import { authenticateToken, requirePermission } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.post('/', authenticateToken, authorizeAdmin, validate(createAnnouncementSchema), createAnnouncement);
-router.get('/', authenticateToken, getAllAnnouncements);
-router.get('/:id', authenticateToken, getAnnouncementById);
-router.put('/:id', authenticateToken, authorizeAdmin, validate(updateAnnouncementSchema), updateAnnouncement);
-router.delete('/:id', authenticateToken, authorizeAdmin, deleteAnnouncement);
+router.post('/', authenticateToken, requirePermission('members:write'), validate(createAnnouncementSchema), createAnnouncement);
+router.get('/', authenticateToken, requirePermission('members:read'), getAllAnnouncements);
+router.get('/:id', authenticateToken, requirePermission('members:read'), getAnnouncementById);
+router.put('/:id', authenticateToken, requirePermission('members:write'), validate(updateAnnouncementSchema), updateAnnouncement);
+router.delete('/:id', authenticateToken, requirePermission('members:write'), deleteAnnouncement);
 
 export default router;

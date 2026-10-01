@@ -101,10 +101,10 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
           style={{
             width: '100%',
             padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '12px',
             minHeight: '100px',
             resize: 'vertical',
@@ -113,14 +113,14 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
         />
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>
             Leader
           </label>
           <select
             name="leaderId"
             value={formData.leaderId}
             onChange={handleChange}
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: '#f1f5f9', fontSize: '12px', boxSizing: 'border-box' }}
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', fontSize: '12px', boxSizing: 'border-box' }}
             required
           >
             <option value="">Select Leader</option>
@@ -132,13 +132,13 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
           </select>
         </div>
 
-        {error && <p style={{ color: '#f87171' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--c-bad)' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}
-            style={{ background: 'linear-gradient(135deg, #ec4899, #c026d3)', flex: 1 }}
+            style={{ background: 'var(--c-accent)', flex: 1 }}
           >
             {loading ? (isEdit ? 'Updating...' : 'Adding Ministry...') : (isEdit ? 'Update Ministry' : 'Add Ministry')}
           </Button>
@@ -146,7 +146,7 @@ export default function AddMinistryForm({ onMinistryAdded, initialData, isEdit =
           <Button 
             type="button"
             onClick={handleCancel}
-            style={{ background: 'transparent', border: '1px solid #f1f5f9', color: '#f1f5f9', flex: 1 }}
+            style={{ background: 'transparent', border: '1px solid var(--c-text)', color: 'var(--c-text)', flex: 1 }}
           >
             Cancel
           </Button>

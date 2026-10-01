@@ -5,7 +5,8 @@ import { CustomJwtPayload } from '../types/auth.types';
 import { runWithTenant, currentTenantOrNull } from '../common/tenant-context';
 import { bindTransactionToResponse, createTenantTx } from '../common/tenant-db';
 import db from '@models';
-import { can, effectiveRole, Permission } from '../auth/permissions';
+import { effectiveRole, Permission } from '../auth/permissions';
+import { resolvePermissions } from '../modules/roles/roles.service';
 import { ForbiddenError, UnauthorizedError } from '../utils/errors';
 
 function bearer(req: Request): string | null {
@@ -38,24 +39,33 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
   const role = effectiveRole(claims.role, Boolean(claims.isAdmin));
   req.user = { ...claims, role, isAdmin: role === 'ADMIN' };
 
-  const context = {
-    churchId: claims.churchId,
-    userId: claims.id,
-    isAdmin: role === 'ADMIN',
-    role,
-    requestId: req.id,
-    tenantTx: createTenantTx(db.sequelize, claims.churchId)
-  };
-  bindTransactionToResponse(res, context);
-  runWithTenant(context, () => next());
+  const tenantTx = createTenantTx(db.sequelize, claims.churchId);
+  // Permissions come from the church's own role rows, not from the token: changing a role takes
+  // effect on the next request (within the cache TTL), and a deleted role stops working at once.
+  resolvePermissions(claims.churchId, role, tenantTx).then(
+    (permissions) => {
+      const context = {
+        churchId: claims.churchId,
+        userId: claims.id,
+        isAdmin: role === 'ADMIN',
+        role,
+        permissions,
+        requestId: req.id,
+        tenantTx
+      };
+      bindTransactionToResponse(res, context);
+      runWithTenant(context, () => next());
+    },
+    next
+  );
 };
 
 /** Gate a route on a named permission rather than a role. */
 export const requirePermission =
   (...permissions: Permission[]) =>
   (req: Request, _res: Response, next: NextFunction) => {
-    const role = effectiveRole(req.user?.role, Boolean(req.user?.isAdmin));
-    if (permissions.some((permission) => can(role, permission))) {
+    const held = currentTenantOrNull()?.permissions;
+    if (held && permissions.some((permission) => held.has(permission))) {
       return next();
     }
     next(new ForbiddenError(`You do not have permission to do that (${permissions.join(' or ')}).`));

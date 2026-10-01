@@ -2,12 +2,12 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronDown, ChevronLeft, ChevronRight, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
-import { ROLE_LABELS } from '../../auth/permissions';
 import { navFor } from '../../nav/registry';
 import type { NavGroup } from '../../nav/types';
 import { ToastProvider } from '../../ui/ToastProvider';
 import { PageLoader } from '../../ui/Skeleton';
 import { Badge } from '../../ui/Badge';
+import { ThemeSwitch } from '../../ui/ThemeSwitch';
 import { useMediaQuery } from '../../ui/hooks/useMediaQuery';
 import { cx } from '../../ui/classes';
 
@@ -31,7 +31,7 @@ function groupHoldsPath(group: NavGroup, pathname: string): boolean {
  * signed-in role's permissions, so a screen is added by registering it, never by editing this file.
  */
 export default function DashboardLayout() {
-  const { logout, role, email } = useAuth();
+  const { logout, email, permissions, roleLabel } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const mobile = useMediaQuery('(max-width: 720px)');
@@ -39,7 +39,7 @@ export default function DashboardLayout() {
   const [rail, setRail] = useState(() => localStorage.getItem(RAIL_KEY) === 'true');
   const [closed, setClosed] = useState<Record<string, boolean>>(readClosed);
 
-  const groups = useMemo(() => navFor(role), [role]);
+  const groups = useMemo(() => navFor(permissions), [permissions]);
   const railMode = rail && !mobile;
 
   useEffect(() => localStorage.setItem(RAIL_KEY, String(rail)), [rail]);
@@ -72,7 +72,6 @@ export default function DashboardLayout() {
             <button type="button" className="ui-btn is-ghost is-sm" aria-label={drawerOpen ? 'Close menu' : 'Open menu'} aria-expanded={drawerOpen} onClick={() => setDrawerOpen((open) => !open)}>
               {drawerOpen ? <X size={16} aria-hidden /> : <Menu size={16} aria-hidden />}
             </button>
-            <span className="ui-logo" aria-hidden="true">C</span>
             <strong style={{ fontSize: 'var(--fs-lg)' }}>Church CMS</strong>
           </div>
         )}
@@ -80,7 +79,6 @@ export default function DashboardLayout() {
         {showSidebar && (
           <aside className={cx('ui-side', railMode && 'is-rail', mobile && 'is-drawer')}>
             <div className="ui-side-head" style={railMode ? { justifyContent: 'center', padding: '12px 0' } : undefined}>
-              <span className="ui-logo" aria-hidden="true">C</span>
               {!railMode && <span className="ui-side-title">Church CMS</span>}
               {!mobile && (
                 <button type="button" className="ui-btn is-ghost is-sm" aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => setRail((value) => !value)} style={railMode ? { display: 'none' } : undefined}>
@@ -135,9 +133,10 @@ export default function DashboardLayout() {
               {!railMode && (
                 <div>
                   <div className="ui-who" title={email ?? undefined}>{email ?? 'Signed in'}</div>
-                  <Badge tone="accent">{ROLE_LABELS[role]}</Badge>
+                  <Badge tone="accent">{roleLabel}</Badge>
                 </div>
               )}
+              <ThemeSwitch label={!railMode} className="ui-btn is-sm" />
               <button
                 type="button"
                 className="ui-btn is-danger is-sm"

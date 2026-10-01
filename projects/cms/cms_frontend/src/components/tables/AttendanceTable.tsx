@@ -19,7 +19,7 @@ export function AttendanceTable({
   activeTab = 'general'
 }: Props) {
   if (attendance.length === 0) {
-    return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No attendance records found</p>;
+    return <p style={{ textAlign: 'center', padding: '40px', color: 'var(--c-muted)' }}>No attendance records found</p>;
   }
 
   return (
@@ -47,7 +47,7 @@ export function AttendanceTable({
                     padding: '4px 12px',
                     borderRadius: '6px',
                     backgroundColor: '#166534',
-                    color: '#86efac',
+                    color: 'var(--c-ok)',
                     fontSize: '11.5px',
                     fontWeight: '600'
                   }}>

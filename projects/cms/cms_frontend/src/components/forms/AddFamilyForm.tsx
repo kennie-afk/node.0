@@ -126,7 +126,7 @@ export const AddFamilyForm: React.FC<Props> = ({
         />
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>
             Head of Family (Member)
           </label>
           <select
@@ -136,10 +136,10 @@ export const AddFamilyForm: React.FC<Props> = ({
             style={{
               width: '100%',
               padding: '12px 16px',
-              backgroundColor: '#27272a',
-              border: '1px solid #3f3f46',
+              backgroundColor: 'var(--c-fill)',
+              border: '1px solid var(--c-border-strong)',
               borderRadius: '6px',
-              color: '#f1f5f9',
+              color: 'var(--c-text)',
               fontSize: '12px',
               boxSizing: 'border-box'
             }}
@@ -168,14 +168,14 @@ export const AddFamilyForm: React.FC<Props> = ({
 
         <Input placeholder="Notes (optional)" name="notes" value={formData.notes} onChange={handleChange} />
 
-        {error && <p style={{ color: '#f87171' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--c-bad)' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}
             style={{ 
-              background: 'linear-gradient(135deg, #ec4899, #c026d3)',
+              background: 'var(--c-accent)',
               flex: 1 
             }}
           >
@@ -187,8 +187,8 @@ export const AddFamilyForm: React.FC<Props> = ({
             onClick={handleCancel}
             style={{ 
               background: 'transparent', 
-              border: '1px solid #f1f5f9', 
-              color: '#f1f5f9',
+              border: '1px solid var(--c-text)', 
+              color: 'var(--c-text)',
               flex: 1 
             }}
           >

@@ -20,6 +20,7 @@ import checkinModels from './checkin/models';
 import facilitiesModels from './facilities/models';
 import visitorsModels from './visitors/models';
 import careModels from './care/models';
+import rolesModels from './roles/models';
 import dataopsModels from './dataops/models';
 
 export const modelFactories: ModelFactory[] = [
@@ -37,6 +38,7 @@ export const modelFactories: ModelFactory[] = [
   facilitiesModels,
   visitorsModels,
   careModels,
+  rolesModels,
   dataopsModels
 ];
 

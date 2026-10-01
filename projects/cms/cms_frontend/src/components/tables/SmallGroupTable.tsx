@@ -10,7 +10,7 @@ interface Props {
 
 export function SmallGroupTable({ smallGroups, onDelete, onEdit, onView }: Props) {
   if (smallGroups.length === 0) {
-    return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No small groups found</p>;
+    return <p style={{ textAlign: 'center', padding: '40px', color: 'var(--c-muted)' }}>No small groups found</p>;
   }
 
   return (
@@ -47,7 +47,7 @@ export function SmallGroupTable({ smallGroups, onDelete, onEdit, onView }: Props
                   borderRadius: '6px',
                   fontSize: '11.5px',
                   backgroundColor: group.isActive ? '#166534' : '#450a0a',
-                  color: group.isActive ? '#86efac' : '#f87171'
+                  color: group.isActive ? 'var(--c-ok)' : 'var(--c-bad)'
                 }}>
                   {group.isActive ? 'Active' : 'Inactive'}
                 </span>

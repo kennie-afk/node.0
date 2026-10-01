@@ -3,19 +3,6 @@ import { useAuth } from './context/auth-context';
 
 import LoginPage from './pages/auth/LoginPage';
 import DashboardLayout from './components/layout/DashboardLayout';
-import DashboardPage from './pages/dashboard/DashboardPage';
-import UsersPage from './pages/users/UsersPage';
-import FamiliesPage from './pages/families/FamiliesPage';
-import MembersPage from './pages/members/MembersPage';
-import EventsPage from './pages/events/EventsPage';
-import AnnouncementsPage from './pages/announcements/AnnouncementsPage';
-import SermonsPage from './pages/sermons/SermonsPage';
-import ContributionsPage from './pages/contributions/ContributionsPage';
-import AttendancePage from './pages/attendance/AttendancePage';
-import EventAttendancePage from './pages/attendance/EventAttendancePage';
-import SermonAttendancePage from './pages/attendance/SermonAttendancePage';
-import MinistriesPage from './pages/ministries/MinistriesPage';
-import SmallGroupsPage from './pages/small-groups/SmallGroupsPage';
 import { financeRoutes } from './routes/finance.routes';
 import { opsRoutes } from './routes/ops.routes';
 import { lazyPage } from './routes/lazy';
@@ -39,20 +26,21 @@ function App() {
       <Route 
         element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />} 
       >
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/users" element={<UsersPage />} />
-        <Route path="/families" element={<FamiliesPage />} />
-        <Route path="/members" element={<MembersPage />} />
-        <Route path="/events" element={<EventsPage />} />
-        <Route path="/announcements" element={<AnnouncementsPage />} />
-        <Route path="/sermons" element={<SermonsPage />} />
-        <Route path="/contributions" element={<ContributionsPage />} />
-        <Route path="/ministries" element={<MinistriesPage />} />
-        <Route path="/small-groups" element={<SmallGroupsPage />} />
+        <Route path="/dashboard" element={lazyPage(() => import('./pages/dashboard/DashboardPage'), 'members:read')} />
+        <Route path="/users" element={lazyPage(() => import('./pages/users/UsersPage'), 'users:manage')} />
+        <Route path="/roles" element={lazyPage(() => import('./pages/roles/RolesPage'), 'users:manage')} />
+        <Route path="/families" element={lazyPage(() => import('./pages/families/FamiliesPage'), 'members:read')} />
+        <Route path="/members" element={lazyPage(() => import('./pages/members/MembersPage'), 'members:read')} />
+        <Route path="/events" element={lazyPage(() => import('./pages/events/EventsPage'), 'members:read')} />
+        <Route path="/announcements" element={lazyPage(() => import('./pages/announcements/AnnouncementsPage'), 'members:read')} />
+        <Route path="/sermons" element={lazyPage(() => import('./pages/sermons/SermonsPage'), 'members:read')} />
+        <Route path="/contributions" element={lazyPage(() => import('./pages/contributions/ContributionsPage'), 'giving:read')} />
+        <Route path="/ministries" element={lazyPage(() => import('./pages/ministries/MinistriesPage'), 'members:read')} />
+        <Route path="/small-groups" element={lazyPage(() => import('./pages/small-groups/SmallGroupsPage'), 'members:read')} />
 
-        <Route path="/attendance" element={<AttendancePage />} />
-        <Route path="/attendance/event" element={<EventAttendancePage />} />
-        <Route path="/attendance/sermon" element={<SermonAttendancePage />} />
+        <Route path="/attendance" element={lazyPage(() => import('./pages/attendance/AttendancePage'), 'members:read')} />
+        <Route path="/attendance/event" element={lazyPage(() => import('./pages/attendance/EventAttendancePage'), 'members:read')} />
+        <Route path="/attendance/sermon" element={lazyPage(() => import('./pages/attendance/SermonAttendancePage'), 'members:read')} />
 
         {financeRoutes}
         {opsRoutes}

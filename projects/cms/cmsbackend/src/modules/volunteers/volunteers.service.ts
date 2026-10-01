@@ -1,10 +1,11 @@
 import { Transaction } from 'sequelize';
 import { BadRequestError, ConflictError, ForbiddenError } from '../../utils/errors';
 import { assertMember, assertRef, camel, deleteRow, getRow, idCursor, idNext, insertRow, linkedMemberId, select, selectOne, updateRow } from '../ops-kit';
-import { can, Role } from '../../auth/permissions';
+import type { Role } from '../../auth/permissions';
+import { holds } from '../../common/tenant-context';
 
 const DEFAULT_EVENT_MINUTES = 120;
-const actor = (role: Role) => can(role, 'members:write');
+const actor = (_role?: Role) => holds('members:write');
 
 // ---- teams, roles, membership ---------------------------------------------------------
 

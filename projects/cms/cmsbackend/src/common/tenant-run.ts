@@ -2,6 +2,7 @@ import db from '@models';
 import { runWithTenant, TenantContext } from './tenant-context';
 import { createTenantTx } from './tenant-db';
 import type { Role } from '../auth/permissions';
+import { resolvePermissions } from '../modules/roles/roles.service';
 
 export interface RunAsTenantOptions {
   userId?: number;
@@ -24,6 +25,7 @@ export async function runAsTenant<T>(churchId: number, work: () => Promise<T>, o
     userId: options.userId ?? 0,
     isAdmin: role === 'ADMIN',
     role,
+    permissions: await resolvePermissions(churchId, role, tenantTx),
     requestId: options.requestId ?? `job-${churchId}-${Date.now()}`,
     tenantTx
   };

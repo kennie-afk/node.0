@@ -5,6 +5,8 @@ export interface StoredSession {
   token: string;
   expiresAt: number;
   churchId: number;
+  permissions: string[];
+  roleLabel: string | null;
 }
 
 const listeners = new Set<() => void>();
@@ -31,13 +33,23 @@ export function readSession(): StoredSession | null {
     return null;
   }
 
-  return { token, expiresAt, churchId: Number(localStorage.getItem('churchId')) || 0 };
+  let permissions: string[] = [];
+  try {
+    const raw = JSON.parse(localStorage.getItem('permissions') ?? '[]');
+    if (Array.isArray(raw)) permissions = raw.filter((p): p is string => typeof p === 'string');
+  } catch {
+    permissions = [];
+  }
+
+  return { token, expiresAt, churchId: Number(localStorage.getItem('churchId')) || 0, permissions, roleLabel: localStorage.getItem('roleLabel') };
 }
 
-export function writeSession(token: string, expiresInSeconds: number, churchId: number): void {
+export function writeSession(token: string, expiresInSeconds: number, churchId: number, permissions: readonly string[] = [], roleLabel?: string | null): void {
   localStorage.setItem(TOKEN_KEY, token);
   localStorage.setItem(EXPIRY_KEY, String(Date.now() + expiresInSeconds * 1000));
   localStorage.setItem('churchId', String(churchId));
+  localStorage.setItem('permissions', JSON.stringify(permissions));
+  if (roleLabel) localStorage.setItem('roleLabel', roleLabel);
   announce();
 }
 
@@ -45,5 +57,7 @@ export function clearSession(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(EXPIRY_KEY);
   localStorage.removeItem('churchId');
+  localStorage.removeItem('permissions');
+  localStorage.removeItem('roleLabel');
   announce();
 }

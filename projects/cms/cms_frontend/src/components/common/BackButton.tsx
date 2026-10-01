@@ -12,9 +12,9 @@ export default function BackButton() {
         alignItems: 'center',
         gap: '8px',
         padding: '10px 18px',
-        backgroundColor: '#27272a',
-        border: '1px solid #3f3f46',
-        color: '#f1f5f9',
+        backgroundColor: 'var(--c-fill)',
+        border: '1px solid var(--c-border-strong)',
+        color: 'var(--c-text)',
         borderRadius: '6px',
         fontWeight: '500',
         cursor: 'pointer',
@@ -22,12 +22,12 @@ export default function BackButton() {
         marginBottom: '24px'
       }}
       onMouseOver={(e) => {
-        e.currentTarget.style.borderColor = '#ec4899';
-        e.currentTarget.style.backgroundColor = '#3f3f46';
+        e.currentTarget.style.borderColor = 'var(--c-accent)';
+        e.currentTarget.style.backgroundColor = 'var(--c-fill-strong)';
       }}
       onMouseOut={(e) => {
-        e.currentTarget.style.borderColor = '#3f3f46';
-        e.currentTarget.style.backgroundColor = '#27272a';
+        e.currentTarget.style.borderColor = 'var(--c-fill-strong)';
+        e.currentTarget.style.backgroundColor = 'var(--c-fill)';
       }}
     >
       <ArrowLeft size={18} />

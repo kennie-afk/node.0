@@ -152,6 +152,8 @@ services:
       context: ../cms_frontend
       args:
         VITE_API_URL: ${PUBLIC_API_URL:-}
+        # Demo sign-in role picker. Leave false in production.
+        VITE_DEMO_LOGINS: ${DEMO_LOGINS:-false}
     restart: unless-stopped
     read_only: true
     tmpfs: [/tmp]

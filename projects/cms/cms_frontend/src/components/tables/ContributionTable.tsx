@@ -10,7 +10,7 @@ interface Props {
 
 export const ContributionTable: React.FC<Props> = ({ contributions, onDelete, onEdit, onView }) => {
   if (contributions.length === 0) {
-    return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No contributions found.</p>;
+    return <p style={{ textAlign: 'center', padding: '40px', color: 'var(--c-muted)' }}>No contributions found.</p>;
   }
 
   const sortedContributions = [...contributions].sort((a, b) => b.id - a.id);
@@ -37,7 +37,7 @@ export const ContributionTable: React.FC<Props> = ({ contributions, onDelete, on
                   {contribution.member?.firstName} {contribution.member?.lastName}
                 </strong>
               </td>
-              <td style={{ fontWeight: '600', color: '#4ade80' }}>
+              <td style={{ fontWeight: '600', color: 'var(--c-ok)' }}>
                 {Number(contribution.amount).toLocaleString()}
               </td>
               <td>{new Date(contribution.date).toLocaleDateString()}</td>

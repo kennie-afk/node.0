@@ -100,8 +100,8 @@ export default function SermonsPage() {
         gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: '16.5px', fontWeight: '700', color: '#f1f5f9', margin: 0 }}>Sermons</h1>
-          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Manage church teachings and sermons</p>
+          <h1 style={{ fontSize: '16.5px', fontWeight: '700', color: 'var(--c-text)', margin: 0 }}>Sermons</h1>
+          <p style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>Manage church teachings and sermons</p>
         </div>
 
         <button 
@@ -111,7 +111,7 @@ export default function SermonsPage() {
           }}
           style={{
             padding: '10px 20px',
-            background: '#ec4899',
+            background: 'var(--c-accent)',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -141,10 +141,10 @@ export default function SermonsPage() {
             flex: 1,
             minWidth: '200px',
             padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '12px',
             boxSizing: 'border-box'
           }}
@@ -152,13 +152,13 @@ export default function SermonsPage() {
       </div>
 
       {error && (
-        <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
+        <div style={{ color: 'var(--c-bad)', padding: '12px', background: 'var(--c-bad-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
           {error}
         </div>
       )}
 
       {success && (
-        <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
+        <div style={{ color: 'var(--c-ok)', padding: '12px', background: 'var(--c-ok-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
           {success}
         </div>
       )}
@@ -175,7 +175,7 @@ export default function SermonsPage() {
       {!showAddForm && (
         <>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading sermons...</div>
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--c-muted)' }}>Loading sermons...</div>
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <SermonTable 
@@ -209,7 +209,7 @@ export default function SermonsPage() {
               justifyContent: 'space-between', 
               alignItems: 'center', 
               marginBottom: '20px',
-              borderBottom: '1px solid #27272a',
+              borderBottom: '1px solid var(--c-border)',
               paddingBottom: '12px'
             }}>
               <h3 style={{ fontSize: '14.5px', fontWeight: '600' }}>Sermon Details</h3>
@@ -217,8 +217,8 @@ export default function SermonsPage() {
                 onClick={closeViewModal}
                 style={{
                   background: 'transparent',
-                  border: '1px solid #f87171',
-                  color: '#f87171',
+                  border: '1px solid var(--c-bad)',
+                  color: 'var(--c-bad)',
                   padding: '6px 16px',
                   borderRadius: '6px',
                   cursor: 'pointer',
@@ -232,57 +232,57 @@ export default function SermonsPage() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa', width: '120px' }}>Title</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.title}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)', width: '120px' }}>Title</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingSermon.title}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Date Preached</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.datePreached ? new Date(viewingSermon.datePreached).toLocaleDateString() : '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Date Preached</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingSermon.datePreached ? new Date(viewingSermon.datePreached).toLocaleDateString() : '-'}</td>
                   </tr>
                   {viewingSermon.speaker && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Speaker</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.speaker.firstName} {viewingSermon.speaker.lastName}</td>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Speaker</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingSermon.speaker.firstName} {viewingSermon.speaker.lastName}</td>
                     </tr>
                   )}
                   {viewingSermon.guestSpeakerName && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Guest Speaker</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.guestSpeakerName}</td>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Guest Speaker</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingSermon.guestSpeakerName}</td>
                     </tr>
                   )}
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Passage Reference</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.passageReference || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Passage Reference</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingSermon.passageReference || '-'}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Summary</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.summary || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Summary</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingSermon.summary || '-'}</td>
                   </tr>
                   {viewingSermon.audioUrl && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Audio</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>
-                        <a href={viewingSermon.audioUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ec4899' }}>Listen</a>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Audio</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>
+                        <a href={viewingSermon.audioUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--c-accent)' }}>Listen</a>
                       </td>
                     </tr>
                   )}
                   {viewingSermon.videoUrl && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Video</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>
-                        <a href={viewingSermon.videoUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ec4899' }}>Watch</a>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Video</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>
+                        <a href={viewingSermon.videoUrl} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--c-accent)' }}>Watch</a>
                       </td>
                     </tr>
                   )}
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.notes || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Notes</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingSermon.notes || '-'}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingSermon.createdAt ? new Date(viewingSermon.createdAt).toLocaleDateString() : '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Created At</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingSermon.createdAt ? new Date(viewingSermon.createdAt).toLocaleDateString() : '-'}</td>
                   </tr>
                 </tbody>
               </table>

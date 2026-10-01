@@ -108,7 +108,7 @@ export default function UsersPage() {
       }}>
         <div>
           <h1 style={{ fontSize: '16.5px', fontWeight: '700', marginBottom: '4px' }}>Users Management</h1>
-          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Manage church administrators and staff</p>
+          <p style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>Manage church administrators and staff</p>
         </div>
 
         <button 
@@ -119,7 +119,7 @@ export default function UsersPage() {
           }}
           style={{
             padding: '10px 20px',
-            background: '#ec4899',
+            background: 'var(--c-accent)',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -133,8 +133,8 @@ export default function UsersPage() {
         </button>
       </div>
 
-      {error && <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
-      {success && <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
+      {error && <div style={{ color: 'var(--c-bad)', padding: '12px', background: 'var(--c-bad-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
+      {success && <div style={{ color: 'var(--c-ok)', padding: '12px', background: 'var(--c-ok-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
 
       {showAddForm && <AddUserForm onUserAdded={handleUserAdded} onCancel={handleCancelForm} />}
 
@@ -165,10 +165,10 @@ export default function UsersPage() {
                 flex: 1,
                 minWidth: '200px',
                 padding: '12px 16px',
-                backgroundColor: '#27272a',
-                border: '1px solid #3f3f46',
+                backgroundColor: 'var(--c-fill)',
+                border: '1px solid var(--c-border-strong)',
                 borderRadius: '6px',
-                color: '#f1f5f9',
+                color: 'var(--c-text)',
                 fontSize: '12px',
                 boxSizing: 'border-box'
               }}
@@ -176,7 +176,7 @@ export default function UsersPage() {
             <button 
               style={{
                 padding: '12px 24px',
-                background: '#ec4899',
+                background: 'var(--c-accent)',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
@@ -191,7 +191,7 @@ export default function UsersPage() {
           </div>
 
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: '#a1a1aa' }}>Loading users...</div>
+            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--c-muted)' }}>Loading users...</div>
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <UserTable users={filteredUsers} onDelete={handleDelete} onEdit={handleEdit} />

@@ -1,3 +1,4 @@
+import { assertRoleDefined } from '../modules/roles/roles.service';
 import bcrypt from 'bcrypt';
 import db from '@models';
 import { User } from './user.model';
@@ -30,6 +31,7 @@ function reconcileRole<T extends { isAdmin?: boolean; role?: string }>(input: T)
 export const createUser = async (input: CreateUserInput): Promise<InstanceType<typeof User>> => {
   try {
     const reconciled = reconcileRole({ isAdmin: input.isAdmin ?? false, role: input.role });
+    if (reconciled.role) await assertRoleDefined(reconciled.role);
     const created = await users.create({
       username: input.username,
       email: input.email,
@@ -63,7 +65,9 @@ export const updateUser = async (
   changes: Partial<CreateUserInput>
 ) => {
   const { password, ...rest } = changes;
-  const payload: Record<string, unknown> = { ...reconcileRole(rest) };
+  const reconciledChanges = reconcileRole(rest);
+  if (reconciledChanges.role) await assertRoleDefined(reconciledChanges.role);
+  const payload: Record<string, unknown> = { ...reconciledChanges };
 
   if (password) {
     payload.password_hash = await bcrypt.hash(password, PASSWORD_ROUNDS);

@@ -5,6 +5,7 @@ import { env } from '../config/env';
 import { ForbiddenError, UnauthorizedError } from '../utils/errors';
 import { CustomJwtPayload } from '../types/auth.types';
 import { effectiveRole } from './permissions';
+import { resolvePermissions, roleLabel } from '../modules/roles/roles.service';
 import { isPostgres } from '../common/tenant-db';
 
 const UserDbModel = db.User;
@@ -15,6 +16,9 @@ export interface Session {
   expiresInSeconds: number;
   churchId: number;
   role: string;
+  roleLabel: string;
+  /** What the signed-in role may do, so the console never needs its own copy of the matrix. */
+  permissions: string[];
 }
 
 /**
@@ -87,7 +91,14 @@ export const loginUser = async (email: string, password: string): Promise<Sessio
   const expiresInSeconds = env.JWT_TTL_MINUTES * 60;
   const token = jwt.sign(payload, env.JWT_SECRET, { expiresIn: expiresInSeconds });
 
-  return { token, expiresInSeconds, churchId: user.churchId, role };
+  return {
+    token,
+    expiresInSeconds,
+    churchId: user.churchId,
+    role,
+    roleLabel: await roleLabel(user.churchId, role),
+    permissions: [...(await resolvePermissions(user.churchId, role))]
+  };
 };
 
 export const getProfile = async (userId: number, churchId: number) => {

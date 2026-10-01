@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { User } from '../../api/userApi';
 import { createUser, updateUser } from '../../api/userApi';
 import { describeError } from '../../api/errors';
+import { useRoles } from '../../api/rolesApi';
 
 interface AddUserFormProps {
   onUserAdded: (data?: any) => void;
@@ -15,8 +16,9 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
     username: '',
     email: '',
     password: '',
-    isAdmin: false,
+    role: 'MEMBER',
   });
+  const { roles } = useRoles();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -26,17 +28,14 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
         username: initialData.username || '',
         email: initialData.email || '',
         password: '',
-        isAdmin: initialData.isAdmin || false,
+        role: initialData.role ?? (initialData.isAdmin ? 'ADMIN' : 'MEMBER'),
       });
     }
   }, [initialData, isEdit]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,7 +53,7 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
       }
 
       if (!isEdit) {
-        setFormData({ username: '', email: '', password: '', isAdmin: false });
+        setFormData({ username: '', email: '', password: '', role: 'MEMBER' });
       }
 
       onUserAdded();
@@ -73,46 +72,46 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
 
   return (
     <div style={{ 
-      backgroundColor: '#18181b', 
+      backgroundColor: 'var(--c-surface)', 
       padding: 'clamp(16px, 4vw, 24px)', 
       borderRadius: '6px', 
       marginBottom: '28px',
-      border: '1px solid #27272a',
+      border: '1px solid var(--c-border)',
       maxWidth: '800px',
       marginLeft: 'auto',
       marginRight: 'auto'
     }}>
-      <h2 style={{ marginBottom: '20px', fontSize: '13px', fontWeight: '600', color: '#f1f5f9' }}>
+      <h2 style={{ marginBottom: '20px', fontSize: '13px', fontWeight: '600', color: 'var(--c-text)' }}>
         {isEdit ? 'Edit User' : 'Add New User'}
       </h2>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Username</label>
+          <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>Username</label>
           <input 
             type="text" 
             name="username" 
             value={formData.username} 
             onChange={handleChange} 
             required 
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '12px', boxSizing: 'border-box' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', fontSize: '12px', boxSizing: 'border-box' }} 
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>Email Address</label>
+          <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>Email Address</label>
           <input 
             type="email" 
             name="email" 
             value={formData.email} 
             onChange={handleChange} 
             required 
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '12px', boxSizing: 'border-box' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', fontSize: '12px', boxSizing: 'border-box' }} 
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>
             {isEdit ? 'New Password (leave blank to keep current)' : 'Password'}
           </label>
           <input 
@@ -121,22 +120,26 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
             value={formData.password} 
             onChange={handleChange} 
             required={!isEdit}
-            style={{ width: '100%', padding: '12px 16px', backgroundColor: '#27272a', border: '1px solid #3f3f46', borderRadius: '6px', color: 'white', fontSize: '12px', boxSizing: 'border-box' }} 
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', fontSize: '12px', boxSizing: 'border-box' }} 
           />
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <input 
-            type="checkbox" 
-            name="isAdmin" 
-            checked={formData.isAdmin} 
-            onChange={handleChange} 
-            style={{ accentColor: '#ec4899' }} 
-          />
-          <label style={{ color: '#d1d5db', fontSize: '12px' }}>Grant Administrator privileges</label>
+        <div>
+          <label htmlFor="user-role" style={{ display: 'block', marginBottom: '6px', color: 'var(--c-text-2)', fontSize: '12px', fontWeight: 500 }}>Role</label>
+          <select
+            id="user-role"
+            name="role"
+            value={formData.role}
+            onChange={handleChange}
+            style={{ width: '100%', padding: '12px 16px', backgroundColor: 'var(--c-fill)', border: '1px solid var(--c-border-strong)', borderRadius: '6px', color: 'var(--c-text)', fontSize: '12px', boxSizing: 'border-box' }}
+          >
+            {/* Until the list arrives, keep the current value selectable so an edit never blanks the role. */}
+            {roles.length === 0 && <option value={formData.role}>{formData.role}</option>}
+            {roles.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
+          </select>
         </div>
 
-        {error && <p style={{ color: '#f87171', fontSize: '12px' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--c-bad)', fontSize: '12px' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <button 
@@ -145,7 +148,7 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
             style={{
               marginTop: '8px',
               padding: '12px 24px',
-              background: 'linear-gradient(135deg, #ec4899, #c026d3)',
+              background: 'var(--c-accent)',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
@@ -168,8 +171,8 @@ export default function AddUserForm({ onUserAdded, initialData, isEdit = false, 
               marginTop: '8px',
               padding: '12px 24px',
               background: 'transparent',
-              border: '1px solid #f1f5f9',
-              color: '#f1f5f9',
+              border: '1px solid var(--c-text)',
+              color: 'var(--c-text)',
               borderRadius: '6px',
               fontWeight: '600',
               fontSize: '13px',

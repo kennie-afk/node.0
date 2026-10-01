@@ -107,8 +107,8 @@ export default function SmallGroupsPage() {
         gap: '16px'
       }}>
         <div>
-          <h1 style={{ fontSize: '16.5px', fontWeight: '700', color: '#f1f5f9', margin: 0 }}>Small Groups</h1>
-          <p style={{ color: '#a1a1aa', fontSize: '11.5px' }}>Manage cell groups and fellowships</p>
+          <h1 style={{ fontSize: '16.5px', fontWeight: '700', color: 'var(--c-text)', margin: 0 }}>Small Groups</h1>
+          <p style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>Manage cell groups and fellowships</p>
         </div>
 
         <button 
@@ -118,7 +118,7 @@ export default function SmallGroupsPage() {
           }}
           style={{
             padding: '10px 20px',
-            background: '#ec4899',
+            background: 'var(--c-accent)',
             color: 'white',
             border: 'none',
             borderRadius: '6px',
@@ -148,10 +148,10 @@ export default function SmallGroupsPage() {
             flex: 1,
             minWidth: '200px',
             padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '12px',
             boxSizing: 'border-box'
           }}
@@ -159,13 +159,13 @@ export default function SmallGroupsPage() {
       </div>
 
       {error && (
-        <div style={{ color: '#f87171', padding: '12px', background: '#3f1e1e', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
+        <div style={{ color: 'var(--c-bad)', padding: '12px', background: 'var(--c-bad-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
           {error}
         </div>
       )}
 
       {success && (
-        <div style={{ color: '#4ade80', padding: '12px', background: '#1f3a1f', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
+        <div style={{ color: 'var(--c-ok)', padding: '12px', background: 'var(--c-ok-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
           {success}
         </div>
       )}
@@ -182,7 +182,7 @@ export default function SmallGroupsPage() {
       {!showAddForm && (
         <>
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '80px 20px', color: '#a1a1aa' }}>Loading small groups...</div>
+            <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--c-muted)' }}>Loading small groups...</div>
           ) : (
             <div className="card" style={{ overflowX: 'auto' }}>
               <SmallGroupTable 
@@ -216,7 +216,7 @@ export default function SmallGroupsPage() {
               justifyContent: 'space-between', 
               alignItems: 'center', 
               marginBottom: '20px',
-              borderBottom: '1px solid #27272a',
+              borderBottom: '1px solid var(--c-border)',
               paddingBottom: '12px'
             }}>
               <h3 style={{ fontSize: '14.5px', fontWeight: '600' }}>Small Group Details</h3>
@@ -224,8 +224,8 @@ export default function SmallGroupsPage() {
                 onClick={closeViewModal}
                 style={{
                   background: 'transparent',
-                  border: '1px solid #f87171',
-                  color: '#f87171',
+                  border: '1px solid var(--c-bad)',
+                  color: 'var(--c-bad)',
                   padding: '6px 16px',
                   borderRadius: '6px',
                   cursor: 'pointer',
@@ -239,49 +239,49 @@ export default function SmallGroupsPage() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa', width: '120px' }}>Group Name</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingGroup.name}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)', width: '120px' }}>Group Name</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingGroup.name}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Ministry</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingGroup.parentMinistry?.name || viewingGroup.ministry?.name || 'N/A'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Ministry</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingGroup.parentMinistry?.name || viewingGroup.ministry?.name || 'N/A'}</td>
                   </tr>
                   {viewingGroup.leader && (
-                    <tr style={{ borderBottom: '1px solid #27272a' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Leader</td>
-                      <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingGroup.leader.firstName} {viewingGroup.leader.lastName}</td>
+                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Leader</td>
+                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingGroup.leader.firstName} {viewingGroup.leader.lastName}</td>
                     </tr>
                   )}
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Meeting Day</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingGroup.meetingDay || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Meeting Day</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingGroup.meetingDay || '-'}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Meeting Time</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingGroup.meetingTime || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Meeting Time</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingGroup.meetingTime || '-'}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Meeting Location</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingGroup.meetingLocation || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Meeting Location</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingGroup.meetingLocation || '-'}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Description</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingGroup.description || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Description</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingGroup.description || '-'}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Notes</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingGroup.notes || '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Notes</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingGroup.notes || '-'}</td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Status</td>
-                    <td style={{ padding: '12px 0', color: viewingGroup.isActive ? '#4ade80' : '#f87171' }}>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Status</td>
+                    <td style={{ padding: '12px 0', color: viewingGroup.isActive ? 'var(--c-ok)' : 'var(--c-bad)' }}>
                       {viewingGroup.isActive ? 'Active' : 'Inactive'}
                     </td>
                   </tr>
-                  <tr style={{ borderBottom: '1px solid #27272a' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: '#a1a1aa' }}>Created At</td>
-                    <td style={{ padding: '12px 0', color: '#f1f5f9' }}>{viewingGroup.createdAt ? new Date(viewingGroup.createdAt).toLocaleDateString() : '-'}</td>
+                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
+                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Created At</td>
+                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingGroup.createdAt ? new Date(viewingGroup.createdAt).toLocaleDateString() : '-'}</td>
                   </tr>
                 </tbody>
               </table>

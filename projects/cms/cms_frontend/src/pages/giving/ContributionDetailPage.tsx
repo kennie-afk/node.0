@@ -3,7 +3,8 @@ import { Button, Card, ErrorState, formatDate, formatDateTime, PageHeader, PageL
 import { getGift, voidGift } from '../../api/givingApi';
 import { normalizeError } from '../../api/http';
 import { useAuth } from '../../context/auth-context';
-import { KeyValue, Money, PrintButton, ReasonAction } from '../../features/finance/components/common';
+import { KeyValue, Money, ReasonAction } from '../../features/finance/components/common';
+import { Receipt } from '../../features/finance/components/Receipt';
 
 export default function ContributionDetailPage() {
   const id = Number(useParams().id);
@@ -21,7 +22,6 @@ export default function ContributionDetailPage() {
         crumbs={[{ label: 'Gifts', to: '/giving/contributions' }]}
         actions={
           <div className="ui-row no-print">
-            <PrintButton />
             {can('giving:write') && gift.status === 'POSTED' && (
               <ReasonAction
                 label="Void gift"
@@ -41,7 +41,8 @@ export default function ContributionDetailPage() {
           </div>
         }
       />
-      <Card title="Gift" actions={<StatusPill status={gift.status} />}>
+      <Receipt gift={gift} />
+      <Card title="Gift" className="no-print" actions={<StatusPill status={gift.status} />}>
         <KeyValue
           items={[
             ['Donor', donor],

@@ -121,10 +121,10 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
           style={{
             width: '100%',
             padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '12px',
             boxSizing: 'border-box',
             opacity: preSelectedMemberId && !isEdit ? 0.7 : 1,
@@ -164,10 +164,10 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
           style={{
             width: '100%',
             padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '12px',
             boxSizing: 'border-box'
           }}
@@ -185,13 +185,13 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
           onChange={handleChange} 
         />
 
-        {error && <p style={{ color: '#f87171' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--c-bad)' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button 
             type="submit" 
             disabled={loading}
-            style={{ background: 'linear-gradient(135deg, #ec4899, #c026d3)', flex: 1 }}
+            style={{ background: 'var(--c-accent)', flex: 1 }}
           >
             {loading ? (isEdit ? 'Updating...' : 'Recording...') : (isEdit ? 'Update Contribution' : 'Record Contribution')}
           </Button>
@@ -201,8 +201,8 @@ export default function AddContributionForm({ onContributionAdded, initialData, 
             onClick={handleCancel}
             style={{ 
               background: 'transparent', 
-              border: '1px solid #f1f5f9', 
-              color: '#f1f5f9',
+              border: '1px solid var(--c-text)', 
+              color: 'var(--c-text)',
               flex: 1 
             }}
           >

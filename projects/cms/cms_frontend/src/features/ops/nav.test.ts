@@ -1,12 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { navFor } from '../../nav/registry';
 import { opsNav } from '../../nav/ops.nav';
-import { ROLES } from '../../auth/permissions';
+
+// What the server would send for each role. The console no longer owns this matrix, so the test
+// supplies grants the way the sign-in response does.
+const GRANTS = {
+  ADMIN: ['members:read', 'members:write', 'giving:read', 'giving:write', 'finance:read', 'finance:post', 'finance:approve', 'finance:close', 'finance:settings', 'payroll:read', 'payroll:run', 'payroll:approve', 'audit:read', 'care:read', 'care:write', 'comms:send', 'users:manage'],
+  AUDITOR: ['members:read', 'giving:read', 'finance:read', 'payroll:read', 'audit:read'],
+  PASTOR: ['members:read', 'members:write', 'giving:read', 'finance:read', 'care:read', 'care:write', 'comms:send'],
+  SECRETARY: ['members:read', 'members:write', 'care:read', 'comms:send'],
+  MEMBER: [] as string[]
+};
 
 const opsPaths = new Set(opsNav.map((i) => i.path));
-const visible = (role: (typeof ROLES)[number]) => navFor(role).flatMap((g) => g.items).filter((i) => opsPaths.has(i.path)).map((i) => i.path);
+const visible = (role: keyof typeof GRANTS) => navFor(GRANTS[role]).flatMap((g) => g.items).filter((i) => opsPaths.has(i.path)).map((i) => i.path);
 
-describe('operations menu by role', () => {
+describe('operations menu by permission', () => {
   it('gives a plain member only the self-service entry from this area', () => {
     expect(visible('MEMBER')).toEqual(['/me']);
   });

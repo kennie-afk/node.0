@@ -10,7 +10,7 @@ interface Props {
 
 export function SermonTable({ sermons, onDelete, onEdit, onView }: Props) {
   if (sermons.length === 0) {
-    return <p style={{ textAlign: 'center', padding: '40px', color: '#a1a1aa' }}>No sermons found</p>;
+    return <p style={{ textAlign: 'center', padding: '40px', color: 'var(--c-muted)' }}>No sermons found</p>;
   }
 
   return (
@@ -35,7 +35,7 @@ export function SermonTable({ sermons, onDelete, onEdit, onView }: Props) {
                     padding: '4px 12px',
                     borderRadius: '6px',
                     backgroundColor: '#166534',
-                    color: '#86efac',
+                    color: 'var(--c-ok)',
                     fontSize: '11.5px'
                   }}>
                     Guest: {sermon.guestSpeakerName}

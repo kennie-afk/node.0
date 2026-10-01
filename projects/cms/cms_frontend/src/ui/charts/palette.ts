@@ -1,5 +1,5 @@
 /** Categorical colours, chosen to stay distinct on the dark surface. Sequence matters: first is the brand accent. */
-export const CHART_COLORS = ['#ec4899', '#22d3ee', '#a78bfa', '#fbbf24', '#4ade80', '#fb7185', '#60a5fa', '#f97316'] as const;
+export const CHART_COLORS = ['var(--c-accent)', 'var(--c-info)', '#f472b6', 'var(--c-warn)', 'var(--c-ok)', 'var(--c-bad)', '#60a5fa', '#2dd4bf'] as const;
 
 export const colorAt = (index: number): string => CHART_COLORS[index % CHART_COLORS.length];
 

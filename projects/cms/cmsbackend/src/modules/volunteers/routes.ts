@@ -4,7 +4,7 @@ import { authenticateToken, requirePermission } from '../../middleware/auth.midd
 import { input, requestTx, route } from '../../common/http';
 import { idOnly, idParam, isoDate, limitQuery } from '../finance/schemas';
 import { linkedMemberId, me } from '../ops-kit';
-import { can } from '../../auth/permissions';
+import { holds } from '../../common/tenant-context';
 import { ForbiddenError } from '../../utils/errors';
 import type { RouteMount } from '../types';
 import * as svc from './volunteers.service';
@@ -40,7 +40,7 @@ router.get('/unavailability', route(async (req) => {
   const own = await linkedMemberId(t, churchId, userId);
   const memberId = query.memberId ?? own;
   if (!memberId) return [];
-  if (memberId !== own && !can(role, 'members:read')) return [];
+  if (memberId !== own && !holds('members:read')) return [];
   return svc.listUnavailability(t, churchId, memberId);
 }));
 router.post('/unavailability', route(async (req) => {
@@ -50,13 +50,13 @@ router.post('/unavailability', route(async (req) => {
   const own = await linkedMemberId(t, churchId, userId);
   const memberId = body.memberId ?? own;
   if (!memberId) throw new ForbiddenError('link your account to a member first');
-  if (memberId !== own && !can(role, 'members:write')) throw new ForbiddenError('you can only mark your own unavailability');
+  if (memberId !== own && !holds('members:write')) throw new ForbiddenError('you can only mark your own unavailability');
   return svc.addUnavailability(t, churchId, { ...body, memberId });
 }, 201));
 router.delete('/unavailability/:id', route(async (req) => {
   const t = await tx();
   const { churchId, userId, role } = me();
-  await svc.removeUnavailability(t, churchId, input(idOnly, req).params.id, await linkedMemberId(t, churchId, userId), can(role, 'members:write'));
+  await svc.removeUnavailability(t, churchId, input(idOnly, req).params.id, await linkedMemberId(t, churchId, userId), holds('members:write'));
   return undefined;
 }, 204));
 

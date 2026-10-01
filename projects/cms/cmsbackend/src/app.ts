@@ -8,6 +8,7 @@ import { generalLimiter, loginLimiter } from './middleware/rate-limit.middleware
 import { requestContext } from './middleware/request-context.middleware';
 import { metricsMiddleware } from './common/metrics';
 import { errorHandler, notFound } from './middleware/error.middleware';
+import { ApiError } from './utils/errors';
 import healthRoutes from './health/health.routes';
 import churchRoutes from './churches/church.routes';
 
@@ -41,7 +42,7 @@ export function createApp(): Express {
         if (!origin || env.CORS_ORIGINS.includes(origin)) {
           return callback(null, true);
         }
-        return callback(new Error('Not allowed by CORS'));
+        return callback(new ApiError('Origin not allowed', 403));
       },
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'Idempotency-Key'],

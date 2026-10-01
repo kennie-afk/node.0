@@ -6,6 +6,7 @@
 import pg from 'pg';
 import db from '@models';
 import { forgetSetupCache } from '../src/modules/finance/setup.service';
+import { clearRoleCache } from '../src/modules/roles/roles.service';
 
 export const onPostgres = Boolean(process.env.TEST_DATABASE_URL);
 
@@ -18,6 +19,7 @@ export async function prepareDatabase(): Promise<void> {
 
 export async function truncateAll(): Promise<void> {
   forgetSetupCache();
+  clearRoleCache();
   if (onPostgres) {
     const owner = new pg.Client({ connectionString: process.env.TEST_OWNER_DATABASE_URL });
     await owner.connect();

@@ -51,7 +51,7 @@ export default function UIKitPage() {
           <Button disabled>Disabled</Button>
           <Button size="sm">Small</Button>
           <Badge>Neutral</Badge>
-          <Badge tone="ok" dot>Ok</Badge>
+          <Badge tone="ok">Ok</Badge>
           <StatusPill status="PARTIALLY_PAID" />
           <StatusPill status="VOID" />
           <StatusPill status="POSTED" />

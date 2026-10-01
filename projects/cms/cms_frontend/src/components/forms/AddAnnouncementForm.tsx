@@ -126,10 +126,10 @@ export default function AddAnnouncementForm({
           style={{
             width: '100%',
             padding: '12px 16px',
-            backgroundColor: '#27272a',
-            border: '1px solid #3f3f46',
+            backgroundColor: 'var(--c-fill)',
+            border: '1px solid var(--c-border-strong)',
             borderRadius: '6px',
-            color: '#f1f5f9',
+            color: 'var(--c-text)',
             fontSize: '12px',
             minHeight: '120px',
             resize: 'vertical',
@@ -143,7 +143,7 @@ export default function AddAnnouncementForm({
           gap: '16px' 
         }}>
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>
               Publication Date
             </label>
             <input
@@ -154,10 +154,10 @@ export default function AddAnnouncementForm({
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                backgroundColor: '#27272a',
-                border: '1px solid #3f3f46',
+                backgroundColor: 'var(--c-fill)',
+                border: '1px solid var(--c-border-strong)',
                 borderRadius: '6px',
-                color: '#f1f5f9',
+                color: 'var(--c-text)',
                 fontSize: '12px',
                 boxSizing: 'border-box'
               }}
@@ -165,7 +165,7 @@ export default function AddAnnouncementForm({
           </div>
 
           <div>
-            <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
+            <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>
               Expiry Date (optional)
             </label>
             <input
@@ -176,10 +176,10 @@ export default function AddAnnouncementForm({
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                backgroundColor: '#27272a',
-                border: '1px solid #3f3f46',
+                backgroundColor: 'var(--c-fill)',
+                border: '1px solid var(--c-border-strong)',
                 borderRadius: '6px',
-                color: '#f1f5f9',
+                color: 'var(--c-text)',
                 fontSize: '12px',
                 boxSizing: 'border-box'
               }}
@@ -188,7 +188,7 @@ export default function AddAnnouncementForm({
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: '6px', color: '#a1a1aa', fontSize: '12px' }}>
+          <label style={{ display: 'block', marginBottom: '6px', color: 'var(--c-muted)', fontSize: '12px' }}>
             Target Audience
           </label>
           <select
@@ -198,10 +198,10 @@ export default function AddAnnouncementForm({
             style={{
               width: '100%',
               padding: '12px 16px',
-              backgroundColor: '#27272a',
-              border: '1px solid #3f3f46',
+              backgroundColor: 'var(--c-fill)',
+              border: '1px solid var(--c-border-strong)',
               borderRadius: '6px',
-              color: '#f1f5f9',
+              color: 'var(--c-text)',
               fontSize: '12px',
               boxSizing: 'border-box'
             }}
@@ -218,19 +218,19 @@ export default function AddAnnouncementForm({
             name="isPublished"
             checked={formData.isPublished}
             onChange={handleChange}
-            style={{ accentColor: '#ec4899' }}
+            style={{ accentColor: 'var(--c-accent)' }}
           />
-          <label style={{ color: '#d1d5db', fontSize: '12px' }}>Publish immediately</label>
+          <label style={{ color: 'var(--c-text-2)', fontSize: '12px' }}>Publish immediately</label>
         </div>
 
-        {error && <p style={{ color: '#f87171', fontSize: '12px' }}>{error}</p>}
+        {error && <p style={{ color: 'var(--c-bad)', fontSize: '12px' }}>{error}</p>}
 
         <div style={{ display: 'flex', gap: '12px', marginTop: '8px', flexDirection: window.innerWidth < 500 ? 'column' : 'row' }}>
           <Button
             type="submit"
             disabled={loading}
             style={{
-              background: 'linear-gradient(135deg, #ec4899, #c026d3)',
+              background: 'var(--c-accent)',
               flex: 1,
               padding: '12px'
             }}
@@ -246,8 +246,8 @@ export default function AddAnnouncementForm({
             onClick={handleCancel}
             style={{
               background: 'transparent',
-              border: '1px solid #f1f5f9',
-              color: '#f1f5f9',
+              border: '1px solid var(--c-text)',
+              color: 'var(--c-text)',
               flex: 1,
               padding: '12px'
             }}

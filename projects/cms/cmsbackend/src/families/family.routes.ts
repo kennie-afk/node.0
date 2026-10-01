@@ -8,14 +8,14 @@ import {
 } from './family.controller';
 import { validate } from '../middleware/validation.middleware';
 import { createFamilySchema, updateFamilySchema } from './family.schemas';
-import { authenticateToken, authorizeAdmin } from '../middleware/auth.middleware';
+import { authenticateToken, requirePermission } from '../middleware/auth.middleware';
 
 const router = Router();
 
-router.post('/', authenticateToken, authorizeAdmin, validate(createFamilySchema), createFamily);
-router.get('/', authenticateToken, getAllFamilies);
-router.get('/:id', authenticateToken, getFamilyById);
-router.put('/:id', authenticateToken, authorizeAdmin, validate(updateFamilySchema), updateFamily);
-router.delete('/:id', authenticateToken, authorizeAdmin, deleteFamily);
+router.post('/', authenticateToken, requirePermission('members:write'), validate(createFamilySchema), createFamily);
+router.get('/', authenticateToken, requirePermission('members:read'), getAllFamilies);
+router.get('/:id', authenticateToken, requirePermission('members:read'), getFamilyById);
+router.put('/:id', authenticateToken, requirePermission('members:write'), validate(updateFamilySchema), updateFamily);
+router.delete('/:id', authenticateToken, requirePermission('members:write'), deleteFamily);
 
 export default router;
