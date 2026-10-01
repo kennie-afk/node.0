@@ -1,15 +1,12 @@
-import { unwrapList } from './pagination';
-import axiosInstance from './axiosInstance';
-
 export interface Announcement {
   id: number;
   title: string;
   content: string;
   authorUserId: number;
   publicationDate: string;
-  expiryDate?: string;
+  expiryDate?: string | null;
   isPublished: boolean;
-  targetAudience?: string;
+  targetAudience?: string | null;
   createdAt?: string;
   updatedAt?: string;
   author?: {
@@ -17,29 +14,3 @@ export interface Announcement {
     email?: string;
   };
 }
-
-export const fetchAnnouncements = async () => {
-  const response = await axiosInstance.get('/announcements');
-  return unwrapList<Announcement>(response.data);
-};
-
-export const createAnnouncement = async (data: {
-  title: string;
-  content: string;
-  publicationDate?: string;
-  expiryDate?: string;
-  isPublished?: boolean;
-  targetAudience?: string;
-}) => {
-  const response = await axiosInstance.post('/announcements', data);
-  return response.data;
-};
-
-export const updateAnnouncement = async (id: number, data: Partial<Announcement>) => {
-  const response = await axiosInstance.put(`/announcements/${id}`, data);
-  return response.data;
-};
-
-export const deleteAnnouncement = async (id: number) => {
-  await axiosInstance.delete(`/announcements/${id}`);
-};

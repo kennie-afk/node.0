@@ -1,7 +1,7 @@
 import { createCrudController } from '../common/crud-controller';
 import service from './event.service';
 
-const controller = createCrudController(service, 'Event');
+const controller = createCrudController(service, 'Event', { searchColumns: ['name','location'] });
 
 export const createEvent = controller.create;
 export const getAllEvents = controller.list;

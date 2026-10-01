@@ -1,4 +1,3 @@
-import { unwrapList } from './pagination';
 import axiosInstance from './axiosInstance';
 
 export interface User {
@@ -9,11 +8,6 @@ export interface User {
   role?: string;
   createdAt: string;
 }
-
-export const fetchUsers = async () => {
-  const response = await axiosInstance.get('/users');
-  return unwrapList<User>(response.data);
-};
 
 export const createUser = async (userData: {
   username: string;

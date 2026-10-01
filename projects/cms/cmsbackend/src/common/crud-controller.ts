@@ -2,8 +2,9 @@ import { NextFunction, Request, Response } from 'express';
 import { CrudService } from './crud-service';
 import { paginationSchema } from './pagination';
 import { NotFoundError } from '../utils/errors';
+import { searchWhere } from './search';
 
-export function createCrudController<T>(service: CrudService<T>, label: string) {
+export function createCrudController<T>(service: CrudService<T>, label: string, options: { searchColumns?: readonly string[] } = {}) {
   return {
     create: async (req: Request, res: Response, next: NextFunction) => {
       try {
@@ -15,7 +16,7 @@ export function createCrudController<T>(service: CrudService<T>, label: string) 
 
     list: async (req: Request, res: Response, next: NextFunction) => {
       try {
-        res.status(200).json(await service.list(paginationSchema.parse(req.query)));
+        res.status(200).json(await service.list(paginationSchema.parse(req.query), searchWhere(options.searchColumns ?? [], req.query.q)));
       } catch (error) {
         next(error);
       }

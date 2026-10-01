@@ -1,319 +1,167 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  ArrowRight, 
-  Users, 
-  Users2, 
-  UserCircle, 
-  BookOpen, 
-  Megaphone, 
-  Calendar,
-  ChevronDown
-} from 'lucide-react';
-import { fetchMembers } from '../../api/memberApi';
-import { fetchMinistries } from '../../api/ministryApi';
-import { fetchSmallGroups } from '../../api/smallGroupApi';
-import { fetchSermons } from '../../api/sermonApi';
-import { fetchAnnouncements } from '../../api/announcementApi';
-import { fetchEvents } from '../../api/eventApi';
+import { Link } from 'react-router-dom';
+import { Badge, Button, Card, DataTable, EmptyState, ErrorState, LineChart, PageHeader, PageLoader, StatTile, formatDate, formatDateTime, formatMoney, monthLabel, toMinor, useQuery } from '../../ui';
+import { getOverview } from '../../api/overviewApi';
+import { useAuth } from '../../context/auth-context';
+
+const shortMonth = (ym: string) => `${monthLabel(Number(ym.slice(5, 7))).slice(0, 3)} ${ym.slice(2, 4)}`;
+const major = (amount: string) => toMinor(amount) / 100;
+
+/** Percent change from the earlier figure to the later, or null when there is nothing to compare with. */
+const change = (now: number, before: number): number | null => (before > 0 ? Math.round(((now - before) / before) * 100) : null);
 
 export default function DashboardPage() {
-  const navigate = useNavigate();
+  const { can, roleLabel, email } = useAuth();
+  const { data, error, refetch } = useQuery(() => getOverview(), []);
 
-  const [stats, setStats] = useState({
-    members: 0,
-    ministries: 0,
-    smallGroups: 0,
-    sermons: 0,
-    announcements: 0,
-    events: 0,
-  });
+  if (error && !data) return <div className="ui-page"><ErrorState message={error.message} onRetry={refetch} requestId={error.requestId} /></div>;
+  if (!data) return <PageLoader />;
 
-  const [newAnnCount, setNewAnnCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { people, giving, finance, attention } = data;
+  const empty = !people && !giving && !finance;
+  const name = (email ?? '').split('@')[0];
 
-  const currentDate = new Date().toLocaleDateString('en-US', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
-
-  const loadDashboard = async () => {
-    try {
-      setLoading(true);
-      const [membersRes, ministriesRes, groupsRes, sermonsRes, annRes, eventsRes] = await Promise.all([
-        fetchMembers(),
-        fetchMinistries(),
-        fetchSmallGroups(),
-        fetchSermons(),
-        fetchAnnouncements(),
-        fetchEvents()
-      ]);
-
-      const announcements = annRes;
-      const sixHoursAgo = new Date(Date.now() - 6 * 60 * 60 * 1000);
-      const recentAnns = announcements.filter((a: any) => 
-        a.createdAt && new Date(a.createdAt) > sixHoursAgo
-      );
-
-      setStats({
-        members: membersRes.length,
-        ministries: ministriesRes.length,
-        smallGroups: groupsRes.length,
-        sermons: sermonsRes.length,
-        announcements: announcements.length,
-        events: eventsRes.length,
-      });
-
-      setNewAnnCount(recentAnns.length);
-    } catch (err) {
-      console.error('Dashboard loading error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadDashboard();
-    
-    const closeDropdown = () => setDropdownOpen(false);
-    window.addEventListener('click', closeDropdown);
-    return () => window.removeEventListener('click', closeDropdown);
-  }, []);
-
-  const modules = [
-    { title: "Members", count: stats.members, path: "/members", desc: "Manage church members", icon: Users, color: "var(--c-accent)" },
-    { title: "Ministries", count: stats.ministries, path: "/ministries", desc: "Departments & ministries", icon: Users2, color: "#a855f7" },
-    { title: "Small Groups", count: stats.smallGroups, path: "/small-groups", desc: "Cell groups", icon: UserCircle, color: "#06b6d4" },
-    { title: "Sermons", count: stats.sermons, path: "/sermons", desc: "Teachings & sermons", icon: BookOpen, color: "#eab308" },
-    { title: "Announcements", count: stats.announcements, path: "/announcements", desc: "Church notices", icon: Megaphone, color: "var(--c-bad)", badge: newAnnCount > 0 ? newAnnCount : null },
-    { title: "Events", count: stats.events, path: "/events", desc: "Upcoming events", icon: Calendar, color: "var(--c-info)" },
-  ];
-
-  const quickActions = [
-    { label: "New Sermon", path: "/sermons" },
-    { label: "New Ministry", path: "/ministries" },
-    { label: "New Small Group", path: "/small-groups" },
-    { label: "New Member", path: "/members" },
-    { label: "New Announcement", path: "/announcements" },
-    { label: "New Event", path: "/events" },
-  ];
-
-  if (loading) {
-    return <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--c-muted)' }}>Loading dashboard...</div>;
-  }
+  const trend = giving?.trend ?? [];
+  const members = people?.members;
 
   return (
-    <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '0' }}>
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ 
-          fontSize: '16.5px', 
-          fontWeight: '700', 
-          color: 'var(--c-text)', 
-          marginBottom: '8px' 
-        }}>
-          Church Dashboard
-        </h1>
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div 
-            style={{
-              backgroundColor: 'var(--c-surface)',
-              borderRadius: '6px',
-              padding: '10px 20px',
-              display: 'inline-block',
-              transition: 'all 0.2s ease',
-              cursor: 'default'
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(var(--c-accent-rgb), 0.1)';
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = 'var(--c-surface)';
-            }}
-          >
-            <p style={{
-              fontSize: '12px',
-              fontWeight: '500',
-              color: 'var(--c-accent)',
-              margin: 0
-            }}>
-              {currentDate}
-            </p>
+    <div className="ui-page ui-stack">
+      <PageHeader
+        title="Dashboard"
+        subtitle={`${formatDate(data.asOf)} · ${name ? `${name}, ` : ''}${roleLabel}`}
+        actions={
+          <div className="ui-row">
+            {can('giving:write') && <Button to="/giving/contributions/new" variant="primary" size="sm">Record a gift</Button>}
+            {can('members:write') && <Button to="/members" size="sm">Add a member</Button>}
+            {can('finance:post') && <Button to="/finance/journal/new" size="sm">New journal entry</Button>}
           </div>
+        }
+      />
 
-          <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
-            <button 
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: 'transparent',
-                border: 'none',
-                color: 'var(--c-text)',
-                borderRadius: '6px',
-                fontWeight: '500',
-                fontSize: '12px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                transition: 'all 0.2s ease'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'rgba(var(--c-accent-rgb), 0.1)';
-                e.currentTarget.style.color = 'var(--c-accent)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--c-text)';
-              }}
-            >
-              Quick Actions
-              <ChevronDown size={14} style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
-            </button>
+      {empty && (
+        <Card>
+          <EmptyState title="Welcome" message="Your role does not include any church-wide figures. Your own details, giving and events are under My account." />
+          <div style={{ padding: '0 12px 12px' }}><Button to="/me" variant="primary" size="sm">Open my account</Button></div>
+        </Card>
+      )}
 
-            {dropdownOpen && (
-              <div style={{
-                position: 'absolute',
-                top: '100%',
-                right: 0,
-                backgroundColor: 'var(--c-surface)',
-                border: '1px solid var(--c-border)',
-                borderRadius: '6px',
-                minWidth: '160px',
-                width: 'max-content',
-                maxWidth: 'calc(100vw - 32px)',
-                zIndex: 10,
-                overflow: 'hidden',
-                marginTop: '4px'
-              }}>
-                {quickActions.map((action, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => {
-                      navigate(action.path);
-                      setDropdownOpen(false);
-                    }}
-                    style={{
-                      padding: '10px 16px',
-                      color: 'var(--c-muted)',
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s',
-                      whiteSpace: 'nowrap'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(var(--c-accent-rgb), 0.1)';
-                      e.currentTarget.style.color = 'var(--c-accent)'; 
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = 'var(--c-muted)';
-                    }}
-                  >
-                    {action.label}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+      {!empty && (
+        <div className="dash-tiles">
+          {members && (
+            <StatTile
+              label="Members"
+              value={members.total}
+              delta={change(members.joinedLast30Days, members.joinedPrevious30Days)}
+              foot={`${members.joinedLast30Days} joined in the last 30 days`}
+            />
+          )}
+          {giving && (
+            <StatTile
+              label="Giving this month"
+              value={formatMoney(giving.thisMonth)}
+              delta={change(toMinor(giving.thisMonth), toMinor(giving.lastMonth))}
+              foot={`${giving.gifts} ${giving.gifts === 1 ? 'gift' : 'gifts'} · was ${formatMoney(giving.lastMonth)}`}
+            />
+          )}
+          {finance && <StatTile label="Cash and bank" value={formatMoney(finance.cash)} foot={`Surplus this month ${formatMoney(finance.month.surplus)}`} />}
+          {finance?.bills && (
+            <StatTile
+              label="Bills overdue"
+              value={formatMoney(finance.bills.overdue)}
+              tone={finance.bills.overdueCount > 0 ? 'warn' : 'ok'}
+              foot={`${finance.bills.overdueCount} overdue · ${formatMoney(finance.bills.dueNext7Days)} due in 7 days`}
+            />
+          )}
         </div>
-      </div>
+      )}
 
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
-        gap: '20px' 
-      }}>
-        {modules.map((module, i) => {
-          const Icon = module.icon;
-          return (
-            <div 
-              key={i}
-              onClick={() => navigate(module.path)}
-              style={{
-                backgroundColor: 'var(--c-surface)',
-                borderRadius: '6px',
-                border: '1px solid var(--c-border)',
-                padding: '32px 24px',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                textAlign: 'center'
-              }}
-              onMouseOver={(e) => {
-                                e.currentTarget.style.borderColor = module.color;
-              }}
-              onMouseOut={(e) => {
-                                e.currentTarget.style.borderColor = 'var(--c-fill)';
-              }}
-            >
-              <div style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '6px',
-                background: `${module.color}15`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 16px auto'
-              }}>
-                <Icon size={32} color={module.color} strokeWidth={1.5} />
-              </div>
-              
-              <div>
-                <h3 style={{ fontSize: '14.5px', fontWeight: '600', marginBottom: '6px', color: 'var(--c-text)' }}>{module.title}</h3>
-                <p style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>{module.desc}</p>
-              </div>
+      {!empty && (
+        <div className="dash-two">
+          <Card title="Needs attention" subtitle="What is waiting on someone in your role">
+            {attention.length === 0 ? (
+              <p className="dash-muted">Nothing is waiting. Everything you can act on is up to date.</p>
+            ) : (
+              <ul className="dash-list">
+                {attention.map((item) => (
+                  <li key={item.key}>
+                    <Link to={item.href}>{item.label}</Link>
+                    <Badge tone="warn">{item.count}</Badge>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
 
-              <div style={{ fontSize: '19px', fontWeight: '700', color: module.color, margin: '16px 0' }}>
-                {module.count}
-              </div>
-
-              {module.badge && module.badge > 0 && (
-                <div style={{
-                  marginTop: '8px',
-                  display: 'inline-block',
-                  padding: '3px 10px',
-                  backgroundColor: 'var(--c-bad)',
-                  color: 'white',
-                  borderRadius: '6px',
-                  fontSize: '10.5px',
-                  fontWeight: '500'
-                }}>
-                  {module.badge} New
-                </div>
+          {giving && (
+            <Card title="Giving, last 6 months" subtitle="Posted gifts by month" actions={can('giving:read') ? <Link to="/giving/contributions">All gifts</Link> : undefined}>
+              {trend.length > 0 ? (
+                <LineChart
+                  area
+                  label="Giving by month for the last six months"
+                  labels={trend.map((m) => shortMonth(m.month))}
+                  series={[{ name: 'Giving', values: trend.map((m) => major(m.total)) }]}
+                  format={(n) => formatMoney(n.toFixed(2))}
+                />
+              ) : (
+                <p className="dash-muted">No gifts recorded yet.</p>
               )}
+            </Card>
+          )}
+        </div>
+      )}
 
-              <div 
-                style={{
-                  marginTop: '20px',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  color: module.color,
-                  fontSize: '11.5px',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  textDecoration: 'none'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.color = '#ffffff';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.color = module.color;
-                }}
-                onClick={(e) => { e.stopPropagation(); navigate(module.path); }}
-              >
-                View {module.title}
-                <ArrowRight size={14} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      {!empty && (
+        <div className="dash-three">
+          {giving && (
+            <Card title="Recent gifts" actions={<Link to="/giving/contributions">View all</Link>} flush>
+              <DataTable
+                rowKey={(g) => g.id}
+                rows={giving.recent}
+                columns={[
+                  { key: 'donor', header: 'Donor', render: (g) => <Link to={`/giving/contributions/${g.id}`}>{g.donor}</Link> },
+                  { key: 'type', header: 'Type', render: (g) => g.type },
+                  { key: 'date', header: 'Date', render: (g) => formatDate(g.date) },
+                  { key: 'amount', header: 'Amount', numeric: true, render: (g) => formatMoney(g.amount) }
+                ]}
+                empty={<span>No gifts yet.</span>}
+              />
+            </Card>
+          )}
+
+          {people && (
+            <Card title="Coming up" actions={<Link to="/events">Events</Link>}>
+              {people.upcomingEvents.length === 0 ? (
+                <p className="dash-muted">No events are scheduled.</p>
+              ) : (
+                <ul className="dash-list">
+                  {people.upcomingEvents.map((e) => (
+                    <li key={e.id}>
+                      <span><strong>{e.name}</strong>{e.location ? <em> · {e.location}</em> : null}</span>
+                      <span className="dash-muted">{formatDateTime(e.startsAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          )}
+
+          {people && (
+            <Card title="New members" actions={<Link to="/members">Members</Link>}>
+              {people.recentMembers.length === 0 ? (
+                <p className="dash-muted">No members yet.</p>
+              ) : (
+                <ul className="dash-list">
+                  {people.recentMembers.map((m) => (
+                    <li key={m.id}>
+                      <Link to={`/members`}>{m.name}</Link>
+                      <span className="dash-muted">{formatDate(m.joinedAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }

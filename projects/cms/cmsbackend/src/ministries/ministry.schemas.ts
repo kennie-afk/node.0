@@ -3,8 +3,8 @@ import { z } from 'zod';
 export const createMinistrySchema = z.object({
   body: z.object({
     name: z.string().min(3, 'Ministry name must be at least 3 characters long.'),
-    description: z.string().optional(),
-    leaderId: z.number().int().optional(),
+    description: z.string().nullish(),
+    leaderId: z.number().int().nullish(),
     isActive: z.boolean().optional(),
   }),
 });
@@ -15,8 +15,8 @@ export const updateMinistrySchema = z.object({
   }),
   body: z.object({
     name: z.string().min(3, 'Ministry name must be at least 3 characters long.').optional(),
-    description: z.string().optional(),
-    leaderId: z.number().int().nullable().optional(),
+    description: z.string().nullish(),
+    leaderId: z.number().int().nullish(),
     isActive: z.boolean().optional(),
   }).strict(),
 });

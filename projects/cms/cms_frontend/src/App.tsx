@@ -34,7 +34,7 @@ function App() {
         <Route path="/events" element={lazyPage(() => import('./pages/events/EventsPage'), 'members:read')} />
         <Route path="/announcements" element={lazyPage(() => import('./pages/announcements/AnnouncementsPage'), 'members:read')} />
         <Route path="/sermons" element={lazyPage(() => import('./pages/sermons/SermonsPage'), 'members:read')} />
-        <Route path="/contributions" element={lazyPage(() => import('./pages/contributions/ContributionsPage'), 'giving:read')} />
+        <Route path="/contributions" element={<Navigate to="/giving/contributions" replace />} />
         <Route path="/ministries" element={lazyPage(() => import('./pages/ministries/MinistriesPage'), 'members:read')} />
         <Route path="/small-groups" element={lazyPage(() => import('./pages/small-groups/SmallGroupsPage'), 'members:read')} />
 

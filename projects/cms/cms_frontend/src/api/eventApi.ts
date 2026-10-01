@@ -4,29 +4,20 @@ import axiosInstance from './axiosInstance';
 export interface Event {
   id: number;
   name: string;
-  description?: string;
+  description?: string | null;
+  type?: string | null;
   startTime: string;
-  endTime?: string;
-  location?: string;
+  endTime?: string | null;
+  location?: string | null;
+  isRecurring?: boolean;
+  recurrencePattern?: string | null;
+  organizer?: { id: number; username: string; email?: string } | null;
   createdAt?: string;
   updatedAt?: string;
 }
 
+/** The first page only: attendance uses it to fill a picker. The Events screen pages on its own. */
 export const fetchEvents = async () => {
   const response = await axiosInstance.get('/events');
   return unwrapList<Event>(response.data);
-};
-
-export const createEvent = async (eventData: Omit<Event, 'id' | 'createdAt' | 'updatedAt'>) => {
-  const response = await axiosInstance.post('/events', eventData);
-  return response.data;
-};
-
-export const updateEvent = async (id: number, eventData: Partial<Event>) => {
-  const response = await axiosInstance.put(`/events/${id}`, eventData);
-  return response.data;
-};
-
-export const deleteEvent = async (id: number) => {
-  await axiosInstance.delete(`/events/${id}`);
 };

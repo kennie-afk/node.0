@@ -3,7 +3,7 @@ import { createCrudController } from '../common/crud-controller';
 import { paginationSchema } from '../common/pagination';
 import service, * as groupService from './ministry.service';
 
-const controller = createCrudController(service, 'Ministry');
+const controller = createCrudController(service, 'Ministry', { searchColumns: ['name','description'] });
 
 export const createMinistry = controller.create;
 export const getAllMinistries = controller.list;

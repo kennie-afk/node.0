@@ -3,7 +3,7 @@ import { createCrudController } from '../common/crud-controller';
 import { UnauthorizedError } from '../utils/errors';
 import service from './announcement.service';
 
-const controller = createCrudController(service, 'Announcement');
+const controller = createCrudController(service, 'Announcement', { searchColumns: ['title','content'] });
 
 export const createAnnouncement = async (req: Request, res: Response, next: NextFunction) => {
   try {

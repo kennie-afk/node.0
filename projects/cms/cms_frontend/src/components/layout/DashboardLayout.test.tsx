@@ -56,7 +56,7 @@ describe('the data-driven shell', () => {
     mount('TREASURER', '/users');
     const nav = screen.getByRole('navigation', { name: 'Main navigation' });
     expect(within(nav).queryByRole('link', { name: 'Users' })).not.toBeInTheDocument();
-    expect(within(nav).getByRole('link', { name: 'Contributions' })).toBeInTheDocument();
+    expect(within(nav).getByRole('link', { name: 'Dashboard' })).toBeInTheDocument();
     expect(screen.getByText('You do not have access to this page')).toBeInTheDocument();
     expect(screen.queryByText('users page')).not.toBeInTheDocument();
   });

@@ -15,9 +15,11 @@ spec:
   podSelector: {}
   policyTypes: [Egress]
   egress:
+    # The whole kube-system namespace, not just pods labelled kube-dns: resolvers are reached
+    # through the cluster DNS Service address, and selecting by pod label does not match on every
+    # CNI (it did not on kind's), which leaves every pod unable to resolve any name.
     - to:
-        - namespaceSelector: {}
-          podSelector: {matchLabels: {k8s-app: kube-dns}}
+        - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: kube-system}}
       ports:
         - {protocol: UDP, port: 53}
         - {protocol: TCP, port: 53}
@@ -32,6 +34,7 @@ spec:
   ingress:
     - from:
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: ingress-nginx}}
+        - podSelector: {matchLabels: {app.kubernetes.io/name: web}}
       ports: [{protocol: TCP, port: 4400}]
     - from:
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: monitoring}}
@@ -70,11 +73,15 @@ metadata:
   name: web
 spec:
   podSelector: {matchLabels: {app.kubernetes.io/name: web}}
-  policyTypes: [Ingress]
+  policyTypes: [Ingress, Egress]
   ingress:
     - from:
         - namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: ingress-nginx}}
       ports: [{protocol: TCP, port: 8080}]
+  egress:
+    # The console forwards /api to the API (see API_UPSTREAM in web.yaml).
+    - to: [{podSelector: {matchLabels: {app.kubernetes.io/name: api}}}]
+      ports: [{protocol: TCP, port: 4400}]
 ---
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy

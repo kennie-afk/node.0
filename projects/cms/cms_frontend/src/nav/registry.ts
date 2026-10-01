@@ -1,4 +1,4 @@
-import { Bell, BookOpen, Calendar, CheckSquare, DollarSign, Home, KeyRound, LayoutDashboard, Users, Users2 } from 'lucide-react';
+import { Bell, BookOpen, Calendar, CheckSquare, Home, KeyRound, LayoutDashboard, Users, Users2 } from 'lucide-react';
 import { canAny, type Permission } from '../auth/permissions';
 import { financeNav } from './finance.nav';
 import { opsNav } from './ops.nav';
@@ -35,7 +35,6 @@ const BASE_ITEMS: NavItem[] = [
   { label: 'Event attendance', path: '/attendance/event', icon: CheckSquare, group: 'worship', order: 41, permission: 'members:read' },
   { label: 'Sermon attendance', path: '/attendance/sermon', icon: CheckSquare, group: 'worship', order: 42, permission: 'members:read' },
 
-  { label: 'Contributions', path: '/contributions', icon: DollarSign, group: 'giving', order: 10, permission: ['giving:read', 'giving:write'] },
 
   { label: 'Users', path: '/users', icon: Users, group: 'admin', order: 10, permission: 'users:manage' },
   { label: 'Roles', path: '/roles', icon: KeyRound, group: 'admin', order: 11, permission: 'users:manage' }

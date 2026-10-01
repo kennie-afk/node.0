@@ -1,277 +1,45 @@
-import { useState, useEffect } from 'react';
-import type { Ministry } from '../../api/ministryApi';
-import {
-  fetchMinistries,
-  deleteMinistry,
-  fetchMinistryMembers,
-  addMinistryMember,
-  removeMinistryMember
-} from '../../api/ministryApi';
+import ResourcePage from '../../features/resource/ResourcePage';
+import type { ResourceConfig } from '../../features/resource/types';
 import MembershipPanel from '../../components/common/MembershipPanel';
-import BackButton from '../../components/common/BackButton';
-import AddMinistryForm from '../../components/forms/AddMinistryForm';
-import { MinistryTable } from '../../components/tables/MinistryTable';
-import { describeError } from '../../api/errors';
+import { searchMembers, leaderOption } from '../../api/memberLookup';
+import { Badge } from '../../ui';
+import { addMinistryMember, fetchMinistryMembers, removeMinistryMember, type Ministry } from '../../api/ministryApi';
+
+const config: ResourceConfig<Ministry> = {
+  noun: 'ministry',
+  plural: 'ministries',
+  title: 'Ministries',
+  subtitle: 'Teams that serve the church, each with a leader and a roster.',
+  endpoint: '/ministries',
+  writePermission: 'members:write',
+  searchPlaceholder: 'Search by name or description',
+  columns: [
+    { key: 'name', header: 'Ministry', render: (m) => <strong>{m.name}</strong> },
+    { key: 'description', header: 'Description', render: (m) => m.description || '-' },
+    { key: 'leader', header: 'Leader', render: (m) => (m.leader ? `${m.leader.firstName} ${m.leader.lastName}` : '-') },
+    { key: 'isActive', header: 'Status', render: (m) => (m.isActive === false ? <Badge>Inactive</Badge> : <Badge tone="ok">Active</Badge>) }
+  ],
+  fields: [
+    { name: 'name', label: 'Name', required: true, maxLength: 255, hint: 'At least 3 characters' },
+    { name: 'leaderId', label: 'Leader', type: 'lookup', search: searchMembers },
+    { name: 'description', label: 'Description', type: 'textarea' },
+    { name: 'isActive', label: 'Active', type: 'checkbox', hint: 'Active', initial: true }
+  ],
+  toForm: (m) => ({
+    name: m.name, description: m.description ?? '', isActive: m.isActive !== false,
+    leaderId: leaderOption(m.leaderId, m.leader)
+  }),
+  editExtra: (m) => (
+    <MembershipPanel
+      key={m.id}
+      title="Members"
+      loadRoster={() => fetchMinistryMembers(m.id)}
+      addMember={(memberId, role) => addMinistryMember(m.id, memberId, role)}
+      removeMember={(memberId) => removeMinistryMember(m.id, memberId)}
+    />
+  )
+};
 
 export default function MinistriesPage() {
-  const [ministries, setMinistries] = useState<Ministry[]>([]);
-  const [filteredMinistries, setFilteredMinistries] = useState<Ministry[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingMinistry, setEditingMinistry] = useState<Ministry | null>(null);
-  const [viewingMinistry, setViewingMinistry] = useState<Ministry | null>(null);
-
-  const loadMinistries = async () => {
-    try {
-      setLoading(true);
-      const res = await fetchMinistries();
-      const data = res;
-      setMinistries(data);
-      setFilteredMinistries(data);
-    } catch (err: any) {
-      setError('Failed to load ministries');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredMinistries(ministries);
-      return;
-    }
-    const term = searchTerm.toLowerCase().trim();
-    const filtered = ministries.filter(ministry =>
-      ministry.name?.toLowerCase().includes(term) ||
-      ministry.description?.toLowerCase().includes(term)
-    );
-    setFilteredMinistries(filtered);
-  }, [searchTerm, ministries]);
-
-  const handleMinistryAdded = () => {
-    setSuccess('Ministry saved successfully!');
-    setTimeout(() => setSuccess(''), 3000);
-    setShowAddForm(false);
-    setEditingMinistry(null);
-    loadMinistries();
-  };
-
-  const handleEdit = (ministry: Ministry) => {
-    setEditingMinistry(ministry);
-    setShowAddForm(true);
-  };
-
-  const handleView = (ministry: Ministry) => {
-    setViewingMinistry(ministry);
-  };
-
-  const closeViewModal = () => {
-    setViewingMinistry(null);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Delete this ministry?')) return;
-    try {
-      await deleteMinistry(id);
-      setSuccess('Ministry deleted successfully');
-      setTimeout(() => setSuccess(''), 3000);
-      loadMinistries();
-    } catch (err: any) {
-      setError(describeError(err, 'Failed to delete ministry'));
-    }
-  };
-
-  const handleCancelForm = () => {
-    setShowAddForm(false);
-    setEditingMinistry(null);
-  };
-
-  useEffect(() => {
-    loadMinistries();
-  }, []);
-
-  return (
-    <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
-      <BackButton />
-
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '24px',
-        flexWrap: 'wrap',
-        gap: '16px'
-      }}>
-        <div>
-          <h1 style={{ fontSize: '16.5px', fontWeight: '700', color: 'var(--c-text)', margin: 0 }}>Ministries</h1>
-          <p style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>Manage church ministries and departments</p>
-        </div>
-
-        <button 
-          onClick={() => {
-            setEditingMinistry(null);
-            setShowAddForm(!showAddForm);
-          }}
-          style={{
-            padding: '10px 20px',
-            background: 'var(--c-accent)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            fontSize: '11.5px',
-            flexShrink: 0
-          }}
-        >
-          {showAddForm ? 'Cancel' : '+ Add New Ministry'}
-        </button>
-      </div>
-
-      <div style={{ 
-        display: 'flex', 
-        gap: '12px', 
-        marginBottom: '20px', 
-        flexWrap: 'wrap',
-        flexDirection: window.innerWidth < 500 ? 'column' : 'row'
-      }}>
-        <input
-          type="text"
-          placeholder="Search by ministry name or description..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          style={{
-            flex: 1,
-            minWidth: '200px',
-            padding: '12px 16px',
-            backgroundColor: 'var(--c-fill)',
-            border: '1px solid var(--c-border-strong)',
-            borderRadius: '6px',
-            color: 'var(--c-text)',
-            fontSize: '12px',
-            boxSizing: 'border-box'
-          }}
-        />
-      </div>
-
-      {error && (
-        <div style={{ color: 'var(--c-bad)', padding: '12px', background: 'var(--c-bad-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div style={{ color: 'var(--c-ok)', padding: '12px', background: 'var(--c-ok-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>
-          {success}
-        </div>
-      )}
-
-      {showAddForm && (
-        <AddMinistryForm 
-          onMinistryAdded={handleMinistryAdded} 
-          initialData={editingMinistry} 
-          isEdit={!!editingMinistry}
-          onCancel={handleCancelForm}
-        />
-      )}
-
-      {!showAddForm && (
-        <>
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--c-muted)' }}>Loading ministries...</div>
-          ) : (
-            <div className="card" style={{ overflowX: 'auto' }}>
-              <MinistryTable 
-                ministries={filteredMinistries} 
-                onDelete={handleDelete} 
-                onEdit={handleEdit}
-                onView={handleView}
-              />
-            </div>
-          )}
-        </>
-      )}
-
-      {viewingMinistry && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          backgroundColor: 'rgba(0, 0, 0, 0.85)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '16px'
-        }}>
-          <div className="card" style={{ width: '100%', maxWidth: '500px', maxHeight: '85vh', overflow: 'auto' }}>
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center', 
-              marginBottom: '20px',
-              borderBottom: '1px solid var(--c-border)',
-              paddingBottom: '12px'
-            }}>
-              <h3 style={{ fontSize: '14.5px', fontWeight: '600' }}>Ministry Details</h3>
-              <button 
-                onClick={closeViewModal}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--c-bad)',
-                  color: 'var(--c-bad)',
-                  padding: '6px 16px',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '11.5px'
-                }}
-              >
-                Close
-              </button>
-            </div>
-
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <tbody>
-                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)', width: '120px' }}>Ministry Name</td>
-                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingMinistry.name}</td>
-                  </tr>
-                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Description</td>
-                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingMinistry.description || '-'}</td>
-                  </tr>
-                  {viewingMinistry.leader && (
-                    <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
-                      <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Leader</td>
-                      <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingMinistry.leader.firstName} {viewingMinistry.leader.lastName}</td>
-                    </tr>
-                  )}
-                  <tr style={{ borderBottom: '1px solid var(--c-border)' }}>
-                    <td style={{ padding: '12px 0', fontWeight: '600', color: 'var(--c-muted)' }}>Created At</td>
-                    <td style={{ padding: '12px 0', color: 'var(--c-text)' }}>{viewingMinistry.createdAt ? new Date(viewingMinistry.createdAt).toLocaleDateString() : '-'}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <MembershipPanel
-              key={viewingMinistry.id}
-              title="Members"
-              loadRoster={() => fetchMinistryMembers(viewingMinistry.id)}
-              addMember={(memberId, role) =>
-                addMinistryMember(viewingMinistry.id, memberId, role)
-              }
-              removeMember={(memberId) => removeMinistryMember(viewingMinistry.id, memberId)}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
+  return <ResourcePage config={config} />;
 }

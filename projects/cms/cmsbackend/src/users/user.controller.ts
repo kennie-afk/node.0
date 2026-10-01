@@ -13,7 +13,7 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
 
 export const getAllUsers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.status(200).json(await userService.getAllUsers(paginationSchema.parse(req.query)));
+    res.status(200).json(await userService.getAllUsers(paginationSchema.parse(req.query), req.query.q));
   } catch (error) {
     next(error);
   }
@@ -41,7 +41,7 @@ export const updateUser = async (req: Request, res: Response, next: NextFunction
 
 export const deleteUser = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    await userService.deleteUser(Number(req.params.id));
+    await userService.deleteUser(Number(req.params.id), req.user?.id);
     res.status(204).send();
   } catch (error) {
     next(error);

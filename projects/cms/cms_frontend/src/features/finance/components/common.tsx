@@ -3,6 +3,7 @@ import { Button, formatMoney, StatusPill, useToast, cx } from '../../../ui';
 import { ApiError, normalizeError } from '../../../api/http';
 import { sourceLabel } from './helpers';
 import { downloadCsv } from '../../../api/reportsApi';
+import { downloadPdf, type PdfDoc } from './pdfDoc';
 import './finance.css';
 
 /** An amount in a table cell or sentence; tabular digits, negatives marked. */
@@ -42,6 +43,28 @@ export function FormError({ error }: { error: ApiError | null }) {
       )}
       {error.requestId && <span className="fin-muted"> Reference {error.requestId}</span>}
     </div>
+  );
+}
+
+/** Builds the document only when clicked, so a page that offers a PDF does no extra work until asked. */
+export function DownloadPdfButton({ build, label = 'Download PDF' }: { build: () => PdfDoc; label?: string }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <Button
+      variant="secondary"
+      size="sm"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          await downloadPdf(build());
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      {label}
+    </Button>
   );
 }
 

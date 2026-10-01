@@ -22,6 +22,13 @@ spec:
           image: cms-web
           imagePullPolicy: IfNotPresent
           ports: [{name: http, containerPort: 8080}]
+          env:
+            # Where the console forwards /api. The Service is cms-api here, not the compose name
+            # `api`, and it must be fully qualified: nginx's resolver does not apply the pod's DNS
+            # search domains, so the short name fails with SERVFAIL. Behind the ingress this path
+            # is bypassed (the ingress sends /api straight to the API), but without it the console
+            # cannot sign in through a port-forward or any setup that serves it alone.
+            - {name: API_UPSTREAM, value: "http://cms-api.cms.svc.cluster.local:4400"}
           readinessProbe:
             httpGet: {path: /healthz, port: http}
             periodSeconds: 5

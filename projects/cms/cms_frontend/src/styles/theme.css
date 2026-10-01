@@ -16,10 +16,10 @@
   --c-text: #f1f5f9;
   --c-text-2: #cbd5e1;
   --c-muted: #a1a1aa;
-  /* Brand accent: a muted burnt orange. Change these three lines (and the light ones below) to re-brand. */
-  --c-accent: #d4763a;
-  --c-accent-rgb: 212, 118, 58;
-  --c-accent-hover: #e08d55;
+  /* Brand accent: a warm, moderately bright orange. Change these three lines (and the light ones below) to re-brand. */
+  --c-accent: #e8793a;
+  --c-accent-rgb: 232, 121, 58;
+  --c-accent-hover: #f08f55;
   --c-on-accent: #ffffff;
   --c-accent-soft: rgba(var(--c-accent-rgb), 0.14);
   --c-ok: #4ade80;
@@ -44,9 +44,9 @@
   --c-text: #0f172a;
   --c-text-2: #334155;
   --c-muted: #5b6678;
-  --c-accent: #b4521a;
-  --c-accent-rgb: 180, 82, 26;
-  --c-accent-hover: #963f10;
+  --c-accent: #c9561b;
+  --c-accent-rgb: 201, 86, 27;
+  --c-accent-hover: #a94612;
   --c-on-accent: #ffffff;
   --c-accent-soft: rgba(var(--c-accent-rgb), 0.1);
   --c-ok: #15803d;

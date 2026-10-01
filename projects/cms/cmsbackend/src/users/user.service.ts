@@ -1,5 +1,6 @@
 import { assertRoleDefined } from '../modules/roles/roles.service';
 import bcrypt from 'bcrypt';
+import { searchWhere } from '../common/search';
 import db from '@models';
 import { User } from './user.model';
 import { TenantRepository } from '../common/tenant-repository';
@@ -46,9 +47,10 @@ export const createUser = async (input: CreateUserInput): Promise<InstanceType<t
   }
 };
 
-export const getAllUsers = async (pagination: Pagination): Promise<Page<any>> => {
+export const getAllUsers = async (pagination: Pagination, search?: unknown): Promise<Page<any>> => {
   return users.list({
     pagination,
+    where: searchWhere(['username', 'email'], search),
     order: [
       ['username', 'ASC'],
       ['id', 'ASC']
@@ -77,6 +79,13 @@ export const updateUser = async (
   return users.findByIdOrFail(id, { attributes: PUBLIC_ATTRIBUTES });
 };
 
-export const deleteUser = async (id: number): Promise<void> => {
+export const deleteUser = async (id: number, actingUserId?: number): Promise<void> => {
+  if (actingUserId !== undefined && id === actingUserId) {
+    throw new BadRequestError('You cannot delete your own account.');
+  }
+  const target = await users.findByIdOrFail(id, { attributes: PUBLIC_ATTRIBUTES });
+  if ((target as any).isAdmin && (await users.count({ isAdmin: true })) <= 1) {
+    throw new BadRequestError('This is the last administrator; make someone else an administrator first.');
+  }
   await users.destroy(id);
 };

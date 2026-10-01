@@ -6,12 +6,12 @@ const timeRegex = /^(0[0-9]|1[0-9]|2[0-3]):[0-5][0-9]$/;
 export const createSmallGroupSchema = z.object({
   body: z.object({
     name: z.string().min(3, 'Small group name must be at least 3 characters long.'),
-    description: z.string().optional().nullable(),
+    description: z.string().nullish(),
     ministryId: z.number().int('Ministry ID must be an integer.'),
-    leaderId: z.number().int('Leader ID must be an integer.').optional().nullable(),
-    meetingDay: meetingDays.optional().nullable(),
-    meetingTime: z.string().regex(timeRegex, 'Meeting time must be in HH:mm format.').optional().nullable(),
-    meetingLocation: z.string().optional().nullable(),
+    leaderId: z.number().int('Leader ID must be an integer.').nullish(),
+    meetingDay: meetingDays.nullish(),
+    meetingTime: z.string().regex(timeRegex, 'Meeting time must be in HH:mm format.').nullish(),
+    meetingLocation: z.string().nullish(),
     isActive: z.boolean().optional(),
   }),
 });
@@ -22,12 +22,12 @@ export const updateSmallGroupSchema = z.object({
   }),
   body: z.object({
     name: z.string().min(3, 'Small group name must be at least 3 characters long.').optional(),
-    description: z.string().optional().nullable(),
+    description: z.string().nullish(),
     ministryId: z.number().int('Ministry ID must be an integer.').optional(),
-    leaderId: z.number().int('Leader ID must be an integer.').optional().nullable(),
-    meetingDay: meetingDays.optional().nullable(),
-    meetingTime: z.string().regex(timeRegex, 'Meeting time must be in HH:mm format.').optional().nullable(),
-    meetingLocation: z.string().optional().nullable(),
+    leaderId: z.number().int('Leader ID must be an integer.').nullish(),
+    meetingDay: meetingDays.nullish(),
+    meetingTime: z.string().regex(timeRegex, 'Meeting time must be in HH:mm format.').nullish(),
+    meetingLocation: z.string().nullish(),
     isActive: z.boolean().optional(),
   }).strict(),
 });

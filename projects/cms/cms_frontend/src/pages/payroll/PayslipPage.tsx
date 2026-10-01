@@ -1,7 +1,30 @@
 import { useParams } from 'react-router-dom';
-import { Card, DataTable, ErrorState, PageHeader, PageLoader, useQuery } from '../../ui';
+import { Card, DataTable, ErrorState, formatMoney, PageHeader, PageLoader, useQuery } from '../../ui';
 import { getPayslip } from '../../api/payrollApi';
-import { KeyValue, Money, PrintButton } from '../../features/finance/components/common';
+import { DownloadPdfButton, KeyValue, Money, PrintButton } from '../../features/finance/components/common';
+import type { PdfDoc } from '../../features/finance/components/pdfDoc';
+import type { Payslip } from '../../api/payrollApi';
+
+const m = (amount: string) => formatMoney(amount);
+
+/** The payslip as a PDF: the same figures the screen shows, laid out for filing. */
+function payslipDoc(s: Payslip): PdfDoc {
+  return {
+    filename: `payslip-${s.employee.name.replace(/\s+/g, '-').toLowerCase()}-${s.period.replace(/\s+/g, '-').toLowerCase()}.pdf`,
+    org: s.employer,
+    title: 'Payslip',
+    subtitle: s.period,
+    sections: [
+      { heading: 'Employee', rows: [['Name', s.employee.name], ['Job title', s.employee.jobTitle ?? '-'], ['KRA PIN', s.employee.kraPin ?? '-'], ['NSSF no.', s.employee.nssfNo ?? '-'], ['SHIF no.', s.employee.shifNo ?? '-'], ['Period ends', s.periodEnd], ['Paid by', s.payMethod.toLowerCase()]] },
+      { heading: 'Earnings', rows: s.earnings.map((r) => [r.label, m(r.amount)] as [string, string]), total: ['Gross pay', m(s.gross)] },
+      { heading: 'Deductions', rows: s.deductions.map((r) => [r.label, m(r.amount)] as [string, string]), total: ['Net pay', m(s.net)] },
+      { heading: 'How PAYE was worked out', rows: [['Taxable pay', m(s.taxComputation.taxablePay)], ['Tax before relief', m(s.taxComputation.taxBeforeRelief)], ['Personal relief', m(s.taxComputation.personalRelief)], ['Insurance relief', m(s.taxComputation.insuranceRelief)]], total: ['PAYE', m(s.taxComputation.paye)] },
+      { heading: 'Employer contributions (not deducted from pay)', rows: s.employerContributions.map((r) => [r.label, m(r.amount)] as [string, string]) },
+      { heading: 'Year to date', rows: [['Gross', m(s.yearToDate.gross)], ['PAYE', m(s.yearToDate.paye)], ['NSSF', m(s.yearToDate.nssf)], ['SHIF', m(s.yearToDate.shif)], ['Housing levy', m(s.yearToDate.housingLevy)]], total: ['Net', m(s.yearToDate.net)] }
+    ],
+    footer: s.runStatus === 'PAID' || s.runStatus === 'POSTED' ? 'Confidential: for the named employee only.' : `Draft: this run is ${s.runStatus.toLowerCase()} and figures may change.`
+  };
+}
 
 /** A payslip to hand over: earnings, deductions, how the tax was worked out, year to date. Prints cleanly. */
 export default function PayslipPage() {
@@ -13,7 +36,7 @@ export default function PayslipPage() {
   if (!s) return <PageLoader />;
   return (
     <div className="ui-page ui-stack fin-doc">
-      <PageHeader title={`Payslip · ${s.period}`} subtitle={s.employer} crumbs={[{ label: 'Pay runs', to: '/payroll/runs' }, { label: 'Run', to: `/payroll/runs/${runId}` }]} actions={<PrintButton />} />
+      <PageHeader title={`Payslip · ${s.period}`} subtitle={s.employer} crumbs={[{ label: 'Pay runs', to: '/payroll/runs' }, { label: 'Run', to: `/payroll/runs/${runId}` }]} actions={<div className="ui-row no-print"><PrintButton /><DownloadPdfButton build={() => payslipDoc(s)} /></div>} />
       {s.runStatus !== 'PAID' && s.runStatus !== 'POSTED' && <p className="fin-warn no-print">This run is {s.runStatus.toLowerCase()}; figures may still change.</p>}
       <Card>
         <KeyValue items={[['Employee', s.employee.name], ['Job title', s.employee.jobTitle ?? '-'], ['KRA PIN', s.employee.kraPin ?? '-'], ['NSSF no.', s.employee.nssfNo ?? '-'], ['SHIF no.', s.employee.shifNo ?? '-'], ['Period ends', s.periodEnd], ['Paid by', s.payMethod.toLowerCase()]]} />

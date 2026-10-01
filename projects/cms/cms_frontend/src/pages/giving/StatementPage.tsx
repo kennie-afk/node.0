@@ -1,8 +1,29 @@
 import { useParams, useSearchParams } from 'react-router-dom';
-import { Card, DataTable, ErrorState, formatDate, formatDateTime, PageHeader, PageLoader, Select, useQuery } from '../../ui';
-import { getStatement } from '../../api/givingApi';
-import { KeyValue, Money, PrintButton } from '../../features/finance/components/common';
+import { Card, DataTable, ErrorState, formatDate, formatDateTime, formatMoney, PageHeader, PageLoader, Select, useQuery } from '../../ui';
+import { getStatement, type Statement } from '../../api/givingApi';
+import { getChurchProfile } from '../../api/churchApi';
+import { DownloadPdfButton, KeyValue, Money, PrintButton } from '../../features/finance/components/common';
+import type { PdfDoc } from '../../features/finance/components/pdfDoc';
 import { yearsBack } from '../../features/finance/components/helpers';
+
+/** The statement as a PDF a member can keep for tax: the same figures as the screen, gift by gift. */
+function statementDoc(s: Statement, church: string): PdfDoc {
+  return {
+    filename: `giving-statement-${s.year}-${s.member.name.replace(/\s+/g, '-').toLowerCase()}.pdf`,
+    org: church,
+    title: 'Giving statement',
+    subtitle: String(s.year),
+    sections: [
+      { heading: 'Member', rows: [['Name', s.member.name], ['Phone', s.member.phone ?? '-'], ['Email', s.member.email ?? '-']] },
+      { heading: 'Summary', rows: [['Gifts', String(s.giftCount)], ['Tax-deductible', formatMoney(s.taxDeductibleTotal)]], total: ['Total given', formatMoney(s.total)] },
+      { heading: 'By type', rows: s.byType.map((r) => [r.type, formatMoney(r.amount)] as [string, string]) },
+      { heading: 'By fund', rows: s.byFund.map((r) => [r.fund, formatMoney(r.amount)] as [string, string]) },
+      { heading: 'Every gift', rows: s.gifts.map((g) => [`${formatDate(g.date)}  ${g.receiptNo ?? ''}  ${g.type} (${g.fund})`, formatMoney(g.amount)] as [string, string]) },
+      { note: `Amounts in ${s.currency}. Thank you for your faithful giving.` }
+    ],
+    footer: `Generated ${formatDateTime(s.generatedAt)}`
+  };
+}
 
 /** The yearly giving statement a member can be handed or sent. Prints cleanly. */
 export default function StatementPage() {
@@ -10,6 +31,7 @@ export default function StatementPage() {
   const [params, setParams] = useSearchParams();
   const year = Number(params.get('year') ?? new Date().getUTCFullYear());
   const { data: s, error, refetch } = useQuery(() => getStatement(memberId, year), [memberId, year]);
+  const church = useQuery(() => getChurchProfile(), []);
   if (error && !s) return <div className="ui-page"><ErrorState message={error.message} onRetry={refetch} requestId={error.requestId} /></div>;
   if (!s) return <PageLoader />;
   return (
@@ -22,6 +44,7 @@ export default function StatementPage() {
           <div className="ui-row no-print">
             <Select aria-label="Year" value={year} onChange={(e) => setParams({ year: e.target.value })}>{yearsBack().map((y) => <option key={y}>{y}</option>)}</Select>
             <PrintButton />
+            <DownloadPdfButton build={() => statementDoc(s, church.data?.name ?? 'Church')} />
           </div>
         }
       />

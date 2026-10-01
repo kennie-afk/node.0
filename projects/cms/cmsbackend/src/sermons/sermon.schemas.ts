@@ -1,16 +1,23 @@
 import { z } from 'zod';
 
+// The date column is date-only; a full ISO timestamp is still accepted for older clients.
+const preached = z.union([
+  z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  z.string().datetime()
+], { message: 'Invalid date format. Expected YYYY-MM-DD.' });
+
+// Optional fields are nullish: the screen sends null to clear a value.
 export const createSermonSchema = z.object({
   body: z.object({
-    title: z.string().min(5, 'Sermon title must be at least 5 characters long.'),
-    speakerMemberId: z.number().int().optional(),
-    eventId: z.number().int().optional(),
-    datePreached: z.string().datetime('Invalid date format. Expected a valid ISO 8601 date string.'),
-    passageReference: z.string().optional(),
-    summary: z.string().optional(),
-    audioUrl: z.string().url('Audio URL must be a valid URL.').optional(),
-    videoUrl: z.string().url('Video URL must be a valid URL.').optional(),
-    notes: z.string().optional(),
+    title: z.string().min(5, 'Sermon title must be at least 5 characters long.').max(255),
+    speakerMemberId: z.number().int().nullish(),
+    eventId: z.number().int().nullish(),
+    datePreached: preached,
+    passageReference: z.string().max(100).nullish(),
+    summary: z.string().nullish(),
+    audioUrl: z.string().url('Audio URL must be a valid URL.').max(255).nullish(),
+    videoUrl: z.string().url('Video URL must be a valid URL.').max(255).nullish(),
+    notes: z.string().nullish(),
   }),
 });
 
@@ -19,15 +26,14 @@ export const updateSermonSchema = z.object({
     id: z.string().regex(/^\d+$/, 'ID must be a number string.')
   }),
   body: z.object({
-    title: z.string().min(5, 'Sermon title must be at least 5 characters long.').optional(),
-    speakerMemberId: z.number().int().nullable().optional(),
-    eventId: z.number().int().nullable().optional(),
-    datePreached: z.string().datetime('Invalid date format. Expected a valid ISO 8601 date string.').optional(),
-    passageReference: z.string().optional(),
-    summary: z.string().optional(),
-    audioUrl: z.string().url('Audio URL must be a valid URL.').optional(),
-    videoUrl: z.string().url('Video URL must be a valid URL.').optional(),
-    notes: z.string().optional(),
+    title: z.string().min(5, 'Sermon title must be at least 5 characters long.').max(255).optional(),
+    speakerMemberId: z.number().int().nullish(),
+    eventId: z.number().int().nullish(),
+    datePreached: preached.optional(),
+    passageReference: z.string().max(100).nullish(),
+    summary: z.string().nullish(),
+    audioUrl: z.string().url('Audio URL must be a valid URL.').max(255).nullish(),
+    videoUrl: z.string().url('Video URL must be a valid URL.').max(255).nullish(),
+    notes: z.string().nullish(),
   }).strict(),
 });
-

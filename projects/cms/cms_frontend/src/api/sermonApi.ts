@@ -4,15 +4,11 @@ import axiosInstance from './axiosInstance';
 export interface Sermon {
   id: number;
   title: string;
-  content?: string;
   datePreached: string;
   speakerMemberId?: number | null;
-  guestSpeakerName?: string | null;
-  speaker?: {
-    firstName: string;
-    lastName: string;
-  };
+  speaker?: { id?: number; firstName: string; lastName: string } | null;
   eventId?: number | null;
+  event?: { id: number; name: string; startTime?: string } | null;
   passageReference?: string | null;
   summary?: string | null;
   audioUrl?: string | null;
@@ -22,21 +18,8 @@ export interface Sermon {
   updatedAt?: string;
 }
 
+/** The first page only: attendance uses it to fill a picker. The Sermons screen pages on its own. */
 export const fetchSermons = async () => {
   const response = await axiosInstance.get('/sermons');
   return unwrapList<Sermon>(response.data);
-};
-
-export const createSermon = async (sermonData: Omit<Sermon, 'id' | 'createdAt' | 'updatedAt'>) => {
-  const response = await axiosInstance.post('/sermons', sermonData);
-  return response.data;
-};
-
-export const updateSermon = async (id: number, sermonData: Partial<Sermon>) => {
-  const response = await axiosInstance.put(`/sermons/${id}`, sermonData);
-  return response.data;
-};
-
-export const deleteSermon = async (id: number) => {
-  await axiosInstance.delete(`/sermons/${id}`);
 };

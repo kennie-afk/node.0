@@ -4,6 +4,7 @@ import axiosInstance from './axiosInstance';
 export interface Family {
   id: number;
   familyName: string;
+  headOfFamilyMemberId?: number | null;
   address?: string;
   city?: string;
   county?: string;
@@ -15,21 +16,8 @@ export interface Family {
   updatedAt?: string;
 }
 
+// Still used by the older member form; the Families screen itself pages and searches on the server.
 export const fetchFamilies = async () => {
   const response = await axiosInstance.get('/families');
   return unwrapList<Family>(response.data);
-};
-
-export const createFamily = async (familyData: Omit<Family, 'id' | 'createdAt' | 'updatedAt'>) => {
-  const response = await axiosInstance.post('/families', familyData);
-  return response.data;
-};
-
-export const updateFamily = async (id: number, familyData: Partial<Omit<Family, 'id' | 'createdAt' | 'updatedAt'>>) => {
-  const response = await axiosInstance.put(`/families/${id}`, familyData);
-  return response.data;
-};
-
-export const deleteFamily = async (id: number) => {
-  await axiosInstance.delete(`/families/${id}`);
 };

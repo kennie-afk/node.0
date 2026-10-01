@@ -1,204 +1,55 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
+import ResourcePage from '../../features/resource/ResourcePage';
+import type { ResourceConfig } from '../../features/resource/types';
+import { Badge, formatDate } from '../../ui';
+import { useAuth } from '../../context/auth-context';
+import { useRoles } from '../../api/rolesApi';
 import type { User } from '../../api/userApi';
-import { fetchUsers, deleteUser, updateUser } from '../../api/userApi';
-import BackButton from '../../components/common/BackButton';
-import AddUserForm from '../../components/forms/AddUserForm';
-import { UserTable } from '../../components/tables/UserTable';
-import { describeError } from '../../api/errors';
 
+/**
+ * Sign-in accounts. The role choices are this church's own roles, so the config is built here
+ * rather than at module level. The server refuses to delete your own account or the last
+ * administrator; its message is shown as it is.
+ */
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [showEditForm, setShowEditForm] = useState(false);
+  const { roles, labelOf } = useRoles();
+  const { userId } = useAuth();
 
-  const loadUsers = async () => {
-    try {
-      setLoading(true);
-      const response = await fetchUsers();
-      const data = response;
-      setUsers(data);
-      setFilteredUsers(data);
-    } catch (err: any) {
-      setError(describeError(err, 'Failed to load users'));
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredUsers(users);
-      return;
-    }
-
-    const term = searchTerm.toLowerCase().trim();
-    const filtered = users.filter(user =>
-      user.username.toLowerCase().includes(term) ||
-      user.email.toLowerCase().includes(term)
-    );
-    setFilteredUsers(filtered);
-  }, [searchTerm, users]);
-
-  const handleUserAdded = async () => {
-    setSuccess('User created successfully!');
-    setTimeout(() => setSuccess(''), 3000);
-    setShowAddForm(false);
-    await loadUsers();
-  };
-
-  const handleUpdateUser = async (updatedData: Partial<User>) => {
-    if (!editingUser) return;
-    try {
-      await updateUser(editingUser.id, updatedData);
-      setSuccess('User updated successfully!');
-      setTimeout(() => setSuccess(''), 3000);
-      setShowEditForm(false);
-      setEditingUser(null);
-      await loadUsers();
-    } catch (err: any) {
-      setError(describeError(err, 'Failed to update user'));
-    }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm('Delete this user?')) return;
-    try {
-      await deleteUser(id);
-      setSuccess('User deleted successfully');
-      setTimeout(() => setSuccess(''), 3000);
-      await loadUsers();
-    } catch (err: any) {
-      setError(describeError(err, 'Failed to delete user'));
-    }
-  };
-
-  const handleEdit = (user: User) => {
-    setEditingUser(user);
-    setShowEditForm(true);
-    setShowAddForm(false);
-  };
-
-  const handleCancelForm = () => {
-    setShowAddForm(false);
-    setShowEditForm(false);
-    setEditingUser(null);
-  };
-
-  return (
-    <div style={{ padding: '20px 16px', minHeight: '100vh' }}>
-      <BackButton />
-
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '24px', 
-        flexWrap: 'wrap', 
-        gap: '16px' 
-      }}>
-        <div>
-          <h1 style={{ fontSize: '16.5px', fontWeight: '700', marginBottom: '4px' }}>Users Management</h1>
-          <p style={{ color: 'var(--c-muted)', fontSize: '11.5px' }}>Manage church administrators and staff</p>
-        </div>
-
-        <button 
-          onClick={() => {
-            setShowAddForm(!showAddForm);
-            setShowEditForm(false);
-            setEditingUser(null);
-          }}
-          style={{
-            padding: '10px 20px',
-            background: 'var(--c-accent)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            flexShrink: 0,
-            fontSize: '11.5px'
-          }}
-        >
-          {showAddForm ? 'Cancel' : '+ Add New User'}
-        </button>
-      </div>
-
-      {error && <div style={{ color: 'var(--c-bad)', padding: '12px', background: 'var(--c-bad-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{error}</div>}
-      {success && <div style={{ color: 'var(--c-ok)', padding: '12px', background: 'var(--c-ok-bg)', borderRadius: '6px', marginBottom: '20px', fontSize: '12px' }}>{success}</div>}
-
-      {showAddForm && <AddUserForm onUserAdded={handleUserAdded} onCancel={handleCancelForm} />}
-
-      {showEditForm && editingUser && (
-        <AddUserForm 
-          onUserAdded={handleUpdateUser} 
-          initialData={editingUser}
-          isEdit={true}
-          onCancel={handleCancelForm}
-        />
-      )}
-
-      {!showAddForm && !showEditForm && (
-        <>
-          <div style={{ 
-            display: 'flex', 
-            gap: '12px', 
-            marginBottom: '28px', 
-            flexWrap: 'wrap',
-            flexDirection: window.innerWidth < 500 ? 'column' : 'row'
-          }}>
-            <input
-              type="text"
-              placeholder="Search by username or email..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{
-                flex: 1,
-                minWidth: '200px',
-                padding: '12px 16px',
-                backgroundColor: 'var(--c-fill)',
-                border: '1px solid var(--c-border-strong)',
-                borderRadius: '6px',
-                color: 'var(--c-text)',
-                fontSize: '12px',
-                boxSizing: 'border-box'
-              }}
-            />
-            <button 
-              style={{
-                padding: '12px 24px',
-                background: 'var(--c-accent)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '6px',
-                fontWeight: '600',
-                cursor: 'pointer',
-                flexShrink: 0,
-                width: window.innerWidth < 500 ? '100%' : 'auto'
-              }}
-            >
-              Search
-            </button>
-          </div>
-
-          {loading ? (
-            <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--c-muted)' }}>Loading users...</div>
-          ) : (
-            <div className="card" style={{ overflowX: 'auto' }}>
-              <UserTable users={filteredUsers} onDelete={handleDelete} onEdit={handleEdit} />
-            </div>
-          )}
-        </>
-      )}
-    </div>
+  const config = useMemo<ResourceConfig<User>>(
+    () => ({
+      noun: 'user',
+      plural: 'users',
+      title: 'Users',
+      subtitle: 'People who can sign in, and the role that decides what they can do.',
+      endpoint: '/users',
+      writePermission: 'users:manage',
+      searchPlaceholder: 'Search by username or email',
+      columns: [
+        { key: 'username', header: 'Username', render: (u) => <strong>{u.username}</strong> },
+        { key: 'email', header: 'Email', render: (u) => u.email },
+        { key: 'role', header: 'Role', render: (u) => <Badge tone={u.isAdmin ? 'info' : 'neutral'}>{labelOf(u.role ?? (u.isAdmin ? 'ADMIN' : 'MEMBER'))}</Badge> },
+        { key: 'createdAt', header: 'Created', render: (u) => formatDate(u.createdAt) }
+      ],
+      fields: [
+        { name: 'username', label: 'Username', required: true, maxLength: 50, hint: 'At least 3 characters' },
+        { name: 'email', label: 'Email', type: 'email', required: true, maxLength: 100 },
+        {
+          name: 'role',
+          label: 'Role',
+          type: 'select',
+          required: true,
+          initial: 'MEMBER',
+          options: roles.map((r) => ({ value: r.key, label: r.label }))
+        },
+        { name: 'password', label: 'Password', type: 'password', required: true, createOnly: true, hint: 'At least 8 characters; set once here' }
+      ],
+      toForm: (u) => ({ username: u.username, email: u.email, role: u.role ?? (u.isAdmin ? 'ADMIN' : 'MEMBER') }),
+      canDelete: (u) => u.id !== userId
+    }),
+    // labelOf is rebuilt every render but only ever changes when roles does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [roles, userId]
   );
+
+  return <ResourcePage config={config} />;
 }

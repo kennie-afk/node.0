@@ -1,7 +1,7 @@
 import { createCrudController } from '../common/crud-controller';
 import service from './sermon.service';
 
-const controller = createCrudController(service, 'Sermon');
+const controller = createCrudController(service, 'Sermon', { searchColumns: ['title'] });
 
 export const createSermon = controller.create;
 export const getAllSermons = controller.list;
