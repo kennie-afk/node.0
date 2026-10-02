@@ -111,7 +111,8 @@ export default function Projects() {
                   alt={`${project.title}: ${project.subtitle}`}
                   fill
                   sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                  className="object-cover object-top grayscale-[25%] transition-all duration-700 group-hover:grayscale-0 group-hover:scale-[1.03]"
+                  quality={95}
+                  className="object-cover object-top"
                 />
 
                 {/* Shot count doubles as the affordance that this opens. */}

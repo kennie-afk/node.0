@@ -95,7 +95,6 @@ export const galleries: Record<string, Shot[]> = {
     { src: "/shots/church-cms/04-gifts.jpg", caption: "Gifts" },
     { src: "/shots/church-cms/05-roles.jpg", caption: "Roles" },
     { src: "/shots/church-cms/07-events.jpg", caption: "Events" },
-    { src: "/shots/church-cms/09-dashboard-light.jpg", caption: "Dashboard light" },
     { src: "/shots/church-cms/10-journal.jpg", caption: "Journal" },
     { src: "/shots/church-cms/11-income-statement.jpg", caption: "Income statement" },
     { src: "/shots/church-cms/12-bills.jpg", caption: "Bills" },

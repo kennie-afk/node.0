@@ -12,9 +12,9 @@
   --bg-inset: #f4f5f7;
 
   --text: #0e1013;
-  --text-2: #454b54;
-  --text-3: #71787f;
-  --text-4: #a2a8b0;
+  --text-2: #2b3037;
+  --text-3: #4a5159;
+  --text-4: #6a717a;
 
   --line: rgb(14 16 19 / 0.08);
   --line-2: rgb(14 16 19 / 0.15);
@@ -47,8 +47,10 @@ body {
   font-family: var(--ff-display);
   background: var(--bg);
   color: var(--text);
-  -webkit-font-smoothing: antialiased;
+  -webkit-font-smoothing: auto;
+  -moz-osx-font-smoothing: auto;
   text-rendering: optimizeLegibility;
+  font-weight: 450;
   overflow-x: hidden;
 }
 

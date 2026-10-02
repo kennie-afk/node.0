@@ -42,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${interTight.variable} ${jetbrains.variable} ${instrument.variable}`}
     >
-      <body className="antialiased canvas">{children}</body>
+      <body className="canvas">{children}</body>
     </html>
   );
 }
