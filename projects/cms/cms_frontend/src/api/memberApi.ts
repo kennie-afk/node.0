@@ -19,6 +19,7 @@ export const fetchMembers = async () => {
   return unwrapList<Member>(response.data);
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const createMember = async (memberData: any) => {
   const response = await axiosInstance.post('/members', memberData);
   return response.data;

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { AlertCircle, HandCoins, Landmark, Users } from 'lucide-react';
 import { Badge, Button, Card, DataTable, EmptyState, ErrorState, LineChart, PageHeader, PageLoader, StatTile, formatDate, formatDateTime, formatMoney, monthLabel, toMinor, useQuery } from '../../ui';
 import { getOverview } from '../../api/overviewApi';
 import { useAuth } from '../../context/auth-context';
@@ -40,7 +41,7 @@ export default function DashboardPage() {
       {empty && (
         <Card>
           <EmptyState title="Welcome" message="Your role does not include any church-wide figures. Your own details, giving and events are under My account." />
-          <div style={{ padding: '0 12px 12px' }}><Button to="/me" variant="primary" size="sm">Open my account</Button></div>
+          <div style={{ paddingTop: 4 }}><Button to="/me" variant="primary" size="sm">Open my account</Button></div>
         </Card>
       )}
 
@@ -48,6 +49,7 @@ export default function DashboardPage() {
         <div className="dash-tiles">
           {members && (
             <StatTile
+              icon={<Users size={18} />}
               label="Members"
               value={members.total}
               delta={change(members.joinedLast30Days, members.joinedPrevious30Days)}
@@ -56,15 +58,17 @@ export default function DashboardPage() {
           )}
           {giving && (
             <StatTile
+              icon={<HandCoins size={18} />}
               label="Giving this month"
               value={formatMoney(giving.thisMonth)}
               delta={change(toMinor(giving.thisMonth), toMinor(giving.lastMonth))}
               foot={`${giving.gifts} ${giving.gifts === 1 ? 'gift' : 'gifts'} · was ${formatMoney(giving.lastMonth)}`}
             />
           )}
-          {finance && <StatTile label="Cash and bank" value={formatMoney(finance.cash)} foot={`Surplus this month ${formatMoney(finance.month.surplus)}`} />}
+          {finance && <StatTile icon={<Landmark size={18} />} label="Cash and bank" value={formatMoney(finance.cash)} foot={`Surplus this month ${formatMoney(finance.month.surplus)}`} />}
           {finance?.bills && (
             <StatTile
+              icon={<AlertCircle size={18} />}
               label="Bills overdue"
               value={formatMoney(finance.bills.overdue)}
               tone={finance.bills.overdueCount > 0 ? 'warn' : 'ok'}

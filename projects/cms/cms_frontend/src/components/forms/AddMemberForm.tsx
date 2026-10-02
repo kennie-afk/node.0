@@ -7,6 +7,7 @@ import { describeError } from '../../api/errors';
 
 interface Props {
   onMemberAdded: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   initialData?: any;
   isEdit?: boolean;
   onCancel?: () => void;
@@ -18,6 +19,7 @@ export const AddMemberForm: React.FC<Props> = ({
   isEdit = false, 
   onCancel 
 }) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [families, setFamilies] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -80,7 +82,7 @@ export const AddMemberForm: React.FC<Props> = ({
       });
 
       onMemberAdded();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(describeError(err, 'Failed to save member'));
     } finally {
       setLoading(false);

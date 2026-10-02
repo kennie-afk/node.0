@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronLeft, ChevronRight, LogOut, Menu, X } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Church, LogOut, Menu, X } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { navFor } from '../../nav/registry';
 import type { NavGroup } from '../../nav/types';
@@ -34,7 +34,7 @@ export default function DashboardLayout() {
   const { logout, email, permissions, roleLabel } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const mobile = useMediaQuery('(max-width: 720px)');
+  const mobile = useMediaQuery('(max-width: 1023px)');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [rail, setRail] = useState(() => localStorage.getItem(RAIL_KEY) === 'true');
   const [closed, setClosed] = useState<Record<string, boolean>>(readClosed);
@@ -70,19 +70,21 @@ export default function DashboardLayout() {
         {mobile && (
           <div className="ui-topbar">
             <button type="button" className="ui-btn is-ghost is-sm" aria-label={drawerOpen ? 'Close menu' : 'Open menu'} aria-expanded={drawerOpen} onClick={() => setDrawerOpen((open) => !open)}>
-              {drawerOpen ? <X size={16} aria-hidden /> : <Menu size={16} aria-hidden />}
+              {drawerOpen ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
             </button>
-            <strong style={{ fontSize: 'var(--fs-lg)' }}>Church CMS</strong>
+            <span className="ui-brand-mark" style={{ width: 30, height: 30, borderRadius: 8 }}><Church size={17} aria-hidden /></span>
+            <strong>Church CMS</strong>
           </div>
         )}
 
         {showSidebar && (
           <aside className={cx('ui-side', railMode && 'is-rail', mobile && 'is-drawer')}>
-            <div className="ui-side-head" style={railMode ? { justifyContent: 'center', padding: '12px 0' } : undefined}>
-              {!railMode && <span className="ui-side-title">Church CMS</span>}
+            <div className="ui-side-head" style={railMode ? { justifyContent: 'center', padding: '16px 0' } : undefined}>
+              {!railMode && <span className="ui-brand-mark"><Church size={20} aria-hidden /></span>}
+              {!railMode && <span className="ui-side-title">Church CMS<span className="ui-side-sub">Console</span></span>}
               {!mobile && (
                 <button type="button" className="ui-btn is-ghost is-sm" aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => setRail((value) => !value)} style={railMode ? { display: 'none' } : undefined}>
-                  <ChevronLeft size={14} aria-hidden />
+                  <ChevronLeft size={16} aria-hidden />
                 </button>
               )}
             </div>
@@ -90,7 +92,7 @@ export default function DashboardLayout() {
             <nav className="ui-side-nav" aria-label="Main navigation">
               {railMode && (
                 <button type="button" className="ui-nav-item" aria-label="Expand sidebar" title="Expand sidebar" onClick={() => setRail(false)} style={{ width: '100%', background: 'none', cursor: 'pointer' }}>
-                  <ChevronRight size={15} aria-hidden />
+                  <ChevronRight size={17} aria-hidden />
                 </button>
               )}
               {groups.map((group, index) => {
@@ -107,7 +109,7 @@ export default function DashboardLayout() {
                         onClick={() => setClosed((state) => ({ ...state, [group.id]: !state[group.id] }))}
                       >
                         {group.label}
-                        <ChevronDown size={11} aria-hidden style={{ transform: isClosed ? 'rotate(-90deg)' : undefined }} />
+                        <ChevronDown size={14} aria-hidden style={{ transform: isClosed ? 'rotate(-90deg)' : undefined }} />
                       </button>
                     )}
                     {!isClosed &&
@@ -120,7 +122,7 @@ export default function DashboardLayout() {
                           aria-label={railMode ? item.label : undefined}
                           className={({ isActive }) => cx('ui-nav-item', isActive && 'is-active')}
                         >
-                          <item.icon size={14} aria-hidden />
+                          <item.icon size={18} aria-hidden />
                           {!railMode && <span>{item.label}</span>}
                         </NavLink>
                       ))}
@@ -136,10 +138,11 @@ export default function DashboardLayout() {
                   <Badge tone="accent">{roleLabel}</Badge>
                 </div>
               )}
-              <ThemeSwitch label={!railMode} className="ui-btn is-sm" />
+              <div className="ui-foot-actions" style={railMode ? { flexDirection: 'column' } : undefined}>
+              <ThemeSwitch label={!railMode} className="ui-btn is-secondary is-sm" />
               <button
                 type="button"
-                className="ui-btn is-danger is-sm"
+                className="ui-btn is-secondary is-sm"
                 aria-label="Log out"
                 title="Log out"
                 onClick={() => {
@@ -147,9 +150,10 @@ export default function DashboardLayout() {
                   navigate('/login');
                 }}
               >
-                <LogOut size={13} aria-hidden />
+                <LogOut size={15} aria-hidden />
                 {!railMode && 'Log out'}
               </button>
+              </div>
             </div>
           </aside>
         )}

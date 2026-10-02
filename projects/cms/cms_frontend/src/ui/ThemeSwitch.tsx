@@ -7,7 +7,7 @@ export function ThemeSwitch({ label = false, className = 'ui-btn is-sm' }: { lab
   const next = theme === 'dark' ? 'light' : 'dark';
   return (
     <button type="button" className={className} onClick={toggle} aria-label={`Switch to ${next} mode`} title={`Switch to ${next} mode`}>
-      {theme === 'dark' ? <Sun size={13} aria-hidden /> : <Moon size={13} aria-hidden />}
+      {theme === 'dark' ? <Sun size={15} aria-hidden /> : <Moon size={15} aria-hidden />}
       {label && (theme === 'dark' ? 'Light mode' : 'Dark mode')}
     </button>
   );
