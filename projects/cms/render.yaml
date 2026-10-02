@@ -1,0 +1,96 @@
+# Render Blueprint for a free-tier CMS DEMO. Not for real users: free web services sleep after
+# ~15 minutes idle, and the free Postgres expires. Deploy: Render dashboard > New > Blueprint,
+# point it at this repo. Prices, limits and field names are from memory; check Render's docs.
+#
+# Differences from cmsbackend/docker-compose.yml, on purpose:
+#   - no PgBouncer (not needed at demo scale; the app connects to Postgres directly)
+#   - no worker (background workers are not free). Queued/recurring jobs will NOT run.
+#   - migrations run at API start, because pre-deploy commands are not free. The command waits on
+#     an advisory lock, so a restart is safe.
+#   - M-Pesa and SMS stay in mock mode: a sleeping service would drop Safaricom callbacks.
+#
+# Three values must be filled in by hand in the dashboard (marked sync: false), because Render
+# cannot interpolate one variable into another:
+#   cms-api  DATABASE_URL   postgres://cms_app:<APP_DB_PASSWORD>@<internal host of cms-db>:5432/cms
+#                           (copy APP_DB_PASSWORD from cms-api's own env; host from cms-db > Internal URL)
+#   cms-api  CORS_ORIGINS   the public https URL of cms-web
+#   cms-web  API_UPSTREAM   http://cms-api:4400   (private network address of the API)
+
+databases:
+  - name: cms-db
+    databaseName: cms
+    user: cms_owner
+    plan: free
+    region: frankfurt
+
+services:
+  - type: keyvalue
+    name: cms-redis
+    plan: free
+    region: frankfurt
+    maxmemoryPolicy: allkeys-lru
+    ipAllowList: []   # private network only
+
+  - type: web
+    name: cms-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./projects/cms/cmsbackend/Dockerfile
+    dockerContext: ./projects/cms/cmsbackend
+    # Migrate as the database owner (creates the cms_app role and the row-level-security policies),
+    # then serve as cms_app. The API refuses to start as a role that bypasses RLS.
+    dockerCommand: sh -c "node scripts/migrate-locked.js && exec node -r module-alias/register dist/server.js"
+    healthCheckPath: /readyz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "4400"
+      - key: DATABASE_SSL
+        value: "false"            # internal Render network
+      - key: MIGRATE_DATABASE_URL
+        fromDatabase:
+          name: cms-db
+          property: connectionString
+      - key: APP_DB_USER
+        value: cms_app
+      - key: APP_DB_PASSWORD
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: cms-redis
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_TTL_MINUTES
+        value: "60"
+      - key: CORS_ORIGINS
+        sync: false
+      - key: DB_POOL_MAX
+        value: "5"
+      - key: DB_STATEMENT_TIMEOUT_MS
+        value: "0"
+      - key: MPESA_MODE
+        value: mock
+      - key: SMS_MODE
+        value: mock
+      - key: LOG_LEVEL
+        value: info
+
+  - type: web
+    name: cms-web
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./projects/cms/cms_frontend/Dockerfile
+    dockerContext: ./projects/cms/cms_frontend
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: API_UPSTREAM
+        sync: false
