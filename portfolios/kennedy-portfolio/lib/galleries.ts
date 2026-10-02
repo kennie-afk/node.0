@@ -38,6 +38,9 @@ export const galleries: Record<string, Shot[]> = {
     { src: "/shots/smartseason/09-live.jpg", caption: "Live" },
     { src: "/shots/smartseason/10-team.jpg", caption: "Team" },
     { src: "/shots/smartseason/11-advisor.jpg", caption: "Advisor" },
+    { src: "/shots/smartseason/12-orders.jpg", caption: "Market orders" },
+    { src: "/shots/smartseason/13-ledger.jpg", caption: "Money: double-entry ledger" },
+    { src: "/shots/smartseason/14-audit.jpg", caption: "Platform: hash-chained audit log" },
   ],
   "smartre": [
     { src: "/shots/smartre/01-home.jpg", caption: "Home" },
