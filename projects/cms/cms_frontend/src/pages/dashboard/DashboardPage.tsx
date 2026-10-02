@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { AlertCircle, HandCoins, Landmark, Users } from 'lucide-react';
-import { Badge, Button, Card, DataTable, EmptyState, ErrorState, LineChart, PageHeader, PageLoader, StatTile, formatDate, formatDateTime, formatMoney, monthLabel, toMinor, useQuery } from '../../ui';
+import { Badge, Button, Card, DataTable, EmptyState, ErrorState, LineChart, PageHeader, PageLoader, StatTile, formatDate, formatDateShort, formatDateTime, formatMoney, monthLabel, toMinor, useQuery } from '../../ui';
 import { getOverview } from '../../api/overviewApi';
 import { useAuth } from '../../context/auth-context';
 
@@ -123,7 +123,7 @@ export default function DashboardPage() {
                 columns={[
                   { key: 'donor', header: 'Donor', render: (g) => <Link to={`/giving/contributions/${g.id}`}>{g.donor}</Link> },
                   { key: 'type', header: 'Type', render: (g) => g.type },
-                  { key: 'date', header: 'Date', render: (g) => formatDate(g.date) },
+                  { key: 'date', header: 'Date', render: (g) => formatDateShort(g.date) },
                   { key: 'amount', header: 'Amount', numeric: true, render: (g) => formatMoney(g.amount) }
                 ]}
                 empty={<span>No gifts yet.</span>}
@@ -138,9 +138,9 @@ export default function DashboardPage() {
               ) : (
                 <ul className="dash-list">
                   {people.upcomingEvents.map((e) => (
-                    <li key={e.id}>
-                      <span><strong>{e.name}</strong>{e.location ? <em> · {e.location}</em> : null}</span>
-                      <span className="dash-muted">{formatDateTime(e.startsAt)}</span>
+                    <li key={e.id} className="dash-stack">
+                      <strong>{e.name}</strong>
+                      <span className="dash-muted">{formatDateTime(e.startsAt)}{e.location ? ` · ${e.location}` : ''}</span>
                     </li>
                   ))}
                 </ul>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                   {people.recentMembers.map((m) => (
                     <li key={m.id}>
                       <Link to={`/members`}>{m.name}</Link>
-                      <span className="dash-muted">{formatDate(m.joinedAt)}</span>
+                      <span className="dash-muted">{formatDateShort(m.joinedAt)}</span>
                     </li>
                   ))}
                 </ul>

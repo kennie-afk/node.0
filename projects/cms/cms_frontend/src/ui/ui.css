@@ -251,6 +251,7 @@
   background: var(--ui-raised);
   border: 1px solid var(--ui-border);
   white-space: nowrap;
+  vertical-align: middle;
 }
 .ui-badge.tone-ok { color: var(--ui-ok); background: rgba(var(--c-ok-rgb), 0.12); border-color: rgba(var(--c-ok-rgb), 0.28); }
 .ui-badge.tone-warn { color: var(--ui-warn); background: rgba(var(--c-warn-rgb), 0.13); border-color: rgba(var(--c-warn-rgb), 0.3); }
@@ -322,7 +323,14 @@ textarea.ui-input { resize: vertical; min-height: 76px; line-height: 1.5; }
   font-size: var(--fs-sm);
   border-bottom: 1px solid var(--ui-border);
   vertical-align: middle;
+  /* Dates, amounts, ids and names stay on one line; long text is cut with an ellipsis and the wrap scrolls. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 320px;
+  font-variant-numeric: tabular-nums;
 }
+.ui-table td.is-num, .ui-table th.is-num { max-width: none; }
 .ui-table th {
   font-size: 11.5px;
   text-transform: uppercase;
@@ -478,8 +486,15 @@ textarea.ui-input { resize: vertical; min-height: 76px; line-height: 1.5; }
 .dash-list em { font-style: normal; color: var(--ui-muted); }
 .dash-muted { color: var(--ui-muted); margin: 0; font-size: var(--fs-sm); }
 .dash-two { display: grid; grid-template-columns: minmax(300px, 1fr) minmax(360px, 1.7fr); gap: 12px; align-items: stretch; }
-.dash-three { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 12px; align-items: stretch; }
+.dash-three { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) minmax(0, 1fr); gap: 12px; align-items: stretch; }
+.dash-three > * { min-width: 0; }
+.dash-list li.dash-stack { flex-direction: column; align-items: flex-start; gap: 1px; }
+.dash-list li.dash-stack > * { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-list li > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-list li > :last-child { flex: none; white-space: nowrap; font-variant-numeric: tabular-nums; }
 @media (max-width: 1100px) { .dash-two { grid-template-columns: 1fr; } }
+@media (max-width: 1280px) { .dash-three { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .dash-three > :first-child { grid-column: 1 / -1; } }
+@media (max-width: 720px) { .dash-three { grid-template-columns: minmax(0, 1fr); } }
 .ui-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .ui-form-grid > .is-wide { grid-column: 1 / -1; }
 
