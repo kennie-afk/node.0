@@ -40,11 +40,11 @@
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --c-bg: #faf7f3;
+  --c-bg: #ffffff;
   --c-surface: #ffffff;
-  --c-raised: #f6f2ec;
+  --c-raised: #ffffff;
   --c-input: #ffffff;
-  --c-fill: #f1ece5;
+  --c-fill: #ffffff;
   --c-fill-strong: #e4ddd2;
   --c-border: #e9e3da;
   --c-border-strong: #d4ccc0;

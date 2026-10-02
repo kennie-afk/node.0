@@ -49,7 +49,7 @@ export default function DashboardPage() {
         <div className="dash-tiles">
           {members && (
             <StatTile
-              icon={<Users size={18} />}
+              icon={<Users size={15} />}
               label="Members"
               value={members.total}
               delta={change(members.joinedLast30Days, members.joinedPrevious30Days)}
@@ -58,17 +58,17 @@ export default function DashboardPage() {
           )}
           {giving && (
             <StatTile
-              icon={<HandCoins size={18} />}
+              icon={<HandCoins size={15} />}
               label="Giving this month"
               value={formatMoney(giving.thisMonth)}
               delta={change(toMinor(giving.thisMonth), toMinor(giving.lastMonth))}
               foot={`${giving.gifts} ${giving.gifts === 1 ? 'gift' : 'gifts'} · was ${formatMoney(giving.lastMonth)}`}
             />
           )}
-          {finance && <StatTile icon={<Landmark size={18} />} label="Cash and bank" value={formatMoney(finance.cash)} foot={`Surplus this month ${formatMoney(finance.month.surplus)}`} />}
+          {finance && <StatTile icon={<Landmark size={15} />} label="Cash and bank" value={formatMoney(finance.cash)} foot={`Surplus this month ${formatMoney(finance.month.surplus)}`} />}
           {finance?.bills && (
             <StatTile
-              icon={<AlertCircle size={18} />}
+              icon={<AlertCircle size={15} />}
               label="Bills overdue"
               value={formatMoney(finance.bills.overdue)}
               tone={finance.bills.overdueCount > 0 ? 'warn' : 'ok'}

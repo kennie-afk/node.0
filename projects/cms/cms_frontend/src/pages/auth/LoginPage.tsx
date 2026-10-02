@@ -104,7 +104,7 @@ export default function LoginPage() {
 
             {error && <p className="ui-error-text" role="alert" style={{ margin: 0, fontSize: 'var(--fs-sm)' }}>{error}</p>}
 
-            <button type="submit" disabled={loading} className="ui-btn is-primary" style={{ width: '100%', padding: '11px 16px', fontSize: 'var(--fs-base)' }}>
+            <button type="submit" disabled={loading} className="ui-btn is-primary" style={{ width: '100%', padding: '9px 14px', fontSize: 'var(--fs-sm)' }}>
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>

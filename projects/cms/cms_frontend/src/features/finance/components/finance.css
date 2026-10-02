@@ -52,7 +52,7 @@
 .receipt-rows dt { width: 140px; flex: none; color: var(--ui-muted); }
 .receipt-rows dd { margin: 0; font-weight: 600; }
 .receipt-total { border-top: 1px solid var(--ui-border); padding-top: 8px; }
-.receipt-amount { font-family: var(--ui-font-head); font-size: var(--fs-3xl); font-weight: 600; font-variant-numeric: tabular-nums; }
+.receipt-amount { font-family: var(--ui-font-body); font-size: var(--fs-3xl); font-weight: 600; font-variant-numeric: tabular-nums; }
 .receipt-words { font-size: var(--fs-sm); font-style: italic; color: var(--ui-text-2); }
 .receipt-actions { display: flex; gap: 8px; }
 
