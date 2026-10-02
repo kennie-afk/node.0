@@ -55,8 +55,8 @@ portfolios/techmara3_updated.zip
 projects/**/dist/
 
 # Personal portfolio sites and brand sites - kept local, never published
-portfolios/
-kennedy-portfolio/
+portfolios/*
+!portfolios/kennedy-portfolio/
 techmara3/
 Portfolio_Website/
 Portfolio-website2/

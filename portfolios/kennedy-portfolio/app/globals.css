@@ -1,0 +1,412 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Refined paper-and-red. Off-white ground so pure-white panels read as raised,
+   near-black ink rather than pure black, hairlines instead of borders, and the
+   brand red kept scarce so it still means something where it appears.
+   --------------------------------------------------------------------------- */
+:root {
+  --bg: #fbfbfc;
+  --bg-raised: #ffffff;
+  --bg-panel: #ffffff;
+  --bg-inset: #f4f5f7;
+
+  --text: #0e1013;
+  --text-2: #454b54;
+  --text-3: #71787f;
+  --text-4: #a2a8b0;
+
+  --line: rgb(14 16 19 / 0.08);
+  --line-2: rgb(14 16 19 / 0.15);
+  --line-3: rgb(14 16 19 / 0.3);
+
+  --signal: #d92d20;
+  --signal-soft: rgb(217 45 32 / 0.08);
+
+  /* Scrim for image overlays, kept as a triplet so opacity can vary at use. */
+  --scrim: 251 251 252;
+  --hover: rgb(14 16 19 / 0.022);
+
+  --ff-display: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  --ff-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, monospace;
+  --ff-serif: var(--font-instrument), ui-serif, Georgia, serif;
+
+  --nav-h: 64px;
+}
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--bg);
+}
+
+body {
+  font-family: var(--ff-display);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--signal);
+  color: #fff;
+}
+
+/* A faint drafting grid, faded out below the fold, with the barest red wash
+   behind the hero. Both fixed, so content reads as moving over a surface. */
+.canvas::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(to right, rgb(14 16 19 / 0.028) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(14 16 19 / 0.028) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 100% 55% at 50% 0%, #000 30%, transparent 100%);
+}
+
+.canvas::after {
+  content: "";
+  position: fixed;
+  top: -35vh;
+  left: 50%;
+  width: 120vw;
+  height: 85vh;
+  transform: translateX(-50%);
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 45% 50% at 50% 50%,
+    rgb(217 45 32 / 0.045) 0%,
+    transparent 70%
+  );
+}
+
+.layer {
+  position: relative;
+  z-index: 1;
+}
+
+/* --------------------------------------------------------------------- Layout */
+.wrap {
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding-inline: clamp(1.25rem, 4vw, 4rem);
+}
+
+.section {
+  scroll-margin-top: calc(var(--nav-h) + 8px);
+  position: relative;
+}
+
+.rule {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--line-2) 12%, var(--line-2) 88%, transparent);
+}
+
+/* ------------------------------------------------------------------ Typography */
+.display {
+  font-family: var(--ff-display);
+  font-weight: 600;
+  letter-spacing: -0.045em;
+  line-height: 0.95;
+}
+
+.serif {
+  font-family: var(--ff-serif);
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: -0.02em;
+}
+
+.mono {
+  font-family: var(--ff-mono);
+  font-feature-settings: "tnum" 1, "zero" 1;
+}
+
+.tag {
+  font-family: var(--ff-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.tag-signal {
+  color: var(--signal);
+}
+
+.h2 {
+  font-family: var(--ff-display);
+  font-size: clamp(2rem, 5vw, 3.25rem);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--text);
+}
+
+.lead {
+  color: var(--text-2);
+  font-size: clamp(0.95rem, 1.2vw, 1.0625rem);
+  line-height: 1.7;
+}
+
+.dim {
+  color: var(--text-3);
+}
+
+/* ---------------------------------------------------------------- Numerals */
+.numeral {
+  font-family: var(--ff-mono);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  font-feature-settings: "tnum" 1, "zero" 1;
+  color: var(--text);
+}
+
+/* ------------------------------------------------------------------ Surfaces */
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--line);
+  position: relative;
+  box-shadow: 0 1px 2px rgb(14 16 19 / 0.03);
+}
+
+.lift {
+  transition: border-color 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 1),
+    transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.lift:hover {
+  border-color: var(--line-2);
+  box-shadow: 0 18px 40px -22px rgb(14 16 19 / 0.28);
+  transform: translateY(-3px);
+}
+
+/* --------------------------------------------------------------------- Chips */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--ff-mono);
+  font-size: 10.5px;
+  line-height: 1;
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  color: var(--text-3);
+  background: var(--bg-raised);
+  white-space: nowrap;
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+.group:hover .chip {
+  color: var(--text-2);
+  border-color: var(--line-2);
+}
+
+/* ------------------------------------------------------------------- Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--ff-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 0.75rem 1.25rem;
+  border: 1px solid transparent;
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease,
+    box-shadow 0.25s ease;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: var(--signal);
+  color: #fff;
+  box-shadow: 0 1px 2px rgb(217 45 32 / 0.24);
+}
+
+.btn-primary:hover {
+  background: #c02318;
+  box-shadow: 0 6px 18px -8px rgb(217 45 32 / 0.55);
+}
+
+.btn-ghost {
+  border-color: var(--line-2);
+  color: var(--text-2);
+  background: var(--bg-raised);
+}
+
+.btn-ghost:hover {
+  border-color: var(--line-3);
+  color: var(--text);
+}
+
+/* --------------------------------------------------------------------- Fields */
+.field {
+  width: 100%;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  padding: 0.7rem 0.875rem;
+  font-size: 0.875rem;
+  font-family: var(--ff-display);
+  color: var(--text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.field::placeholder {
+  color: var(--text-4);
+}
+
+.field:focus {
+  outline: none;
+  border-color: var(--signal);
+  box-shadow: 0 0 0 3px var(--signal-soft);
+}
+
+.label {
+  display: block;
+  font-family: var(--ff-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 0.5rem;
+}
+
+/* ------------------------------------------------------------ Link underline */
+.ul {
+  background-image: linear-gradient(var(--signal), var(--signal));
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.25s ease;
+}
+
+.ul:hover {
+  background-size: 100% 1px;
+  color: var(--text);
+}
+
+/* Row hover tint, defined once so components don't hardcode a colour that only
+   works on one background. */
+.row-hover {
+  transition: background-color 0.3s ease;
+}
+
+.row-hover:hover {
+  background: var(--hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* An eyebrow that hangs off a short red rail, used where a section or the hero
+   needs a label with more presence than plain small caps. */
+.rail-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-family: var(--ff-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.rail-tag::before {
+  content: "";
+  width: 1.75rem;
+  height: 2px;
+  background: var(--signal);
+}
+
+/* Availability indicator. */
+.pulse {
+  position: relative;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--signal);
+}
+
+.pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--signal);
+  animation: pulse 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.55; }
+  70% { transform: scale(2.6); opacity: 0; }
+  100% { transform: scale(2.6); opacity: 0; }
+}
+
+/* Cut-out portrait. No frame, no plate — the subject sits directly on the page.
+   A soft warm bloom behind it and a contact shadow under the feet stop it
+   reading as a sticker pasted onto the background. */
+.cutout-stage {
+  position: relative;
+  isolation: isolate;
+}
+
+.cutout-stage::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  left: 50%;
+  top: 2%;
+  width: 96%;
+  height: 70%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgb(217 45 32 / 0.11) 0%,
+    rgb(217 45 32 / 0.05) 42%,
+    transparent 72%
+  );
+  filter: blur(26px);
+}
+
+.cutout-img {
+  /* The matte can leave a faint light rim; a hair of contrast cleans the edge. */
+  filter: contrast(1.03) saturate(1.02);
+
+  /* Only the lower edge softens, and only a little; the sides and top stay
+     exactly as the cutout's own alpha channel renders them — seamless. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 85%,
+    rgb(0 0 0 / 0.55) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 85%,
+    rgb(0 0 0 / 0.55) 100%
+  );
+}
