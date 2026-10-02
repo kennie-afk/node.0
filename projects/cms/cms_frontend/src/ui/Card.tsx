@@ -14,10 +14,10 @@ interface CardProps {
   className?: string;
 }
 
-/** A boundary, not an object: 1px border, 6px radius, no shadow. */
+/** A boundary, not an object: 1px hairline border, 12px radius, no shadow. */
 export function Card({ title, subtitle, actions, children, flush, to, className }: CardProps) {
   const head = (title || actions) && (
-    <div className="ui-card-head" style={flush ? { padding: '10px 12px 0', marginBottom: 0 } : undefined}>
+    <div className="ui-card-head">
       <div>
         {title && <h2 className="ui-card-title">{title}</h2>}
         {subtitle && <div className="ui-card-sub">{subtitle}</div>}

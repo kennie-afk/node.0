@@ -4,10 +4,9 @@ import App from './App';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 
-import '@fontsource/inter/400.css';
-import '@fontsource/inter/500.css';
-import '@fontsource/inter/600.css';
-import '@fontsource/inter/700.css';
+
+import '@fontsource-variable/fraunces';
+import '@fontsource-variable/manrope';
 
 import './styles/theme.css';
 import './styles/variables.css';

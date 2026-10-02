@@ -8,7 +8,7 @@ interface Props {
   crumbs?: Array<{ label: string; to?: string }>;
 }
 
-/** Page titles sit at 2xl; everything else on the page is smaller. */
+/** Page titles are Fraunces at 30px (26px on phones). */
 export function PageHeader({ title, subtitle, actions, crumbs }: Props) {
   return (
     <header>

@@ -31,6 +31,6 @@ npm run lint
 
 ## Look and feel
 
-Dark theme, 12px root, 6px corner radius everywhere, no shadows for depth, and hover changes
-colour only: nothing moves or lifts on hover or press. Type sizes follow the house scale
-(10.5, 11.5, 12, 13, 14.5, 16.5, 19px).
+Light and dark themes (toggle in the sidebar, stored in `localStorage['theme']`), Fraunces headings
+and Manrope body at a 15px root, hairline borders, 8px controls and 12px cards, and hover changes
+colour only. The full token and component rules are in `DESIGN.md`.

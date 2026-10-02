@@ -12,15 +12,15 @@ The live catalogue is at **`/ui-kit`** (dev server only; it is tree-shaken out o
 
 | Rule | Value |
 | --- | --- |
-| Root font size | 12px. Scale: `2xs` 9.5 · `xs` 10.5 · `sm` 11.5 · `base` 12 · `lg` 13 · `xl` 14.5 · `2xl` 16.5 (CSS vars `--fs-*`) |
-| Weight, not size, separates things | Titles `2xl`; table cells `xs`; column headers `2xs` uppercase; a headline figure is `base` semibold, never several steps above its label |
-| Radius | 6px maximum (`--ui-radius`) |
-| Depth | 1px border, **no shadows** |
+| Root font size | 15px. Scale: `2xs` 12 · `xs` 13 · `sm` 14 · `base` 15 · `lg` 16.5 · `xl` 19 · `2xl` 24 · `3xl` 30 (CSS vars `--fs-*`). 12-13px only for uppercase captions and hints |
+| Type | Fraunces for page titles, card titles and headline figures; Manrope for everything else. Page title `3xl`; table cells `sm`; column headers `xs` uppercase |
+| Radius | 8px controls, 12px cards (`--ui-radius`, `--ui-radius-lg`) |
+| Depth | 1px hairline border; shadow only on floating layers (menus, toasts, drawer) |
 | Hover | Colour changes; **nothing moves** (no translate, scale or press nudge) |
 | Figures | `tabular-nums` (`numeric` columns, `.ui-num`) |
 | CRUD | A create/edit form is its own route (`/x/new`, `/x/:id/edit`), never a panel above the table it changes |
 | Delete/void | `InlineConfirm` where the button is. Never `window.confirm` |
-| Empty states | A signpost (`EmptyState`): heading, one sentence, the way forward; about 36px tall padding |
+| Empty states | A signpost (`EmptyState`): heading, one sentence, the way forward; about 44px tall padding |
 | Lists | Server-side paging, filtering and search. Never fetch everything and filter in the browser |
 | Money | Decimal **strings** end to end. Use `toMinor`/`fromMinor`/`addMoney`/`sumMoney`, never `parseFloat` |
 

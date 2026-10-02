@@ -1,59 +1,72 @@
 /*
  * One palette, two themes. Everything in the app reads these tokens; nothing should hard-code a
- * colour. Dark is the default; `data-theme="light"` on <html> (set by the theme switch, restored
- * before first paint by /theme-init.js) swaps the whole set.
+ * colour. Light is the working theme; Dark is the default for first-time visitors until they
+ * choose. `data-theme="light"` on <html> (set by the theme switch, restored before first paint
+ * by /theme-init.js) swaps the whole set. See ../../DESIGN.md.
  */
 :root {
   color-scheme: dark;
-  --c-bg: #0a0a0f;
-  --c-surface: #18181b;
-  --c-raised: #1f1f25;
-  --c-input: #141418;
-  --c-fill: #27272a;
-  --c-fill-strong: #3f3f46;
-  --c-border: #27272a;
-  --c-border-strong: #3f3f46;
-  --c-text: #f1f5f9;
-  --c-text-2: #cbd5e1;
-  --c-muted: #a1a1aa;
-  /* Brand accent: a warm, moderately bright orange. Change these three lines (and the light ones below) to re-brand. */
-  --c-accent: #e8793a;
-  --c-accent-rgb: 232, 121, 58;
-  --c-accent-hover: #f08f55;
-  --c-on-accent: #ffffff;
+  --c-bg: #0e0d0c;
+  --c-surface: #181614;
+  --c-raised: #211e1b;
+  --c-input: #141210;
+  --c-fill: #26221f;
+  --c-fill-strong: #3a352f;
+  --c-border: #2d2925;
+  --c-border-strong: #433d36;
+  --c-text: #f6f2ed;
+  --c-text-2: #d6cfc6;
+  --c-muted: #aaa297;
+  /* Brand accent: orange. Re-brand by changing these (and the light ones below). */
+  --c-accent: #ee8444;
+  --c-accent-rgb: 238, 132, 68;
+  --c-accent-hover: #f59a60;
+  --c-accent-deep: #f7b07f;
+  --c-on-accent: #1a0d04;
   --c-accent-soft: rgba(var(--c-accent-rgb), 0.14);
   --c-ok: #4ade80;
+  --c-ok-rgb: 74, 222, 128;
   --c-warn: #fbbf24;
+  --c-warn-rgb: 251, 191, 36;
   --c-bad: #f87171;
-  --c-info: #22d3ee;
+  --c-bad-rgb: 248, 113, 113;
+  --c-info: #5eb8ff;
+  --c-info-rgb: 94, 184, 255;
   --c-ok-bg: #1f3a1f;
   --c-bad-bg: #3f1e1e;
-  --c-scrollbar: #3f3f46;
+  --c-scrollbar: #433d36;
+  --c-scrim: rgba(0, 0, 0, 0.6);
 }
 
 :root[data-theme='light'] {
   color-scheme: light;
-  --c-bg: #f4f5f8;
+  --c-bg: #faf7f3;
   --c-surface: #ffffff;
-  --c-raised: #f1f2f6;
+  --c-raised: #f6f2ec;
   --c-input: #ffffff;
-  --c-fill: #eceef3;
-  --c-fill-strong: #dde0e8;
-  --c-border: #dfe2ea;
-  --c-border-strong: #c3c8d3;
-  --c-text: #0f172a;
-  --c-text-2: #334155;
-  --c-muted: #5b6678;
-  --c-accent: #c9561b;
-  --c-accent-rgb: 201, 86, 27;
-  --c-accent-hover: #a94612;
+  --c-fill: #f1ece5;
+  --c-fill-strong: #e4ddd2;
+  --c-border: #e9e3da;
+  --c-border-strong: #d4ccc0;
+  --c-text: #1c1917;
+  --c-text-2: #44403c;
+  --c-muted: #5d5851;
+  --c-accent: #c2501a;
+  --c-accent-rgb: 194, 80, 26;
+  --c-accent-hover: #a54314;
+  --c-accent-deep: #8a3510;
   --c-on-accent: #ffffff;
-  --c-accent-soft: rgba(var(--c-accent-rgb), 0.1);
+  --c-accent-soft: rgba(var(--c-accent-rgb), 0.09);
   --c-ok: #15803d;
-  --c-warn: #b45309;
+  --c-ok-rgb: 21, 128, 61;
+  --c-warn: #a15c07;
+  --c-warn-rgb: 180, 105, 9;
   --c-bad: #b91c1c;
-  --c-info: #0e7490;
+  --c-bad-rgb: 185, 28, 28;
+  --c-info: #1d6fb8;
+  --c-info-rgb: 29, 111, 184;
   --c-ok-bg: #dcfce7;
   --c-bad-bg: #fee2e2;
-  --c-scrollbar: #c3c8d3;
+  --c-scrollbar: #d4ccc0;
+  --c-scrim: rgba(28, 25, 23, 0.45);
 }
