@@ -60,7 +60,7 @@ const SAMPLE: SampleProduct[] = [
 
 function sampleGtin(n: number): string {
   const body = `9${String(n).padStart(12, '0')}`; // 13 digits in a made-up number space, never a real manufacturer's
-  return `0${body}${gs1CheckDigit(`0${body}`)}`;
+  return `${body}${gs1CheckDigit(body)}`;
 }
 
 export async function loadSampleData(client: PoolClient, ctx: Ctx) {

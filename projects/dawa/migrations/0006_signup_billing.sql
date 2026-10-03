@@ -18,7 +18,9 @@ CREATE TABLE signup_requests (
   code_sent_at     timestamptz,
   resend_count     int NOT NULL DEFAULT 0,
   verified_at      timestamptz,
-  org_id           uuid,
+  -- the organisation this request became; deliberately NOT called org_id, because this table exists before any
+  -- tenant does and is exempt from row-level security (the startup guard treats every org_id table as a tenant table)
+  provisioned_org_id uuid,
   created_at       timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX signup_requests_status_idx ON signup_requests (status, created_at DESC);

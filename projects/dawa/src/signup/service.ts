@@ -166,7 +166,7 @@ export async function verifySignup(id: string, code: string, pin: string): Promi
       pin,
       signupId: id
     });
-    await withoutTenant((client) => client.query('UPDATE signup_requests SET org_id = $2, code_hash = NULL WHERE id = $1', [id, made.orgId]));
+    await withoutTenant((client) => client.query('UPDATE signup_requests SET provisioned_org_id = $2, code_hash = NULL WHERE id = $1', [id, made.orgId]));
     const { token, expiresInSeconds } = signToken({ userId: made.ownerId, orgId: made.orgId, branchId: null, role: 'owner' });
     logger.info('self-serve organisation created', { orgId: made.orgId, signupRequestId: id });
     return { token, expiresInSeconds, displayName: row.contact_name, role: 'owner', orgId: made.orgId, branchId: made.branchId };

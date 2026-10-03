@@ -39,7 +39,10 @@ export async function listPayables(client: PoolClient, branchId: string | null, 
 
 export async function paySupplierInvoice(client: PoolClient, ctx: Ctx, invoiceId: string, input: z.infer<typeof supplierPaymentSchema>) {
   need(ctx, 'suppliers');
-  const invoice = (await client.query('SELECT id, branch_id, total_cents, invoice_number FROM supplier_invoices WHERE id = $1 FOR UPDATE', [invoiceId])).rows[0];
+  // Supplier invoices are append-only (the application role has no UPDATE on them, so no row lock either): payments to one
+  // invoice are serialised with a transaction-scoped advisory lock instead, so two payments cannot both fit the same balance.
+  await client.query('SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))', [`supplier-invoice:${invoiceId}`]);
+  const invoice = (await client.query('SELECT id, branch_id, total_cents, invoice_number FROM supplier_invoices WHERE id = $1', [invoiceId])).rows[0];
   if (!invoice) throw new NotFoundError('That supplier invoice was not found.');
   if (ctx.branchId && invoice.branch_id !== ctx.branchId) throw new AppError(403, 'forbidden', 'That invoice belongs to a different branch.');
   const paid = Number((await client.query('SELECT COALESCE(sum(amount_cents), 0)::bigint AS p FROM supplier_payments WHERE supplier_invoice_id = $1', [invoiceId])).rows[0].p);
