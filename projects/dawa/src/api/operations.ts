@@ -75,29 +75,44 @@ async function reportBranches(req: import('express').Request): Promise<string[]>
     return rows.map((r) => r.id as string);
   });
 }
-function range(req: import('express').Request): { from: string; to: string } {
-  const today = new Date().toISOString().slice(0, 10);
-  const from = z.optional(isoDay).parse(queryString(req.query.from)) ?? `${today.slice(0, 8)}01`;
-  const to = z.optional(isoDay).parse(queryString(req.query.to)) ?? today;
+/**
+ * The default window is "this month to today" on the BRANCH's calendar, the same one sales are stamped with. Using the server's
+ * UTC date instead left today's sales out of every report between midnight and 03:00 in Nairobi.
+ */
+async function range(req: import('express').Request): Promise<{ from: string; to: string }> {
+  let from = z.optional(isoDay).parse(queryString(req.query.from));
+  let to = z.optional(isoDay).parse(queryString(req.query.to));
+  if (!from || !to) {
+    const ctx = ctxOf(req);
+    const requested = queryString(req.query.branchId) ?? ctx.branchId ?? null;
+    const today = await withOrg(ctx.orgId, async (client) => {
+      const tz = (await client.query(
+        `SELECT timezone FROM branches WHERE ($1::uuid IS NULL OR id = $1) AND NOT is_demo ORDER BY archived, created_at LIMIT 1`, [requested]
+      )).rows[0]?.timezone as string | undefined;
+      return businessDayNow(client, tz ?? 'Africa/Nairobi');
+    });
+    from = from ?? `${today.slice(0, 8)}01`;
+    to = to ?? today;
+  }
   if (from > to) throw new BadRequestError('from is after to');
   return { from, to };
 }
 
 router.get('/reports/sales', requirePermission('reports'), wrap(async (req, res) => {
   const ids = await reportBranches(req);
-  const { from, to } = range(req);
+  const { from, to } = await range(req);
   res.json(await inOrg(req, (client) => salesSummary(client, ids, from, to)));
 }));
 router.get('/reports/margin', requirePermission('reports'), wrap(async (req, res) => {
   const ids = await reportBranches(req);
-  const { from, to } = range(req);
+  const { from, to } = await range(req);
   res.json(await inOrg(req, (client) => margin(client, ids, from, to)));
 }));
 router.get('/reports/movers', requirePermission('reports'), wrap(async (req, res) => {
   res.json(await inBranch(req, req.query.branchId, async (client, _ctx, branch) => movers(client, branch, await businessDayNow(client, branch.timezone), Math.min(Math.max(queryInt(req.query.days, 30), 7), 365))));
 }));
 router.get('/reports/expiry-loss', requirePermission('reports'), wrap(async (req, res) => {
-  const { from, to } = range(req);
+  const { from, to } = await range(req);
   res.json(await inBranch(req, req.query.branchId, async (client, _ctx, branch) => ({
     ...(await expiryLoss(client, branch, await businessDayNow(client, branch.timezone), from, to)),
     valuation: await stockValuation(client, branch, await businessDayNow(client, branch.timezone))
@@ -111,7 +126,7 @@ function sendCsv(res: import('express').Response, name: string, csv: string) {
   res.send(csv);
 }
 router.get('/export/sales.csv', requirePermission('reports'), wrap(async (req, res) => {
-  const { from, to } = range(req);
+  const { from, to } = await range(req);
   sendCsv(res, 'dawa-sales.csv', await inBranch(req, req.query.branchId, (client, _ctx, branch) => salesCsv(client, branch, from, to)));
 }));
 router.get('/export/stock.csv', requirePermission('reports'), wrap(async (req, res) => {
@@ -129,7 +144,7 @@ router.get('/ntts/events', requirePermission('reports'), wrap(async (req, res) =
   res.json(await inOrg(req, (client, ctx) => listEvents(client, ctx.branchId, queryInt(req.query.limit, 100))));
 }));
 router.get('/ntts/export.csv', requirePermission('reports'), wrap(async (req, res) => {
-  const { from, to } = range(req);
+  const { from, to } = await range(req);
   const csv = await inOrg(req, (client, ctx) => exportCsv(client, ctx.branchId, from, to));
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="dawa-internal-activity-log.csv"');

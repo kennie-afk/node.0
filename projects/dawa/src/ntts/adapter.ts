@@ -83,7 +83,7 @@ export async function exportCsv(client: PoolClient, branchId: string | null, fro
     await client.query(
       `SELECT o.id, o.occurred_at, b.code AS branch, o.event_type, p.name AS product, o.gtin, o.batch_no, to_char(o.expiry_date, 'YYYY-MM-DD') AS expiry_date, o.serial, o.qty
          FROM ntts_outbox o JOIN products p ON p.id = o.product_id JOIN branches b ON b.id = o.branch_id
-        WHERE ($1::uuid IS NULL OR o.branch_id = $1) AND o.occurred_at::date BETWEEN $2 AND $3 ORDER BY o.id LIMIT 100000`,
+        WHERE ($1::uuid IS NULL OR o.branch_id = $1) AND (o.occurred_at AT TIME ZONE b.timezone)::date BETWEEN $2 AND $3 ORDER BY o.id LIMIT 100000`,
       [branchId, from, to]
     )
   ).rows;

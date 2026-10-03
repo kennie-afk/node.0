@@ -45,7 +45,7 @@ router.get('/exports/arrears.csv', authenticate, requirePermission('reports'), w
 }));
 
 router.get('/exports/trial-balance.csv', authenticate, requirePermission('reports'), wrap(async (req, res) => {
-  const asOf = queryString(req.query.asOf) ?? new Date().toISOString().slice(0, 10);
+  const asOf = queryString(req.query.asOf) ?? new Date(Date.now() + 3 * 3_600_000).toISOString().slice(0, 10);
   const tb = await inOrg(req, (client) => trialBalance(client, asOf));
   send(res, `trial-balance-${asOf}.csv`, toCsv(['code', 'account', 'type', 'debit', 'credit'], [
     ...tb.rows.map((r) => [r.code, r.name, r.type, money(r.debitCents), money(r.creditCents)]),

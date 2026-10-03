@@ -20,7 +20,7 @@ export async function listPayables(client: PoolClient, branchId: string | null, 
       [branchId]
     )
   ).rows;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = (await client.query(`SELECT to_char((now() AT TIME ZONE COALESCE((SELECT timezone FROM branches WHERE ($1::uuid IS NULL OR id = $1) AND NOT is_demo ORDER BY archived, created_at LIMIT 1), 'Africa/Nairobi'))::date, 'YYYY-MM-DD') AS d`, [branchId])).rows[0].d as string;
   const items = rows
     .map((r) => {
       const balance = Number(r.total_cents) - Number(r.paid);

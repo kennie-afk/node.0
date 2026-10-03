@@ -19,8 +19,9 @@ export async function salesSummary(client: PoolClient, branchIds: string[], from
   ).rows;
   const refunds = (
     await client.query(
-      `SELECT to_char(r.created_at::date, 'YYYY-MM-DD') AS day, sum(r.refund_cents)::bigint AS refunded
-         FROM sale_returns r WHERE r.branch_id = ANY($1::uuid[]) AND r.created_at::date BETWEEN $2 AND $3 GROUP BY 1`,
+      `SELECT to_char((r.created_at AT TIME ZONE b.timezone)::date, 'YYYY-MM-DD') AS day, sum(r.refund_cents)::bigint AS refunded
+         FROM sale_returns r JOIN branches b ON b.id = r.branch_id
+        WHERE r.branch_id = ANY($1::uuid[]) AND (r.created_at AT TIME ZONE b.timezone)::date BETWEEN $2 AND $3 GROUP BY 1`,
       [branchIds, from, to]
     )
   ).rows;
@@ -95,8 +96,8 @@ export async function expiryLoss(client: PoolClient, branch: BranchRow, today: s
   const written = (
     await client.query(
       `SELECT COALESCE(sum(-m.qty_delta * m.unit_cost_cents), 0)::bigint AS value, COALESCE(sum(-m.qty_delta), 0)::int AS units
-         FROM stock_movements m WHERE m.branch_id = $1 AND m.kind = 'expiry_writeoff' AND m.created_at::date BETWEEN $2 AND $3`,
-      [branch.id, from, to]
+         FROM stock_movements m WHERE m.branch_id = $1 AND m.kind = 'expiry_writeoff' AND (m.created_at AT TIME ZONE $4)::date BETWEEN $2 AND $3`,
+      [branch.id, from, to, branch.timezone]
     )
   ).rows[0];
   const sitting = (
