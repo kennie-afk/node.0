@@ -21,14 +21,14 @@ export const headline = [
     method: "26 in SmartSeason, 9 in SmartRE, one database each",
   },
   {
-    value: "2,484",
-    label: "Tests across nine systems",
-    method: "Passing tests from each runner; HMS, SmartSeason, Church CMS and Soko re-measured 3 Oct 2026, the rest 2 Oct; skipped database-gated tests not counted",
+    value: "2,813",
+    label: "Tests across twelve systems",
+    method: "Passing tests from each runner; Dawa, Hazina and Askari measured 3 to 4 Oct 2026, HMS, SmartSeason, Church CMS and Soko 3 Oct, the rest 2 Oct; skipped database-gated tests not counted",
   },
   {
-    value: "9",
+    value: "12",
     label: "Systems built and runnable",
-    method: "Each with a test suite and docker compose; Mara is partial by design and HMS has no live payer or payment connection; none has real users yet",
+    method: "Each with a test suite and docker compose; Mara is partial by design, HMS has no live payer or payment connection, and Dawa, Hazina and Askari connect to no regulator; none has real users or a paying customer yet",
   },
   {
     value: "10.7 ms",
@@ -38,7 +38,7 @@ export const headline = [
 ];
 
 export const evidenceNote =
-  "Test counts are passing tests from each project's own runner (pytest, vitest, Maven surefire), re-measured on 2 October 2026 (HMS, SmartSeason, Church CMS and Soko again on 3 October); tests that need an external database and were skipped are not counted. Service counts come from the build files. Latency and accuracy come from the benchmark documented in that project's own README. Mara is partial by design and HMS has no live payer or payment connection; each says what it does not build. Nothing here is rounded up and no system has real users yet.";
+  "Test counts are passing tests from each project's own runner (pytest, vitest, Maven surefire), re-measured on 2 October 2026 (HMS, SmartSeason, Church CMS and Soko again on 3 October; Dawa, Hazina and Askari measured on 3 and 4 October); tests that need an external database and were skipped are not counted. Service counts come from the build files. Latency and accuracy come from the benchmark documented in that project's own README. Mara is partial by design, HMS has no live payer or payment connection, and Dawa, Hazina and Askari are connected to no regulator and have never received a live M-Pesa payment; each says what it does not build. Nothing here is rounded up and no system has real users or a paying customer yet.";
 
 export const resume = {
   // The download name is set explicitly so it does not land in someone's
@@ -183,6 +183,36 @@ export const experience = [
     points: [
       "Built a dropshipping platform for perishable dairy and farm produce, where the routing engine refuses a supplier whose lead time meets or exceeds a product's shelf life: fresh milk at 48 hours rejects a supplier 30 hours away even when it is cheapest.",
       "Shipped separate interfaces for shoppers, suppliers and operations across 21 console routes, with every rejection carrying its reason, a simulated-by-default M-Pesa STK push, a plan-based commission layer, and rate limiting on sign-in.",
+    ],
+  },
+  {
+    role: "Architect and Engineer",
+    org: "Dawa, Pharmacy Point of Sale",
+    period: "2026 to Present",
+    points: [
+      "Built a multi-branch pharmacy till where stock is received by batch and expiry, sold first-expiry-first-out, and never sold once expired; a pack scanned twice or never received is refused. Prescription and controlled-drug records are append-only, and a controlled-drug entry needs a witness who signs in with their own phone and PIN.",
+      "Tenancy is PostgreSQL row-level security under a non-superuser role, with a startup guard that refuses to run if a table is unprotected. 73 tests run against a real PostgreSQL and two organisations were checked live against each other.",
+      "Not claimed: it is not connected to the national medicine track-and-trace platforms, because no interface specification has been published to it; its adapter is empty and sends nothing. No live M-Pesa, offline mode or receipt printing. Pre-revenue.",
+    ],
+  },
+  {
+    role: "Architect and Engineer",
+    org: "Hazina, SACCO and Lender Ledger",
+    period: "2026 to Present",
+    points: [
+      "Built a ledger for small SACCOs and non-deposit-taking lenders: every deposit, loan and repayment posts a balanced double-entry journal enforced by constraint, a loan's applicant, appraiser and approver must be three different people, and repayments clear penalty, interest then principal on the oldest instalment first.",
+      "Reconciles paybill confirmations to a member or loan by account reference; what cannot be matched waits for a person instead of being guessed. 93 tests run against a real PostgreSQL, and two organisations were checked live against each other.",
+      "Not claimed: the returns it generates are generic and marked not official, since the real SASRA, Central Bank and Commissioner formats have not been obtained and nothing is filed with anyone. Interest is recognised on receipt, live M-Pesa is unregistered, and the statement parser has only seen synthetic files. Pre-revenue.",
+    ],
+  },
+  {
+    role: "Architect and Engineer",
+    org: "Askari, Security Guard Operations",
+    period: "2026 to Present",
+    points: [
+      "Built operations and wage compliance for private security firms: attendance stamped on the server's clock with a geofence flag that marks but never blocks, QR patrol checkpoints, rosters where the database refuses a double booking, payroll checked against a configurable minimum wage, and invoices drawn from verified shifts. Closed pay periods are immutable by trigger and a shift can be invoiced only once.",
+      "163 tests run against a real PostgreSQL, two firms were checked live against each other, and four controls were each removed in turn to confirm the matching tests fail.",
+      "Not claimed: the minimum wage, overtime multipliers and the NSSF, SHA, housing-levy and PAYE tables are unverified placeholders that load unconfirmed, so nothing is deducted until a named person confirms them. Nothing is reported or remitted to any authority, and a supervisor can still falsify a check-in; the checks make it visible, not impossible. Pre-revenue.",
     ],
   },
   {
@@ -376,6 +406,63 @@ export const projects = [
     ],
     tech: ["Java 21", "Spring Boot 3", "PostgreSQL", "Flyway", "Row-level security", "Next.js 16"],
     image: "/images/hms.jpg",
+  },
+  {
+    id: 10,
+    slug: "dawa",
+    lang: "TypeScript",
+    tests: "73",
+    domain: "Pharmacy",
+    title: "Dawa",
+    subtitle: "Pharmacy point of sale with batch and expiry stock",
+    scale: "TypeScript · 90 sources",
+    description:
+      "A pharmacy till where the stock model is the product. Every delivery is received by batch and expiry, the till sells the soonest-expiring batch first and never sells expired stock, and a pack scanned twice or never received is refused. Prescription and controlled-drug records are append-only, a controlled-drug entry needs a witness who signs in with their own phone and PIN, and each cashier's cash is counted against what the system expects at day close. Tenancy is row-level security per organisation, with self-serve signup, a trial and its own billing against a simulated M-Pesa. Not connected to the national medicine track-and-trace platforms: no interface specification has been published to the project, so the adapter is empty and sends nothing. No offline mode, receipt printing or branch transfers. Pre-revenue; no pharmacy uses it.",
+    metrics: [
+      { value: "73", label: "tests, passing" },
+      { value: "18", label: "live isolation checks" },
+      { value: "RLS", label: "per tenant" },
+    ],
+    tech: ["TypeScript", "Express", "PostgreSQL", "Zod", "Row-level security", "Next.js"],
+    image: "/images/dawa.jpg",
+  },
+  {
+    id: 11,
+    slug: "hazina",
+    lang: "TypeScript",
+    tests: "93",
+    domain: "SACCO and lender finance",
+    title: "Hazina",
+    subtitle: "Ledger and M-Pesa reconciliation for SACCOs and lenders",
+    scale: "TypeScript · 95 sources",
+    description:
+      "A ledger for small SACCOs and non-deposit-taking lenders. Every deposit, loan and repayment posts a balanced double-entry journal enforced by constraint; a loan's applicant, appraiser and approver must be three different people; repayments clear penalty, interest then principal on the oldest instalment first. Paybill confirmations are matched to a member or loan by account reference, and anything unmatched waits for a person rather than being guessed at. Statement intake flags an M-Pesa statement for a human and decides nothing. The periodic returns it generates are generic and marked not official: the real SASRA, Central Bank and Commissioner formats have not been obtained and nothing is filed with anyone. Interest is recognised on receipt, live M-Pesa is unregistered, and the statement parser has only seen synthetic files. Pre-revenue.",
+    metrics: [
+      { value: "93", label: "tests, passing" },
+      { value: "22", label: "live isolation checks" },
+      { value: "RLS", label: "per tenant" },
+    ],
+    tech: ["TypeScript", "Express", "PostgreSQL", "Zod", "Row-level security", "Next.js"],
+    image: "/images/hazina.jpg",
+  },
+  {
+    id: 12,
+    slug: "askari",
+    lang: "TypeScript",
+    tests: "163",
+    domain: "Security operations",
+    title: "Askari",
+    subtitle: "Guard operations and wage compliance",
+    scale: "TypeScript · 110 sources",
+    description:
+      "Operations and wage compliance for private security firms. Attendance is stamped on the server's clock with a geofence flag that marks but never blocks, supervisor corrections keep the original record, QR checkpoints log patrols, and the database refuses to roster a guard twice at once. Closed pay periods are immutable by trigger and a shift can be invoiced only once. Payroll is checked against a configurable minimum wage; invoices, credit notes, debtors ageing and margin per client come from verified shifts. The minimum wage, overtime multipliers and the NSSF, SHA, housing-levy and PAYE tables are unverified placeholders that load unconfirmed, so nothing is deducted until a named person confirms them. Nothing is reported or remitted to any authority, and a supervisor can still falsify a check-in; the checks make it visible, not impossible. Pre-revenue.",
+    metrics: [
+      { value: "163", label: "tests, passing" },
+      { value: "91", label: "browser checks" },
+      { value: "RLS", label: "per tenant" },
+    ],
+    tech: ["TypeScript", "Express", "PostgreSQL", "Zod", "Row-level security", "Next.js"],
+    image: "/images/askari.jpg",
   },
 ];
 
