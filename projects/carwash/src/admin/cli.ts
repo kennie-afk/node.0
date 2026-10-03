@@ -7,6 +7,7 @@
  *   create-org --business NAME --owner NAME --phone NUMBER [--site NAME] [--till CODE]
  *   device:add --org ID --site ID --type flow_meter|camera|... [--bay ID]   register a real device; prints its secret once
  *   reset-pin --phone NUMBER                 a forgotten PIN: prints a new one once
+ *   close-days                               reconcile every site's finished day now (also runs hourly in the API)
  *   messages [N]                             recent outbound messages (read a verification code to relay it)
  *   billing:run                              issue due invoices and refresh statuses now
  *   billing:show <org-id>                    subscription, account number and invoices
@@ -20,6 +21,7 @@
 import { closeMigrationPool, closePool } from '../persistence/pool';
 import { DEVICE_TYPES, DeviceType, listSignups, provisionFromSignup, provisionOrganisation, ProvisionResult, registerDevice, resetPin } from './provisioning';
 import { recentMessages } from '../notify/provider';
+import { runDailyCloses } from '../reconciliation/schedule';
 import { assignUnmatched, getBillingView, listUnmatched, recordManualPayment, runBillingCycle, setUnitPriceOverride } from '../billing/service';
 import { formatKsh, Cents } from '../domain/money';
 
@@ -106,6 +108,11 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === 'close-days') {
+    console.log(JSON.stringify(await runDailyCloses(), null, 2));
+    return;
+  }
+
   if (command === 'messages') {
     for (const message of await recentMessages(Number(args[0] ?? 20))) {
       console.log(`${message.createdAt.toISOString()}  ${message.status.padEnd(7)} ${message.to}  ${message.body}`);
@@ -162,7 +169,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.log('commands: signups | provision | create-org | messages | billing:run | billing:show | billing:pay | billing:unmatched | billing:assign | billing:price');
+  console.log('commands: signups | provision | create-org | messages | close-days | billing:run | billing:show | billing:pay | billing:unmatched | billing:assign | billing:price');
   process.exitCode = command ? 1 : 0;
 }
 
