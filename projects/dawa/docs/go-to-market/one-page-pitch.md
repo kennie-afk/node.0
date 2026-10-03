@@ -21,4 +21,4 @@
 - You decide how each medicine is classified; Dawa does not.
 
 ## Try it without risk
-Sign up on your phone in two minutes and practise on a sample branch (never billed, hidden when you are ready). Your own data is yours: you can export your records at any time.
+Sign up on your phone in two minutes and practise on a sample branch (never billed, hidden when you are ready). Your own data is yours: sales, stock, the controlled-drug register and the dispensing log download as spreadsheets whenever you want.

@@ -138,11 +138,15 @@ describe.runIf(on)('roles, sessions and the audit trail', () => {
 
   it('rate-limits sign-in attempts per number', async () => {
     await boot();
+    const { env } = await import('../src/config/env');
+    const limit = env.LOGIN_RATE_LIMIT_PER_WINDOW;
     const phone = nextPhone();
     const statuses: number[] = [];
-    for (let i = 0; i < 8; i += 1) statuses.push((await signIn(phone, '000000')).status);
-    expect(statuses.slice(0, 5).every((s) => s === 401)).toBe(true);
-    expect(statuses.slice(5).every((s) => s === 429)).toBe(true);
+    for (let i = 0; i < limit + 3; i += 1) statuses.push((await signIn(phone, '000000')).status);
+    expect(statuses.slice(0, limit).every((s) => s === 401)).toBe(true);
+    expect(statuses.slice(limit).every((s) => s === 429)).toBe(true);
+    // another number is unaffected
+    expect((await signIn(nextPhone(), '000000')).status).toBe(401);
   });
 });
 
@@ -202,6 +206,24 @@ describe.runIf(on)('self-serve signup, trial, invoices and payment (mock M-Pesa)
     // a manager cannot pay or see the owner's payment button
     const manager = await addStaff(t, 'manager');
     expect((await post(manager.auth, '/v1/billing/mock-payment', {})).status).toBe(403);
+  });
+
+  it('limits signup per phone number, not per address, so one busy console address cannot block everyone', async () => {
+    const { setProvider } = await import('../src/notify/provider');
+    setProvider({ name: 'quiet', send: async () => ({ status: 'logged' as const }) });
+    const app = (await boot()).app;
+    // eight different people signing up from the same address all get through
+    for (let i = 0; i < 8; i += 1) {
+      const res = await request(app).post('/v1/signup').send({ businessName: `Chemist ${i}`, contactName: 'Someone', phone: nextPhone() });
+      expect(res.status).toBe(201);
+    }
+    // the same number asking over and over is stopped
+    const phone = nextPhone();
+    const statuses: number[] = [];
+    for (let i = 0; i < 7; i += 1) statuses.push((await request(app).post('/v1/signup').send({ businessName: 'Spam', contactName: 'Spam', phone })).status);
+    expect(statuses.filter((s) => s === 201).length).toBeLessThanOrEqual(5);
+    expect(statuses).toContain(429);
+    setProvider(null);
   });
 
   it('applies the same M-Pesa confirmation to billing once, however many times Daraja delivers it', async () => {
@@ -371,5 +393,36 @@ describe.runIf(on)('onboarding, sample data, scanning and the track-and-trace lo
     const loss = (await get(t.owner.auth, '/v1/reports/expiry-loss')).body;
     expect(loss).toMatchObject({ writtenOffCents: 0, expiredOnShelfCents: 0 });
     expect(loss.valuation.inDateCents).toBe(17 * 6000);
+  });
+});
+
+describe.runIf(on)('taking your data out', () => {
+  it('exports sales, stock and the controlled register as plain CSV, to the right roles, with spreadsheet formulas neutralised', async () => {
+    await boot();
+    const t = await newTenant('Export Chemist');
+    const manager = await addStaff(t, 'manager');
+    const cashier = await addStaff(t, 'cashier');
+    const ph = await addStaff(t, 'pharmacist');
+    const ph2 = await addStaff(t, 'pharmacist');
+    const p = await makeProduct(t.owner.auth, { name: '=HYPERLINK("x") bait', listPriceCents: 12000 });
+    const cd = await makeProduct(t.owner.auth, { name: 'Diazepam 5mg', category: 'controlled', listPriceCents: 5000 });
+    await receive(t.owner.auth, p, [{ batchNo: 'EX1', expiryDate: dayOffset(300), qty: 10, unitCostCents: 7000 }]);
+    await receive(ph.auth, cd, [{ batchNo: 'CD1', expiryDate: dayOffset(300), qty: 5 }], { witness: { phone: ph2.phone, pin: ph2.pin } });
+    await sell(t.owner.auth, { lines: [{ productId: p, qty: 2 }], payments: [{ method: 'cash', amountCents: 24000 }] });
+
+    const sales = await get(manager.auth, '/v1/export/sales.csv');
+    expect(sales.status).toBe(200);
+    expect(sales.headers['content-type']).toContain('text/csv');
+    expect(sales.text.split('\n')[0]).toContain('sale,day,time,status,cashier');
+    expect(sales.text).toContain('240');
+    expect(sales.text).toContain("'=HYPERLINK");
+    const stock = await get(manager.auth, '/v1/export/stock.csv');
+    expect(stock.text).toContain('EX1');
+    expect(stock.text).toContain('CD1');
+    const reg = await get(ph.auth, '/v1/export/controlled.csv');
+    expect(reg.text).toContain('Diazepam 5mg');
+    expect(reg.text.trim().split('\n')).toHaveLength(2);
+    // a cashier gets none of them
+    for (const path of ['/v1/export/sales.csv', '/v1/export/stock.csv', '/v1/export/controlled.csv']) expect((await get(cashier.auth, path)).status).toBe(403);
   });
 });

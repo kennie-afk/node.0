@@ -9,6 +9,8 @@ import { listPayables, paySupplierInvoice, supplierPaymentSchema } from '../paya
 import { expiryLoss, margin, movers, salesSummary, stockValuation } from '../reports/service';
 import { exportCsv, listEvents, status as nttsStatus } from '../ntts/adapter';
 import { checklist, hideSampleData, loadSampleData } from '../onboarding/service';
+import { controlledCsv, salesCsv, stockCsv } from '../reports/exports';
+import { need } from '../common/context';
 import { BadRequestError } from '../domain/errors';
 import { withOrg } from '../persistence/pool';
 
@@ -100,6 +102,23 @@ router.get('/reports/expiry-loss', requirePermission('reports'), wrap(async (req
     ...(await expiryLoss(client, branch, await businessDayNow(client, branch.timezone), from, to)),
     valuation: await stockValuation(client, branch, await businessDayNow(client, branch.timezone))
   })));
+}));
+
+// ---- take your data out: plain CSV ----
+function sendCsv(res: import('express').Response, name: string, csv: string) {
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+  res.send(csv);
+}
+router.get('/export/sales.csv', requirePermission('reports'), wrap(async (req, res) => {
+  const { from, to } = range(req);
+  sendCsv(res, 'dawa-sales.csv', await inBranch(req, req.query.branchId, (client, _ctx, branch) => salesCsv(client, branch, from, to)));
+}));
+router.get('/export/stock.csv', requirePermission('reports'), wrap(async (req, res) => {
+  sendCsv(res, 'dawa-stock.csv', await inBranch(req, req.query.branchId, (client, _ctx, branch) => stockCsv(client, branch)));
+}));
+router.get('/export/controlled.csv', wrap(async (req, res) => {
+  sendCsv(res, 'dawa-controlled-register.csv', await inBranch(req, req.query.branchId, (client, ctx, branch) => { need(ctx, 'controlled'); return controlledCsv(client, branch); }));
 }));
 
 // ---- track-and-trace readiness (NOT an integration) ----

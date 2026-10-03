@@ -16,6 +16,6 @@
 
 **"My stock is on paper."** The first delivery is the work: enter batch numbers and expiries (or scan packs). Offer to do the first one together. Alerts become true from that moment, not before.
 
-**"What if I stop paying?"** The account becomes read-only after a grace period; nothing is deleted, and paying reopens it immediately. They can export dispensing records as a spreadsheet at any time.
+**"What if I stop paying?"** The account becomes read-only after a grace period; nothing is deleted, and paying reopens it immediately. They can download their sales, stock, controlled-drug register and dispensing log as spreadsheets at any time.
 
 **"Can I try it first?"** Yes: fourteen days free, and a sample branch to practise on that is never billed.

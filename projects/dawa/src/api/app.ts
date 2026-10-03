@@ -1,7 +1,8 @@
 import express, { Express } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { pool } from '../persistence/pool';
 import { errorHandler, notFound, requestContext } from './middleware';
@@ -43,7 +44,29 @@ export function createApiApp(): Express {
     }
   });
 
-  app.use(rateLimit({ windowMs: 60_000, limit: env.API_RATE_LIMIT_PER_MINUTE, standardHeaders: true, legacyHeaders: false }));
+  // Every request from the console reaches this API from the console's one address, so an IP-keyed limit would make every
+  // pharmacy share one allowance. Signed-in traffic is therefore limited per person (token verified, so a forged subject
+  // cannot buy a fresh allowance); anything else falls back to the caller's address.
+  app.use(
+    rateLimit({
+      windowMs: 60_000,
+      limit: env.API_RATE_LIMIT_PER_MINUTE,
+      standardHeaders: true,
+      legacyHeaders: false,
+      keyGenerator: (req) => {
+        const header = req.headers.authorization;
+        if (header?.startsWith('Bearer ')) {
+          try {
+            const claims = jwt.verify(header.slice(7).trim(), env.JWT_SECRET) as { sub?: string };
+            if (typeof claims.sub === 'string') return `user:${claims.sub}`;
+          } catch {
+            /* an invalid token is limited like an anonymous caller */
+          }
+        }
+        return `ip:${ipKeyGenerator(req.ip ?? 'unknown')}`;
+      }
+    })
+  );
 
   app.use('/v1', authRoutes);
   app.use('/v1', signupRoutes);

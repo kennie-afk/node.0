@@ -30,6 +30,17 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
         <Stat label="Stock at cost" value={ksh(loss.valuation.inDateCents)} hint="in date" tone="accent" />
         <Stat label="Expired on shelf" value={ksh(loss.expiredOnShelfCents)} hint={`${loss.expiredOnShelfUnits} units · written off ${ksh(loss.writtenOffCents)}`} tone={loss.expiredOnShelfCents ? "danger" : "good"} />
       </div>
+      <div className="mt-5">
+        <Card title="Take your records out" description="Plain spreadsheets (CSV) of your own data. They are yours to keep, whatever happens to your subscription.">
+          <div className="flex flex-wrap gap-4 text-[0.8125rem] font-medium text-[var(--color-accent)]">
+            <a href="/console/export/sales" className="underline">Sales, line by line</a>
+            <a href="/console/export/stock" className="underline">Stock by batch</a>
+            <a href="/console/export/controlled" className="underline">Controlled-drug register</a>
+            <a href="/console/dispensing/export" className="underline">Dispensing log</a>
+            <a href="/console/trace/export" className="underline">Trace log</a>
+          </div>
+        </Card>
+      </div>
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <Card title="By day">
           {sales.perDay.length === 0 ? <EmptyState message="No sales in this period." /> : <Table head={["Day", "Sales", "Net"]}>{sales.perDay.map((d) => <tr key={d.day} className={rowClass}><td className="px-3.5 py-2.5">{day(d.day)}</td><td className="px-3.5 py-2.5 tabular-nums">{d.sales}{d.voids ? ` (+${d.voids} voided)` : ""}</td><td className="px-3.5 py-2.5 tabular-nums">{ksh(d.netCents)}</td></tr>)}</Table>}

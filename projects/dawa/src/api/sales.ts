@@ -10,6 +10,7 @@ import { DARAJA_ACCEPTED } from '../mpesa/daraja';
 import { ingestConfirmation } from '../mpesa/service';
 import { logger } from '../common/logger';
 import { NotFoundError } from '../domain/errors';
+import { csvCell } from '../common/csv';
 
 const router = Router();
 
@@ -81,12 +82,6 @@ router.get('/mpesa/unmatched', requirePermission('day_close'), wrap(async (req, 
 }));
 
 // ---- dispensing records ----
-function csvCell(value: unknown): string {
-  if (value === null || value === undefined) return '';
-  const text = value instanceof Date ? value.toISOString() : String(value);
-  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
-  return /[",\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
-}
 
 async function dispensingRows(req: import('express').Request, branchId: unknown, from: string | undefined, to: string | undefined, productId: string | undefined, patient: string | undefined, limit: number, offset: number) {
   return inBranch(req, branchId, async (client, ctx, branch) => {

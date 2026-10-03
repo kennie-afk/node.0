@@ -20,19 +20,30 @@ const verifySchema = z.object({
 });
 const resendSchema = z.object({ id: z.string().uuid() });
 
-const byIp = (windowMs: number, limit: number) =>
+/**
+ * Signup is reached through the console, so every caller arrives from the console's address and an IP limit would cap
+ * signups for the whole product. The limits are per phone number (start) and per signup request (verify, resend), which is
+ * what actually stops guessing codes or flooding one person's phone; the service enforces its own per-phone ceilings too.
+ */
+const keyed = (windowMs: number, limit: number, key: (body: Record<string, unknown>) => string) =>
   rateLimit({
     windowMs,
     limit,
     standardHeaders: true,
     legacyHeaders: false,
-    keyGenerator: (req) => ipKeyGenerator(req.ip ?? 'unknown'),
+    keyGenerator: (req) => key((req.body ?? {}) as Record<string, unknown>) || ipKeyGenerator(req.ip ?? 'unknown'),
     message: { code: 'too-many-attempts', message: 'Too many requests. Try again later.' }
   });
 
-const startLimiter = byIp(60 * 60 * 1000, 5);
-const verifyLimiter = byIp(15 * 60 * 1000, 20);
-const resendLimiter = byIp(60 * 60 * 1000, 10);
+const phoneKey = (body: Record<string, unknown>) => {
+  const raw = typeof body.phone === 'string' ? body.phone.replace(/\D/g, '').slice(-9) : '';
+  return raw ? `phone:${raw}` : '';
+};
+const idKey = (body: Record<string, unknown>) => (typeof body.id === 'string' ? `signup:${body.id}` : '');
+
+const startLimiter = keyed(60 * 60 * 1000, 5, phoneKey);
+const verifyLimiter = keyed(15 * 60 * 1000, 20, idKey);
+const resendLimiter = keyed(60 * 60 * 1000, 10, idKey);
 
 router.post('/signup', startLimiter, async (req, res, next) => {
   try {

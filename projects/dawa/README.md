@@ -17,6 +17,7 @@ Working name. Built 2026-10-03 as one of three revenue bets (see `~/Software_dev
 | Dispensing | Prescription and controlled items need patient + prescriber; the record is append-only and exportable as CSV |
 | Controlled drugs | Receiving, dispensing, adjustments and write-offs need a witness who signs in with their own phone and PIN and is not the actor; running balance per branch; append-only register |
 | Money | Day close per cashier (cash counted vs expected), supplier invoices and payments, customer ledgers, reports (net sales, margin, movers, expiry loss, stock value) |
+| Your data | CSV exports of sales (line by line), stock by batch, the controlled-drug register, the dispensing log and the trace log |
 | Tenancy | Postgres row-level security on every tenant table, forced, app role is not a superuser; the API refuses to start in production if any `org_id` table is unprotected |
 | Signup and billing | Phone-code signup, 14-day trial, per-branch monthly plan, invoices, mock M-Pesa payment, suspension to read-only (nothing deleted) |
 | Track-and-trace readiness | An **empty** adapter and a log of what a report would contain (see below) |
@@ -28,7 +29,7 @@ Working name. Built 2026-10-03 as one of three revenue bets (see `~/Software_dev
 - **No offline mode.** The till needs the network. No receipt printing yet. No stock transfers between branches. No purchase orders or supplier returns. No prescription image capture. No patient record beyond the dispensing log.
 - **No real SMS or WhatsApp provider.** Signup codes are logged; an operator relays one with `npm run admin -- messages`.
 - **Live M-Pesa is unverified.** The Daraja confirmation endpoint (`POST /v1/mpesa/<secret>/confirmation`) is implemented and tested with synthetic confirmations in Daraja's published C2B shape. Nobody has registered the URL with Safaricom or received a real confirmation. The secret in the path is our own authentication; no Daraja signature scheme is assumed.
-- **No backup/restore drill, no data-subject export, no independent security review, no data-protection impact assessment.** Dispensing records are health data; that obligation has not been checked.
+- **No backup/restore drill, no per-patient export, no independent security review, no data-protection impact assessment.** Dispensing records are health data; that obligation has not been checked.
 - **No load test.** Designed for a pharmacy or a small chain, not for scale.
 
 ## Run it
@@ -47,8 +48,8 @@ docker run -d --name dawa-pg -e POSTGRES_USER=dawa -e POSTGRES_PASSWORD=ownerpw 
 export DATABASE_URL=postgres://dawa_app:app-password-123@localhost:55440/dawa_test \
        DATABASE_MIGRATION_URL=postgres://dawa:ownerpw@localhost:55440/dawa_test DAWA_APP_PASSWORD=app-password-123 \
        JWT_SECRET=test-secret-test-secret-test-secret-1234 MPESA_CALLBACK_SECRET=mpesa-secret-1234567 \
-       NODE_ENV=test DAWA_INTEGRATION=1 SIGNUP_RESEND_COOLDOWN_SECONDS=0
-npm run migrate && npx vitest run          # 71 tests: 32 pure logic, 39 integration
+       NODE_ENV=test DAWA_INTEGRATION=1 SIGNUP_RESEND_COOLDOWN_SECONDS=0 API_RATE_LIMIT_PER_MINUTE=100000
+npm run migrate && npx vitest run          # 73 tests: 32 pure logic, 41 integration
 node scripts/isolation-check.mjs           # against a running compose stack: 18 live two-tenant checks
 ```
 Run the isolation script after `docker compose up`; it provisions two pharmacies through the operator CLI. Turning RLS off on one table makes 7 of its checks fail and the API refuse to start - that is the control.
@@ -60,5 +61,7 @@ Run the isolation script after `docker compose up`; it provisions two pharmacies
 A suspended account is read-only (writes get HTTP 402) but keeps every record, and M-Pesa confirmations are still recorded against sales. Paying reopens it immediately.
 
 ## Layout
+
+Rate limits are per signed-in person (and per phone number for signup and sign-in), never per IP address, because every request from the console reaches the API from the console's one address.
 
 `src/` API (`api/` routes, `sales/`, `inventory/`, `gs1/`, `stocktake/`, `close/`, `payables/`, `customers/`, `reports/`, `ntts/`, `onboarding/`, `billing/`, `signup/`, `mpesa/`), `migrations/` (append-only SQL, 0001-0006), `apps/console/` (Next.js), `scripts/isolation-check.mjs`, `tests/`, `docs/` (`ARCHITECTURE.md`, `FIRST-PHARMACY.md`, `go-to-market/`).
