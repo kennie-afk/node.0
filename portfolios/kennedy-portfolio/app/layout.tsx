@@ -26,11 +26,11 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://kennedymwanzia.dev"),
   title: "Kennedy Mwanzia, Software Engineer",
   description:
-    "Distributed systems, multi-tenant SaaS and machine learning, built end to end. Nine systems, 35 microservices, 2,399 tests. Every number counted from the repository it describes.",
+    "Distributed systems, multi-tenant SaaS and machine learning, built end to end. Nine systems, 35 microservices, 2,484 tests. Every number counted from the repository it describes.",
   openGraph: {
     title: "Kennedy Mwanzia, Software Engineer",
     description:
-      "Nine systems, 35 microservices, 2,399 tests. Every number counted from the repository it describes.",
+      "Nine systems, 35 microservices, 2,484 tests. Every number counted from the repository it describes.",
     type: "website",
   },
   icons: { icon: "/favicon.ico" },

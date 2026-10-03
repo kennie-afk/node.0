@@ -21,14 +21,14 @@ export const headline = [
     method: "26 in SmartSeason, 9 in SmartRE, one database each",
   },
   {
-    value: "2,399",
+    value: "2,484",
     label: "Tests across nine systems",
-    method: "Passing tests from each runner, re-measured 2 Oct 2026; skipped database-gated tests not counted",
+    method: "Passing tests from each runner; HMS, SmartSeason, Church CMS and Soko re-measured 3 Oct 2026, the rest 2 Oct; skipped database-gated tests not counted",
   },
   {
     value: "9",
     label: "Systems built and runnable",
-    method: "Each with a test suite and docker compose; Mara and HMS are partial by design; none has real users yet",
+    method: "Each with a test suite and docker compose; Mara is partial by design and HMS has no live payer or payment connection; none has real users yet",
   },
   {
     value: "10.7 ms",
@@ -38,7 +38,7 @@ export const headline = [
 ];
 
 export const evidenceNote =
-  "Test counts are passing tests from each project's own runner (pytest, vitest, Maven surefire), re-measured on 2 October 2026; tests that need an external database and were skipped are not counted. Service counts come from the build files. Latency and accuracy come from the benchmark documented in that project's own README. Mara and HMS are partial by design and say what they do not build. Nothing here is rounded up and no system has real users yet.";
+  "Test counts are passing tests from each project's own runner (pytest, vitest, Maven surefire), re-measured on 2 October 2026 (HMS, SmartSeason, Church CMS and Soko again on 3 October); tests that need an external database and were skipped are not counted. Service counts come from the build files. Latency and accuracy come from the benchmark documented in that project's own README. Mara is partial by design and HMS has no live payer or payment connection; each says what it does not build. Nothing here is rounded up and no system has real users yet.";
 
 export const resume = {
   // The download name is set explicitly so it does not land in someone's
@@ -162,9 +162,9 @@ export const experience = [
     org: "HMS, a Health Management System for Kenya",
     period: "2026 to Present",
     points: [
-      "Building a multi-facility health management system: nine backend modules covering patient registry, scheduling, clinical, pharmacy, laboratory, billing, claims readiness, inpatient and reporting, with tenant isolation enforced by PostgreSQL row-level security and a hash-chained audit trail written in the same transaction as each change.",
-      "Encoded safety rules in the database rather than the UI: double booking blocked by exclusion constraints, invoice lines frozen by trigger once issued, four-eyes validation of lab results, and a controlled-drug dispense that needs a different witness. Sixty-one tests run against a real PostgreSQL.",
-      "Not claimed: M-Pesa is simulated and SHA/DHA claim submission is an unverified stub that sends nothing, so no payer connection exists. Maternal, programmes, imaging, FHIR, patient portal, offline mode and the official MOH returns are not built.",
+      "Built a multi-facility health management system as a modular monolith: fifteen backend modules covering patient registry, scheduling, clinical, pharmacy, laboratory, imaging, billing, claims readiness, inpatient, maternal and child health, disease programmes, reporting, a FHIR R4 read interface and a patient portal, with tenant isolation enforced by PostgreSQL row-level security and a hash-chained audit trail written in the same transaction as each change.",
+      "Encoded safety rules in the database rather than the UI: double booking blocked by exclusion constraints, invoice lines frozen by trigger once issued, four-eyes validation of lab results, and a controlled-drug dispense that needs a different witness. 101 backend tests run against a real PostgreSQL, and the offline bedside capture was checked in headless Chrome.",
+      "Not claimed: M-Pesa is simulated and SHA/DHA claim submission is an unverified stub that sends nothing, so no payer connection exists. The DHIS2 export has not been sent to a DHIS2 server, the FHIR output has not been run through the HL7 validator, and the official MOH returns and DICOM imaging are not built.",
     ],
   },
   {
@@ -242,17 +242,17 @@ export const projects = [
     id: 3,
     slug: "smartseason",
     lang: "Java 21",
-    tests: "546",
+    tests: "591",
     domain: "Agri operations",
     title: "SmartSeason",
     subtitle: "Agricultural operations platform",
-    scale: "Java · 1,867 sources",
+    scale: "Java · 1,771 sources",
     description:
-      "Twenty-six bounded contexts, database-per-service behind a gateway, generated from a single catalogue so regenerating the tree produces no diff. Five fraud detectors consume attendance events over Kafka and open evidence-backed cases whose confidences compound probabilistically. Task start and stop are timed on the server's clock and written through an audit outbox. Errors are RFC 7807 problem documents across every service.",
+      "Twenty-six bounded contexts, database-per-service behind a gateway, generated from a single catalogue so regenerating the tree produces no diff. Five fraud detectors consume attendance events over Kafka and open evidence-backed cases whose confidences compound probabilistically. Task start and stop are timed on the server's clock and written through an audit outbox. Errors are RFC 7807 problem documents across every service. List endpoints filter and sort on the server through one shared specification filter, so the console never fetches everything to filter in the browser.",
     metrics: [
       { value: "26", label: "services" },
-      { value: "546", label: "tests" },
-      { value: "1,867", label: "Java sources" },
+      { value: "591", label: "tests" },
+      { value: "1,771", label: "Java sources" },
     ],
     tech: ["Java 21", "Spring Boot 3", "Kafka", "PostgreSQL", "Redis", "Next.js"],
     image: "/images/smartseason.jpg",
@@ -306,7 +306,7 @@ export const projects = [
     domain: "Congregations",
     title: "Church CMS",
     subtitle: "Multi-tenant congregation management",
-    scale: "TypeScript · 518 sources",
+    scale: "TypeScript · 562 sources",
     description:
       "Members, families, ministries, small groups, events, sermons, attendance, giving and a finance ledger, with every query scoped to the signed-in congregation by row-level security so one deployment serves many churches without them seeing each other. Each church defines its own roles, and permissions are resolved per request from the database rather than baked into the code or the token. Gift receipts print or download as PDF, the dashboard shows only what the signed-in role may see, and the interface has light and dark themes.",
     metrics: [
@@ -362,17 +362,17 @@ export const projects = [
     id: 9,
     slug: "hms",
     lang: "Java 21",
-    tests: "61",
+    tests: "101",
     domain: "Health systems",
     title: "HMS",
     subtitle: "Health management system for Kenya",
-    scale: "Java · 70 sources",
+    scale: "Java · 88 sources",
     description:
-      "A multi-facility health management system with nine backend modules: patient registry with duplicate detection, scheduling and a priority queue, clinical encounters, pharmacy, laboratory, billing, claims readiness, inpatient and reporting. Tenancy is PostgreSQL row-level security and the audit trail is hash-chained in the same transaction as each change. Safety rules live in the database: exclusion constraints stop double booking, issued invoice lines are frozen by trigger, lab results need a second validator, controlled drugs need a witness. M-Pesa is simulated and SHA/DHA claim submission is an unverified stub that sends nothing. Not built: maternal care, programmes, imaging, FHIR, patient portal, offline mode and the official MOH returns.",
+      "A multi-facility health management system for Kenya, built as a modular monolith: one Spring Boot service with fifteen feature modules over one PostgreSQL, so a dispense, its invoice line and its audit entry commit or roll back together. It covers patient registry with duplicate detection, scheduling and a priority queue, clinical encounters, pharmacy, laboratory, imaging with second-person sign-off, billing, claims readiness, inpatient, maternal and child health, HIV, TB and chronic-disease registers, configurable reports with CSV and DHIS2 export, a FHIR R4 read interface, a patient portal that shows results only after a clinician releases them, and offline-tolerant bedside capture. Tenancy is PostgreSQL row-level security and the audit trail is hash-chained in the same transaction as each change. Safety rules live in the database: exclusion constraints stop double booking, issued invoice lines are frozen by trigger, lab results need a second validator, controlled drugs need a witness. M-Pesa is simulated and SHA/DHA claim submission is an unverified stub that sends nothing. The DHIS2 file has not been sent to a DHIS2 server, the FHIR output has not been run through the HL7 validator, and the official MOH returns, a KHIS export and DICOM imaging are not built.",
     metrics: [
-      { value: "61", label: "backend tests" },
-      { value: "9", label: "backend modules" },
-      { value: "41", label: "console routes" },
+      { value: "101", label: "backend tests" },
+      { value: "15", label: "backend modules" },
+      { value: "61", label: "console routes" },
     ],
     tech: ["Java 21", "Spring Boot 3", "PostgreSQL", "Flyway", "Row-level security", "Next.js 16"],
     image: "/images/hms.jpg",
