@@ -75,15 +75,6 @@ const schemaChecked = schema.superRefine((value, context) => {
       message: 'BILLING_SHORTCODE is required when BILLING_MODE=live'
     });
   }
-  // Mock billing lets an owner "pay" without paying. Left on by mistake in a real deployment it would
-  // hand out free months, so production refuses it unless someone says, in writing, that they mean it.
-  if (value.NODE_ENV === 'production' && value.BILLING_MODE === 'mock' && !value.BILLING_ALLOW_MOCK_IN_PRODUCTION) {
-    context.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ['BILLING_MODE'],
-      message: 'BILLING_MODE=mock lets owners simulate paying; set BILLING_MODE=live with a BILLING_SHORTCODE, or BILLING_ALLOW_MOCK_IN_PRODUCTION=true for a demo'
-    });
-  }
 });
 
 function load(): Env {
@@ -100,3 +91,17 @@ function load(): Env {
 export const env = load();
 export const isProduction = env.NODE_ENV === 'production';
 export const isTest = env.NODE_ENV === 'test';
+
+/**
+ * Mock billing lets an owner "pay" without paying. Left on by mistake in a real deployment it would
+ * hand out free months, so the API (the only process that serves that route) refuses to start with it
+ * in production unless someone says, in writing, that they mean it. Migrations and the telemetry
+ * service do not serve it and are not held to this.
+ */
+export function assertBillingSafeForProduction(): void {
+  if (isProduction && env.BILLING_MODE === 'mock' && !env.BILLING_ALLOW_MOCK_IN_PRODUCTION) {
+    throw new Error(
+      'BILLING_MODE=mock lets owners simulate paying; set BILLING_MODE=live with a BILLING_SHORTCODE, or BILLING_ALLOW_MOCK_IN_PRODUCTION=true for a demo'
+    );
+  }
+}

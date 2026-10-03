@@ -22,7 +22,7 @@ export interface ChecklistStep {
   href: string;
 }
 
-router.get('/onboarding', authenticate, async (req, res, next) => {
+router.get('/onboarding', authenticate, requireRole('owner', 'manager', 'supervisor', 'support'), async (req, res, next) => {
   try {
     const facts = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(

@@ -429,7 +429,7 @@ router.post('/devices', authenticate, owner, requireWritable, async (req, res, n
 
 // ---- devices ---------------------------------------------------------------------
 
-router.get('/devices', authenticate, async (req, res, next) => {
+router.get('/devices', authenticate, requireRole('owner', 'manager', 'supervisor', 'support'), async (req, res, next) => {
   try {
     const rows = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(
@@ -463,7 +463,7 @@ const resolveBody = z.object({
   note: z.string().trim().max(2000).optional()
 });
 
-router.get('/discrepancies/:id', authenticate, async (req, res, next) => {
+router.get('/discrepancies/:id', authenticate, requireRole('owner', 'manager', 'supervisor', 'support'), async (req, res, next) => {
   try {
     const row = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(

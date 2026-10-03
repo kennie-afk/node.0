@@ -106,9 +106,13 @@ describe.runIf(on)('self-serve signup, billing, sample data and the summary (rea
     expect(view.quote).toMatchObject({ planCode: 'starter', amountCents: 350_000 });
     expect(Math.round((new Date(view.trialEndsAt).getTime() - Date.now()) / DAY)).toBe(14);
 
-    // The owner can sign in afterwards with the PIN they chose; the code is spent.
+    // The owner can sign in afterwards with the PIN they chose, however they type their number.
     const login = await request(app).post('/v1/auth/login').send({ phone: owner.phone, pin: '482913' });
     expect(login.status).toBe(200);
+    for (const typed of [`0${owner.phone.slice(3)}`, `+${owner.phone}`, ` ${owner.phone.slice(0, 6)} ${owner.phone.slice(6)} `]) {
+      expect([typed, (await request(app).post('/v1/auth/login').send({ phone: typed, pin: '482913' })).status]).toEqual([typed, 200]);
+    }
+    expect((await request(app).post('/v1/auth/login').send({ phone: owner.phone, pin: '000000' })).status).toBe(401);
     const stored = await pool.withMigrator(async (c) => (await c.query('SELECT status, org_id, code_hash FROM signup_requests WHERE id = $1', [owner.id])).rows[0]);
     expect(stored).toMatchObject({ status: 'onboarded', org_id: owner.orgId, code_hash: null });
   });
@@ -246,6 +250,39 @@ describe.runIf(on)('self-serve signup, billing, sample data and the summary (rea
     expect((await request(app).post('/v1/devices').set(stranger.auth).send({ siteId: site.id, type: 'camera' })).status).toBe(404);
     // and only an owner can register at all
     expect((await request(app).get('/v1/devices').set(owner.auth)).body.some((d: { id: string }) => d.id === made.body.id)).toBe(true);
+  });
+
+  it('lets an attendant record work and nothing else: no payments, flags, water, reports or billing', async () => {
+    await load();
+    const owner = await selfServe('Attendant Wash');
+    const workerPhone = phone();
+    const site = (await request(app).get('/v1/sites').set(owner.auth)).body[0];
+    expect((await request(app).post('/v1/users').set(owner.auth).send({ displayName: 'Hassan', phone: workerPhone, role: 'worker', pin: '135790', siteId: site.id })).status).toBe(201);
+    const login = await request(app).post('/v1/auth/login').send({ phone: workerPhone, pin: '135790' });
+    expect(login.status).toBe(200);
+    const worker = { Authorization: `Bearer ${login.body.token}` };
+
+    // the work screen's own calls succeed
+    const services = (await request(app).get('/v1/services').set(worker)).body;
+    expect(services.length).toBeGreaterThan(0);
+    const job = await request(app).post('/v1/jobs').set(worker).send({ serviceIds: [services[0].id], plate: 'KDA 123A' });
+    expect(job.status).toBe(201);
+    expect((await request(app).post(`/v1/jobs/${job.body.id}/events`).set(worker).send({ type: 'started' })).status).toBe(200);
+    expect((await request(app).post(`/v1/jobs/${job.body.id}/events`).set(worker).send({ type: 'work_finished' })).status).toBe(200);
+    expect((await request(app).post(`/v1/jobs/${job.body.id}/cash`).set(worker).send({})).status).toBe(201);
+    expect((await request(app).get('/v1/jobs').set(worker)).status).toBe(200);
+
+    // the evidence they are checked against is not theirs to read
+    for (const path of ['/v1/payments', '/v1/discrepancies', '/v1/telemetry', '/v1/overview', '/v1/devices', '/v1/onboarding', '/v1/billing', '/v1/summary']) {
+      expect([path, (await request(app).get(path).set(worker)).status]).toEqual([path, 403]);
+    }
+    expect((await request(app).get('/v1/report').query({ siteId: site.id, day: '2026-09-30' }).set(worker)).status).toBe(403);
+    expect((await request(app).post('/v1/sandbox').set(worker).send({})).status).toBe(403);
+    expect((await request(app).post('/v1/sites').set(worker).send({ name: 'Mine' })).status).toBe(403);
+    // and the owner still can
+    for (const path of ['/v1/payments', '/v1/discrepancies', '/v1/overview', '/v1/devices']) {
+      expect([path, (await request(app).get(path).set(owner.auth)).status]).toEqual([path, 200]);
+    }
   });
 
   // ---- billing ------------------------------------------------------------------------------

@@ -1,10 +1,11 @@
 import { createApiApp } from './app';
-import { env } from '../config/env';
+import { assertBillingSafeForProduction, env } from '../config/env';
 import { logger } from '../common/logger';
 import { assertRlsIsEffective, closePool, pool } from '../persistence/pool';
 import { runBillingCycle } from '../billing/service';
 
 async function main(): Promise<void> {
+  assertBillingSafeForProduction();
   await pool.query('SELECT 1');
   await assertRlsIsEffective();
   logger.info('database reachable');

@@ -72,3 +72,24 @@ export function Rail({ items, displayName, role }: RailProps) {
     </aside>
   );
 }
+
+/** The rail is hidden below the medium breakpoint, so a phone gets this: the same destinations and a way out. */
+export function MobileBar({ items, displayName }: { items: RailItem[]; displayName: string }) {
+  return (
+    <div className="mb-5 flex items-center gap-2 overflow-x-auto border-b border-[var(--color-line)] pb-3 md:hidden">
+      <Image src="/mark.svg" alt="Forecourt" width={256} height={256} className="h-6 w-6 shrink-0" />
+      <nav className="flex flex-1 items-center gap-1">
+        {items.map((item) => (
+          <Link key={item.href} href={item.href} className="shrink-0 rounded-md px-2.5 py-1.5 text-[0.75rem] font-medium text-[var(--color-muted)]">
+            {item.label}
+          </Link>
+        ))}
+      </nav>
+      <form action={signOut} className="shrink-0">
+        <button type="submit" title={displayName} className="rounded-md border border-[var(--color-line)] px-2.5 py-1.5 text-[0.75rem] font-medium">
+          Sign out
+        </button>
+      </form>
+    </div>
+  );
+}

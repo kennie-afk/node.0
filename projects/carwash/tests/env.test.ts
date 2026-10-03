@@ -33,11 +33,22 @@ describe('billing configuration', () => {
     expect([env.BILLING_PRICE_STARTER_KES, env.BILLING_PRICE_GROWTH_KES, env.BILLING_TRIAL_DAYS]).toEqual([3500, 3000, 14]);
   });
 
-  it('refuses mock billing in production unless it is allowed on purpose', async () => {
-    await expect(loadWith({ NODE_ENV: 'production', BILLING_MODE: 'mock' })).rejects.toThrow(/BILLING_ALLOW_MOCK_IN_PRODUCTION/);
-    expect((await loadWith({ NODE_ENV: 'production', BILLING_MODE: 'mock', BILLING_ALLOW_MOCK_IN_PRODUCTION: 'true' })).BILLING_MODE).toBe('mock');
-    expect((await loadWith({ NODE_ENV: 'production', BILLING_MODE: 'live', BILLING_SHORTCODE: '600123' })).BILLING_MODE).toBe('live');
-    expect((await loadWith({ NODE_ENV: 'development', BILLING_MODE: 'mock' })).BILLING_MODE).toBe('mock');
+  it('makes the API refuse mock billing in production unless it is allowed on purpose, without stopping migrations or telemetry from loading', async () => {
+    const check = async (extra: Record<string, string>) => {
+      vi.resetModules();
+      const saved = { ...process.env };
+      Object.assign(process.env, BASE, extra);
+      try {
+        const mod = await import('../src/config/env');
+        return () => mod.assertBillingSafeForProduction();
+      } finally {
+        process.env = saved;
+      }
+    };
+    expect(await check({ NODE_ENV: 'production', BILLING_MODE: 'mock' })).toThrow(/BILLING_ALLOW_MOCK_IN_PRODUCTION/);
+    expect(await check({ NODE_ENV: 'production', BILLING_MODE: 'mock', BILLING_ALLOW_MOCK_IN_PRODUCTION: 'true' })).not.toThrow();
+    expect(await check({ NODE_ENV: 'production', BILLING_MODE: 'live', BILLING_SHORTCODE: '600123' })).not.toThrow();
+    expect(await check({ NODE_ENV: 'development', BILLING_MODE: 'mock' })).not.toThrow();
   });
 
   it('refuses to start in live mode without a shortcode, so real money can never arrive on nothing', async () => {

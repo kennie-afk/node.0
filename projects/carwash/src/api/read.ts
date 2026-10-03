@@ -1,11 +1,17 @@
 import { Router } from "express";
 import { z } from "zod";
 import { withOrg } from "../persistence/pool";
-import { authenticate } from "./middleware";
+import { authenticate, requireRole } from "./middleware";
 import { closeDay } from "../reconciliation/service";
 import { BadRequestError } from "../domain/errors";
 
 const router = Router();
+
+/**
+ * What an attendant must not read: the payments, flags and water readings the product checks their
+ * own work against. If the person being audited can see the evidence, they can fit around it.
+ */
+export const staffOnly = requireRole("owner", "manager", "supervisor", "support");
 
 const dayShape = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 
@@ -42,7 +48,8 @@ router.get("/sites", authenticate, async (req, res, next) => {
 
 router.get("/jobs", authenticate, async (req, res, next) => {
   try {
-    const siteId = String(req.query.siteId ?? "");
+    // An attendant tied to a site sees that site's jobs whatever they ask for.
+    const siteId = req.principal!.siteId ?? String(req.query.siteId ?? "");
     const rows = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(
         `SELECT j.id, j.state, j.quoted_total_cents, j.list_total_cents, j.created_at,
@@ -77,7 +84,7 @@ router.get("/jobs", authenticate, async (req, res, next) => {
   }
 });
 
-router.get("/payments", authenticate, async (req, res, next) => {
+router.get("/payments", authenticate, staffOnly, async (req, res, next) => {
   try {
     const rows = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(
@@ -103,7 +110,7 @@ router.get("/payments", authenticate, async (req, res, next) => {
   }
 });
 
-router.get("/discrepancies", authenticate, async (req, res, next) => {
+router.get("/discrepancies", authenticate, staffOnly, async (req, res, next) => {
   try {
     // `state` filters the queue (open by default in the console); `all` returns every state.
     const state = typeof req.query.state === "string" ? req.query.state : "all";
@@ -143,7 +150,7 @@ router.get("/discrepancies", authenticate, async (req, res, next) => {
   }
 });
 
-router.get("/telemetry", authenticate, async (req, res, next) => {
+router.get("/telemetry", authenticate, staffOnly, async (req, res, next) => {
   try {
     const siteId = String(req.query.siteId ?? "");
     const rows = await withOrg(req.principal!.orgId, async (client) => {
@@ -171,7 +178,7 @@ router.get("/telemetry", authenticate, async (req, res, next) => {
   }
 });
 
-router.get("/report", authenticate, async (req, res, next) => {
+router.get("/report", authenticate, staffOnly, async (req, res, next) => {
   try {
     const siteId = String(req.query.siteId ?? "");
     const day = dayShape.safeParse(req.query.day);
@@ -194,7 +201,7 @@ router.get("/report", authenticate, async (req, res, next) => {
   }
 });
 
-router.get("/overview", authenticate, async (req, res, next) => {
+router.get("/overview", authenticate, staffOnly, async (req, res, next) => {
   try {
     const summary = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(

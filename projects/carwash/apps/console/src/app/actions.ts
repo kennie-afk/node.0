@@ -18,17 +18,19 @@ export async function signIn(_previous: LoginState, form: FormData): Promise<Log
     return { error: "Enter both your phone number and PIN." };
   }
 
+  let destination = "/console";
   try {
     const result = await api.login({ phone, pin });
     await writeSession(
       { token: result.token, displayName: result.displayName, role: result.role },
       result.expiresInSeconds
     );
+    destination = result.role === "worker" || result.role === "supervisor" ? "/console/work" : "/console";
   } catch (caught) {
     return { error: describeError(caught) };
   }
 
-  redirect("/console");
+  redirect(destination);
 }
 
 export async function signOut(): Promise<void> {
@@ -319,4 +321,47 @@ export async function simulatePayment(): Promise<void> {
   }
   revalidatePath("/console", "layout");
   redirect("/console/billing");
+}
+
+
+// ---- the attendant's screen: record a job, move it along, declare cash ------------------------
+
+export async function createJob(_previous: FormState, form: FormData): Promise<FormState> {
+  const serviceIds = form.getAll("serviceIds").map(String);
+  if (serviceIds.length === 0) return { error: "Choose at least one service." };
+  const plate = text(form, "plate");
+  const bayId = text(form, "bayId");
+  const siteId = text(form, "siteId");
+  const failed = await attempt(async () => {
+    await api.send("POST", "/v1/jobs", {
+      serviceIds,
+      ...(plate ? { plate } : {}),
+      ...(bayId ? { bayId } : {}),
+      ...(siteId ? { siteId } : {})
+    });
+  });
+  if (failed) return failed;
+  revalidatePath("/console/work");
+  return OK;
+}
+
+export async function moveJob(form: FormData): Promise<void> {
+  const id = text(form, "jobId");
+  const type = text(form, "type");
+  try {
+    await api.send("POST", `/v1/jobs/${id}/events`, { type });
+  } catch (caught) {
+    redirect(`/console/work?error=${encodeURIComponent(describeError(caught))}`);
+  }
+  revalidatePath("/console/work");
+}
+
+export async function declareCash(form: FormData): Promise<void> {
+  const id = text(form, "jobId");
+  try {
+    await api.send("POST", `/v1/jobs/${id}/cash`, {});
+  } catch (caught) {
+    redirect(`/console/work?error=${encodeURIComponent(describeError(caught))}`);
+  }
+  revalidatePath("/console/work");
 }

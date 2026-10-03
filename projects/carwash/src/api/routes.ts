@@ -12,6 +12,17 @@ import { env } from '../config/env';
 import { logger } from '../common/logger';
 import { BadRequestError, UnauthorizedError } from '../domain/errors';
 import { signToken } from './token';
+import { normalisePhone } from '../admin/phone';
+
+/** People type their number the way they always do (0712..., +254..., 254...); accounts are stored as 254XXXXXXXXX. */
+function loginPhone(raw: unknown): string {
+  if (typeof raw !== 'string') return '';
+  try {
+    return normalisePhone(raw);
+  } catch {
+    return raw;
+  }
+}
 
 const router = Router();
 
@@ -22,8 +33,8 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
   skipSuccessfulRequests: true,
   keyGenerator: (req) => {
-    const phone = typeof req.body?.phone === 'string' ? req.body.phone : '';
-    return `${ipKeyGenerator(req.ip ?? 'unknown')}|${phone}`;
+    // keyed on the normalised number, so 0712... and 254712... cannot be used to get two sets of attempts
+    return `${ipKeyGenerator(req.ip ?? 'unknown')}|${loginPhone(req.body?.phone)}`;
   },
   message: { code: 'too-many-attempts', message: 'Too many sign in attempts. Try again shortly.' }
 });
@@ -57,7 +68,7 @@ router.post('/auth/login', loginLimiter, async (req, res, next) => {
     const row = await withoutTenant(async (client) => {
       const { rows } = await client.query(
         `SELECT id, org_id, site_id, role, display_name, pin_hash FROM resolve_login($1)`,
-        [parsed.data.phone]
+        [loginPhone(parsed.data.phone)]
       );
       return rows[0];
     });
