@@ -6,6 +6,7 @@
  *   provision <signup-id|latest> [--site NAME] [--till CODE] [--phone NUMBER]
  *   create-org --business NAME --owner NAME --phone NUMBER [--site NAME] [--till CODE]
  *   device:add --org ID --site ID --type flow_meter|camera|... [--bay ID]   register a real device; prints its secret once
+ *   reset-pin --phone NUMBER                 a forgotten PIN: prints a new one once
  *   messages [N]                             recent outbound messages (read a verification code to relay it)
  *   billing:run                              issue due invoices and refresh statuses now
  *   billing:show <org-id>                    subscription, account number and invoices
@@ -17,7 +18,7 @@
  * The owner's PIN is generated here, printed once and stored only as a bcrypt hash.
  */
 import { closeMigrationPool, closePool } from '../persistence/pool';
-import { DEVICE_TYPES, DeviceType, listSignups, provisionFromSignup, provisionOrganisation, ProvisionResult, registerDevice } from './provisioning';
+import { DEVICE_TYPES, DeviceType, listSignups, provisionFromSignup, provisionOrganisation, ProvisionResult, registerDevice, resetPin } from './provisioning';
 import { recentMessages } from '../notify/provider';
 import { assignUnmatched, getBillingView, listUnmatched, recordManualPayment, runBillingCycle, setUnitPriceOverride } from '../billing/service';
 import { formatKsh, Cents } from '../domain/money';
@@ -94,6 +95,14 @@ async function main(): Promise<void> {
     }
     const device = await registerDevice(org, { siteId: site, bayId: flag(args, 'bay') ?? null, type });
     console.log(`device id : ${device.id}\nsecret    : ${device.secret}   (shown once - it is not stored)`);
+    return;
+  }
+
+  if (command === 'reset-pin') {
+    const phone = flag(args, 'phone');
+    if (!phone) throw new Error('usage: reset-pin --phone NUMBER');
+    const result = await resetPin(phone);
+    console.log(`${result.phone} new PIN: ${result.pin}   (shown once - it is not stored)`);
     return;
   }
 

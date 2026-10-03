@@ -3,6 +3,7 @@ import { assertBillingSafeForProduction, env } from '../config/env';
 import { logger } from '../common/logger';
 import { assertRlsIsEffective, closePool, pool } from '../persistence/pool';
 import { runBillingCycle } from '../billing/service';
+import { runDailyCloses } from '../reconciliation/schedule';
 
 async function main(): Promise<void> {
   assertBillingSafeForProduction();
@@ -23,6 +24,15 @@ async function main(): Promise<void> {
       .catch((error) => logger.error('billing cycle failed', { error: error instanceof Error ? error.message : String(error) }));
   }, env.BILLING_RUN_INTERVAL_MINUTES * 60_000);
   billingTimer.unref();
+
+  // Reconciles each site's finished day exactly once. Checked hourly so a site in any time zone is
+  // closed shortly after its own midnight; a day already closed is skipped, so replicas and reruns agree.
+  const closeTimer = setInterval(() => {
+    runDailyCloses()
+      .then((result) => logger.info('daily close', { ...result }))
+      .catch((error) => logger.error('daily close failed', { error: error instanceof Error ? error.message : String(error) }));
+  }, 60 * 60_000);
+  closeTimer.unref();
   if (env.BILLING_MODE === 'mock' && env.NODE_ENV === 'production') {
     logger.warn('BILLING_MODE=mock in production: owners can simulate payments and nothing real is collected');
   }
@@ -33,6 +43,7 @@ async function main(): Promise<void> {
     stopping = true;
     logger.info('shutting down', { signal });
     clearInterval(billingTimer);
+    clearInterval(closeTimer);
     const forced = setTimeout(() => process.exit(1), env.SHUTDOWN_GRACE_MS);
     forced.unref();
     server.close(async () => {

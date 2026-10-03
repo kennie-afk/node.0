@@ -94,15 +94,56 @@ npm test
 That brings up Postgres, the API on 4000, the telemetry ingestion service on 4100
 and the console on 3300.
 
-### Signup intake
+### Self-serve signup, trial and billing
 
-The console serves a public landing page, `/pricing` and `/signup`. `POST /v1/signup`
-(5 requests per hour per IP) writes to `signup_requests`, a table with no `org_id` and
-no row-level security because it exists before any organisation does. Verified live:
-201 on a valid request, 400 on a missing field, 429 on the sixth request in an hour.
-This is intake; turning a request into a tenant is one operator command, see
-[Onboarding a customer](#onboarding-a-customer). The prices on `/pricing` are
-introductory and provisional.
+`POST /v1/signup` starts a signup and issues a six-digit code (stored only as a bcrypt hash, 15
+minute expiry, 5 tries, resend with a cooldown and a ceiling; 5 starts an hour per IP and per phone).
+`POST /v1/signup/verify` takes the code and a PIN the owner chooses and, in one step, creates the
+organisation, a first site, a starter price list, the owner and a 14-day trial, and signs them in.
+Two simultaneous verifies create one organisation: the request is claimed atomically.
+
+There is **no SMS provider**. `NOTIFY_PROVIDER=mock` records and logs each message; during a pilot an
+operator reads the code with `npm run admin -- messages`, and the signup screen says so plainly. A real
+provider is one class behind `src/notify/provider.ts` and needs that provider's own documentation.
+
+Forecourt bills its customers itself (migration 0009; **every price and period is provisional** and
+comes from `BILLING_*` configuration, with defaults matching `/pricing`: KES 3,500 for one site, 3,000
+per site for two to five, six or more by agreement, 14-day trial). Status is computed from dates at
+request time: trial, active, past_due, then suspended (read-only: configuration and reconciliation
+actions are refused with 402; **M-Pesa confirmations, telemetry and attendants' job events keep going
+in, and nothing is deleted**). Invoices are issued three days before coverage ends, one per period, with
+gap-free numbering however often the hourly runner passes. A payment is applied to the oldest open
+invoice, partial payments accumulate, an excess becomes credit applied to the next invoice, and a late
+payment buys a month from the day it arrives. Payments and invoices are facts: the application role cannot
+edit or delete them.
+
+Collection uses the existing Daraja confirmation path: money paid to `BILLING_SHORTCODE` with the
+owner's account number (`FC` + six digits) settles the invoice, idempotent on the M-Pesa transaction id;
+an unknown account number is kept in `unmatched_billing_payments` for an operator. `BILLING_MODE=mock`
+(the default) lets an owner simulate paying from the console through the very same code, and the API
+**refuses to start in production in mock mode** unless `BILLING_ALLOW_MOCK_IN_PRODUCTION=true`.
+Registering the callback with Safaricom for a real shortcode has not been done or verified; see
+[docs/FIRST-CUSTOMER.md](docs/FIRST-CUSTOMER.md) for the runbook, what is verified and what is not.
+
+### First hour
+
+`GET /v1/onboarding` is a checklist derived from what exists, so it cannot drift from the account.
+`POST /v1/sandbox` loads one sample car wash (two weeks, run through the real engine) into a **new**
+account: every row is flagged `is_demo`, labelled "(sample)", with no usable phone number, device secret
+or till; it is excluded from billing and from the real checklist, refused once real records exist, and
+removable. `GET /v1/summary` is the shareable "what Forecourt found", built only from days that were
+actually reconciled (`day_closes`), with sample data never mixed into a real account. Each site's
+finished day is closed automatically every night in the site's own time zone.
+
+Attendants sign in on a phone and see one screen (`/console/work`). They cannot read payments, flags,
+water readings, overview, devices, billing or reports: the person being checked does not get to see the
+evidence.
+
+### Signup intake (the older, manual path)
+
+`provision` / `create-org` (see [Onboarding a customer](#onboarding-a-customer)) still work and also
+create a trial subscription. Pre-existing `signup_requests` rows without a code can still be
+provisioned by hand.
 
 ### Devices are credentials, not addresses
 

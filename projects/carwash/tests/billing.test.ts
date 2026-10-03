@@ -12,6 +12,7 @@ import {
 } from '../src/billing/state';
 import { normaliseBillingRef } from '../src/billing/ref';
 import { renderSummaryText } from '../src/reporting/summary-text';
+import { localYesterday } from '../src/reconciliation/schedule';
 
 const CONFIG: BillingConfig = {
   starterCents: 350_000,
@@ -159,5 +160,16 @@ describe('the shareable summary', () => {
 
   it('says plainly when nothing has been reconciled', () => {
     expect(renderSummaryText({ ...base, scope: 'none', daysChecked: 0 }, 'Pwani Wash')).toContain('Nothing has been reconciled yet');
+  });
+});
+
+describe('which day is yesterday at the site', () => {
+  it('uses the site\'s own clock, not the server\'s', () => {
+    // 22:30 UTC on 1 Oct is already 01:30 on 2 Oct in Nairobi (UTC+3): yesterday there is 1 Oct, not 30 Sep.
+    const now = new Date('2026-10-01T22:30:00Z');
+    expect(localYesterday(now, 'Africa/Nairobi')).toBe('2026-10-01');
+    expect(localYesterday(now, 'UTC')).toBe('2026-09-30');
+    expect(localYesterday(new Date('2026-03-01T00:30:00Z'), 'UTC')).toBe('2026-02-28');
+    expect(localYesterday(new Date('2028-03-01T12:00:00Z'), 'UTC')).toBe('2028-02-29');
   });
 });

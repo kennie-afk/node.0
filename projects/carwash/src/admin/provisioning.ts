@@ -104,6 +104,17 @@ export async function provisionOrganisation(input: ProvisionInput): Promise<Prov
   return { orgId, phone, pin, pinWasGenerated: input.pin === undefined, ...ids };
 }
 
+/** Operator recovery for a forgotten PIN: a new random one, shown once, stored only as a hash. */
+export async function resetPin(rawPhone: string): Promise<{ phone: string; pin: string }> {
+  const phone = normalisePhone(rawPhone);
+  const account = await withoutTenant(async (client) => (await client.query('SELECT id, org_id FROM resolve_login($1)', [phone])).rows[0]);
+  if (!account) throw new NotFoundError(`no active account for ${phone}`);
+  const pin = generatePin();
+  const pinHash = await bcrypt.hash(pin, PIN_ROUNDS);
+  await withOrg(account.org_id, (client) => client.query('UPDATE users SET pin_hash = $2 WHERE id = $1', [account.id, pinHash]));
+  return { phone, pin };
+}
+
 export const DEVICE_TYPES = ['flow_meter', 'pump_monitor', 'beam', 'doser', 'machine', 'camera'] as const;
 export type DeviceType = (typeof DEVICE_TYPES)[number];
 

@@ -285,6 +285,35 @@ describe.runIf(on)('self-serve signup, billing, sample data and the summary (rea
     }
   });
 
+  it('closes every site\'s finished day once, on its own, and a rerun changes nothing', async () => {
+    await load();
+    const schedule = await import('../src/reconciliation/schedule');
+    const owner = await selfServe('Daily Wash');
+    const now = new Date('2026-10-02T08:00:00Z');
+    const first = await schedule.runDailyCloses(now);
+    expect(first.failed).toBe(0);
+    expect(first.closed).toBeGreaterThanOrEqual(1);
+    const closed = await asOwner(owner.orgId, 'SELECT business_day::text AS day FROM day_closes');
+    expect(closed.rows.map((r) => r.day)).toEqual(['2026-10-01']);
+
+    const again = await schedule.runDailyCloses(now);
+    expect(again.closed).toBe(0);
+    expect(again.alreadyClosed).toBeGreaterThanOrEqual(1);
+    expect((await asOwner(owner.orgId, 'SELECT count(*)::int AS n FROM day_closes')).rows[0].n).toBe(1);
+    // the owner's checklist now sees a reconciliation that nobody had to press a button for
+    expect((await request(app).get('/v1/onboarding').set(owner.auth)).body.steps.find((s: { key: string }) => s.key === 'reconcile').done).toBe(true);
+  });
+
+  it('resets a forgotten PIN for an operator: a new random one, shown once, hashed, and the old one stops working', async () => {
+    await load();
+    const owner = await selfServe('Forgetful Wash');
+    const reset = await provisioning.resetPin(`0${owner.phone.slice(3)}`);
+    expect(reset.pin).toMatch(/^\d{6}$/);
+    expect((await request(app).post('/v1/auth/login').send({ phone: owner.phone, pin: '482913' })).status).toBe(401);
+    expect((await request(app).post('/v1/auth/login').send({ phone: owner.phone, pin: reset.pin })).status).toBe(200);
+    await expect(provisioning.resetPin('0700000000')).rejects.toThrow(/no active account/);
+  });
+
   // ---- billing ------------------------------------------------------------------------------
 
   it('issues the invoice before the trial ends, once, with no gaps in the numbering however often the runner passes', async () => {
