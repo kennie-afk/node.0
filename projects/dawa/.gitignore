@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+coverage/
+*.log
+apps/console/.next/
+apps/console/node_modules/
+apps/console/tsconfig.tsbuildinfo
