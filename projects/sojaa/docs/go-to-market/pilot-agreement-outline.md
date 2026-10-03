@@ -1,0 +1,8 @@
+# Pilot outline (to be turned into an agreement by a lawyer; not legal advice)
+
+- **Scope:** one licensed firm, 60 days, 30 to 100 guards, one or two client sites to start. Run alongside the firm's existing records for the first 30 days.
+- **Price:** free for the pilot, then the provisional per-guard plan if they continue. No lock-in.
+- **Data:** the firm owns its data; export on request; deletion on request after the pilot. Sojaa is a processor of personal data (guards' ID numbers and locations). Registration with the Data Protection Commissioner as a processor, and a data-protection impact assessment, are **for Kennedy to check before the pilot starts; they have not been researched or done**.
+- **What is promised:** the features in the README; written bug fixes within an agreed time. **Not promised:** that any output satisfies PSRA, the Labour ministry, NSSF, SHA or KRA; live M-Pesa before Safaricom setup is done; that the figures are legal advice; that check-ins cannot be falsified.
+- **Success measure (agree up front):** the month's attendance matches the firm's own records within an agreed margin; at least one client invoice built from verified shifts is issued and paid or disputed with evidence; the compliance report is read and acted on by the owner; guards actually check in through the system on most shifts.
+- **What the pilot must produce for Sojaa:** the firm's real roster pattern and minimum-wage position (anonymised if needed), the deduction tables the firm actually uses (to replace the illustrative set), a real signal-coverage picture of the sites, whether supervisors will really use a phone, and a quotable outcome if the firm is willing.

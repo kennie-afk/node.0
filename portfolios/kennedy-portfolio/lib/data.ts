@@ -23,12 +23,12 @@ export const headline = [
   {
     value: "2,813",
     label: "Tests across twelve systems",
-    method: "Passing tests from each runner; Dawa, Hazina and Askari measured 3 to 4 Oct 2026, HMS, SmartSeason, Church CMS and Soko 3 Oct, the rest 2 Oct; skipped database-gated tests not counted",
+    method: "Passing tests from each runner; Dawa, Hazina and Sojaa measured 3 to 4 Oct 2026, HMS, SmartSeason, Church CMS and Soko 3 Oct, the rest 2 Oct; skipped database-gated tests not counted",
   },
   {
     value: "12",
     label: "Systems built and runnable",
-    method: "Each with a test suite and docker compose; Mara is partial by design, HMS has no live payer or payment connection, and Dawa, Hazina and Askari connect to no regulator; none has real users or a paying customer yet",
+    method: "Each with a test suite and docker compose; Mara is partial by design, HMS has no live payer or payment connection, and Dawa, Hazina and Sojaa connect to no regulator; none has real users or a paying customer yet",
   },
   {
     value: "10.7 ms",
@@ -38,7 +38,7 @@ export const headline = [
 ];
 
 export const evidenceNote =
-  "Test counts are passing tests from each project's own runner (pytest, vitest, Maven surefire), re-measured on 2 October 2026 (HMS, SmartSeason, Church CMS and Soko again on 3 October; Dawa, Hazina and Askari measured on 3 and 4 October); tests that need an external database and were skipped are not counted. Service counts come from the build files. Latency and accuracy come from the benchmark documented in that project's own README. Mara is partial by design, HMS has no live payer or payment connection, and Dawa, Hazina and Askari are connected to no regulator and have never received a live M-Pesa payment; each says what it does not build. Nothing here is rounded up and no system has real users or a paying customer yet.";
+  "Test counts are passing tests from each project's own runner (pytest, vitest, Maven surefire), re-measured on 2 October 2026 (HMS, SmartSeason, Church CMS and Soko again on 3 October; Dawa, Hazina and Sojaa measured on 3 and 4 October); tests that need an external database and were skipped are not counted. Service counts come from the build files. Latency and accuracy come from the benchmark documented in that project's own README. Mara is partial by design, HMS has no live payer or payment connection, and Dawa, Hazina and Sojaa are connected to no regulator and have never received a live M-Pesa payment; each says what it does not build. Nothing here is rounded up and no system has real users or a paying customer yet.";
 
 export const resume = {
   // The download name is set explicitly so it does not land in someone's
@@ -207,7 +207,7 @@ export const experience = [
   },
   {
     role: "Architect and Engineer",
-    org: "Askari, Security Guard Operations",
+    org: "Sojaa, Security Guard Operations",
     period: "2026 to Present",
     points: [
       "Built operations and wage compliance for private security firms: attendance stamped on the server's clock with a geofence flag that marks but never blocks, QR patrol checkpoints, rosters where the database refuses a double booking, payroll checked against a configurable minimum wage, and invoices drawn from verified shifts. Closed pay periods are immutable by trigger and a shift can be invoiced only once.",
@@ -447,11 +447,11 @@ export const projects = [
   },
   {
     id: 12,
-    slug: "askari",
+    slug: "sojaa",
     lang: "TypeScript",
     tests: "163",
     domain: "Security operations",
-    title: "Askari",
+    title: "Sojaa",
     subtitle: "Guard operations and wage compliance",
     scale: "TypeScript · 110 sources",
     description:
@@ -462,7 +462,7 @@ export const projects = [
       { value: "RLS", label: "per tenant" },
     ],
     tech: ["TypeScript", "Express", "PostgreSQL", "Zod", "Row-level security", "Next.js"],
-    image: "/images/askari.jpg",
+    image: "/images/sojaa.jpg",
   },
 ];
 
