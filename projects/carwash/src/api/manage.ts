@@ -7,7 +7,8 @@ import { Router, Request } from 'express';
 import bcrypt from 'bcrypt';
 import { z, ZodType } from 'zod';
 import { withOrg } from '../persistence/pool';
-import { authenticate, requireRole } from './middleware';
+import { authenticate, requireRole, requireWritable } from './middleware';
+import { payShortcode } from '../billing/service';
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../domain/errors';
 import { assertTransition, EVENT_RESULTING_STATE, JobEventType, JobState } from '../domain/job';
 import { normalisePlate } from '../domain/plate';
@@ -55,6 +56,14 @@ const siteCreate = z.object({ ...siteFields, timezone: siteFields.timezone.defau
 });
 const siteUpdate = z.object(siteFields).partial();
 
+/** Forecourt's own billing shortcode must never be claimed as a car wash's till. */
+function checkTill(till: string | null | undefined): void {
+  const billing = payShortcode();
+  if (till && billing && till === billing) {
+    throw new BadRequestError('That number is reserved. Use your own till or paybill number.');
+  }
+}
+
 function checkHours(opens?: number, closes?: number): void {
   if (opens !== undefined && closes !== undefined && closes <= opens) {
     throw new BadRequestError('closesMinute must be later than opensMinute');
@@ -75,10 +84,11 @@ function siteDto(row: Record<string, any>) {
   };
 }
 
-router.post('/sites', authenticate, owner, async (req, res, next) => {
+router.post('/sites', authenticate, owner, requireWritable, async (req, res, next) => {
   try {
     const body = parse(siteCreate, req.body);
     checkHours(body.opensMinute, body.closesMinute);
+    checkTill(body.tillNumber);
     const row = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(
         `INSERT INTO sites (org_id, name, timezone, till_number, opens_minute, closes_minute, days_open, litres_per_wash, cash_ratio)
@@ -119,10 +129,11 @@ router.get('/sites/:id', authenticate, async (req, res, next) => {
   }
 });
 
-router.put('/sites/:id', authenticate, owner, async (req, res, next) => {
+router.put('/sites/:id', authenticate, owner, requireWritable, async (req, res, next) => {
   try {
     const id = idParam(req);
     const body = parse(siteUpdate, req.body);
+    checkTill(body.tillNumber);
     const row = await withOrg(req.principal!.orgId, async (client) => {
       const current = await client.query('SELECT * FROM sites WHERE id = $1', [id]);
       const existing = current.rows[0];
@@ -154,7 +165,7 @@ router.put('/sites/:id', authenticate, owner, async (req, res, next) => {
 
 const bayBody = z.object({ label: z.string().trim().min(1).max(40) });
 
-router.post('/sites/:id/bays', authenticate, owner, async (req, res, next) => {
+router.post('/sites/:id/bays', authenticate, owner, requireWritable, async (req, res, next) => {
   try {
     const siteId = idParam(req);
     const { label } = parse(bayBody, req.body);
@@ -172,7 +183,7 @@ router.post('/sites/:id/bays', authenticate, owner, async (req, res, next) => {
   }
 });
 
-router.put('/bays/:id', authenticate, owner, async (req, res, next) => {
+router.put('/bays/:id', authenticate, owner, requireWritable, async (req, res, next) => {
   try {
     const { label } = parse(bayBody, req.body);
     const row = await withOrg(req.principal!.orgId, async (client) => {
@@ -186,7 +197,7 @@ router.put('/bays/:id', authenticate, owner, async (req, res, next) => {
   }
 });
 
-router.delete('/bays/:id', authenticate, owner, async (req, res, next) => {
+router.delete('/bays/:id', authenticate, owner, requireWritable, async (req, res, next) => {
   try {
     const removed = await withOrg(req.principal!.orgId, async (client) => {
       const jobs = await client.query('SELECT count(*) AS n FROM jobs WHERE bay_id = $1', [idParam(req)]);
@@ -243,7 +254,7 @@ router.get('/services', authenticate, async (req, res, next) => {
   }
 });
 
-router.post('/services', authenticate, owner, async (req, res, next) => {
+router.post('/services', authenticate, owner, requireWritable, async (req, res, next) => {
   try {
     const body = parse(serviceCreate, req.body);
     const row = await withOrg(req.principal!.orgId, async (client) => {
@@ -262,7 +273,7 @@ router.post('/services', authenticate, owner, async (req, res, next) => {
 
 // A price change applies to jobs opened from now on; jobs already recorded keep the price they
 // were quoted at, because job_services stores the unit price it was sold at.
-router.put('/services/:id', authenticate, owner, async (req, res, next) => {
+router.put('/services/:id', authenticate, owner, requireWritable, async (req, res, next) => {
   try {
     const body = parse(serviceUpdate, req.body);
     const row = await withOrg(req.principal!.orgId, async (client) => {
@@ -338,7 +349,7 @@ router.get('/users/:id', authenticate, requireRole('owner', 'manager'), async (r
   }
 });
 
-router.post('/users', authenticate, owner, async (req, res, next) => {
+router.post('/users', authenticate, owner, requireWritable, async (req, res, next) => {
   try {
     const body = parse(userCreate, req.body);
     let phone: string;
@@ -367,7 +378,7 @@ router.post('/users', authenticate, owner, async (req, res, next) => {
   }
 });
 
-router.put('/users/:id', authenticate, owner, async (req, res, next) => {
+router.put('/users/:id', authenticate, owner, requireWritable, async (req, res, next) => {
   try {
     const id = idParam(req);
     const body = parse(userUpdate, req.body);
@@ -465,7 +476,7 @@ router.get('/discrepancies/:id', authenticate, async (req, res, next) => {
   }
 });
 
-router.post('/discrepancies/:id/resolve', authenticate, requireRole('owner', 'manager'), async (req, res, next) => {
+router.post('/discrepancies/:id/resolve', authenticate, requireRole('owner', 'manager'), requireWritable, async (req, res, next) => {
   try {
     const body = parse(resolveBody, req.body);
     if (body.state !== 'open' && !body.note) {

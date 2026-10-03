@@ -8,6 +8,9 @@ import { errorHandler, notFound, requestContext } from './middleware';
 import routes from './routes';
 import readRoutes from './read';
 import manageRoutes from './manage';
+import signupRoutes from './signup';
+import billingRoutes from './billing';
+import onboardingRoutes from './onboarding';
 
 export function createApiApp(): Express {
   const app = express();
@@ -42,12 +45,15 @@ export function createApiApp(): Express {
   });
 
   app.use(
-    rateLimit({ windowMs: 60_000, limit: 120, standardHeaders: true, legacyHeaders: false })
+    rateLimit({ windowMs: 60_000, limit: env.API_RATE_LIMIT_PER_MINUTE, standardHeaders: true, legacyHeaders: false })
   );
 
   app.use('/v1', routes);
   app.use('/v1', readRoutes);
   app.use('/v1', manageRoutes);
+  app.use('/v1', signupRoutes);
+  app.use('/v1', billingRoutes);
+  app.use('/v1', onboardingRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

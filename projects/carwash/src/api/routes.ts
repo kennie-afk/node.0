@@ -2,16 +2,16 @@ import { Router } from 'express';
 import { timingSafeEqual } from 'node:crypto';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { withoutTenant } from '../persistence/pool';
-import { authenticate, requireRole } from './middleware';
+import { authenticate, requireRole, requireWritable } from './middleware';
 import { closeDay } from '../reconciliation/service';
 import { ingestConfirmation } from '../mpesa/service';
 import { DARAJA_ACCEPTED, DARAJA_REJECTED } from '../mpesa/daraja';
 import { env } from '../config/env';
 import { logger } from '../common/logger';
 import { BadRequestError, UnauthorizedError } from '../domain/errors';
+import { signToken } from './token';
 
 const router = Router();
 
@@ -47,23 +47,6 @@ const loginSchema = z.object({
   pin: z.string().min(4).max(64)
 });
 
-const signupSchema = z.object({
-  businessName: z.string().min(2).max(200),
-  contactName: z.string().min(2).max(200),
-  phone: z.string().min(6).max(20),
-  siteCount: z.number().int().min(1).max(500).optional(),
-  notes: z.string().max(2000).optional()
-});
-
-const signupLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  limit: 5,
-  standardHeaders: true,
-  legacyHeaders: false,
-  keyGenerator: (req) => ipKeyGenerator(req.ip ?? 'unknown'),
-  message: { code: 'too-many-attempts', message: 'Too many requests. Try again later.' }
-});
-
 router.post('/auth/login', loginLimiter, async (req, res, next) => {
   try {
     const parsed = loginSchema.safeParse(req.body);
@@ -86,17 +69,13 @@ router.post('/auth/login', loginLimiter, async (req, res, next) => {
       throw new UnauthorizedError('Those credentials are not valid.');
     }
 
-    const token = jwt.sign(
-      { sub: row.id, orgId: row.org_id, siteId: row.site_id, role: row.role },
-      env.JWT_SECRET,
-      { expiresIn: env.JWT_TTL_MINUTES * 60 }
-    );
+    const { token, expiresInSeconds } = signToken({ userId: row.id, orgId: row.org_id, siteId: row.site_id, role: row.role });
 
     res.status(200).json({
       token,
       displayName: row.display_name,
       role: row.role,
-      expiresInSeconds: env.JWT_TTL_MINUTES * 60
+      expiresInSeconds
     });
   } catch (error) {
     next(error);
@@ -111,6 +90,7 @@ router.post(
   '/sites/close',
   authenticate,
   requireRole('owner', 'manager', 'support'),
+  requireWritable,
   async (req, res, next) => {
     try {
       const parsed = closeSchema.safeParse(req.body);
@@ -169,37 +149,6 @@ router.post('/webhooks/mpesa/confirmation', async (req, res) => {
 
 router.post('/webhooks/mpesa/validation', (_req, res) => {
   res.status(200).json(DARAJA_ACCEPTED);
-});
-
-router.post('/signup', signupLimiter, async (req, res, next) => {
-  try {
-    const parsed = signupSchema.safeParse(req.body);
-    if (!parsed.success) {
-      throw new BadRequestError('businessName, contactName and phone are required');
-    }
-
-    const { businessName, contactName, phone, siteCount, notes } = parsed.data;
-
-    const id = await withoutTenant(async (client) => {
-      const { rows } = await client.query<{ id: string }>(
-        `INSERT INTO signup_requests (business_name, contact_name, phone, site_count, notes)
-         VALUES ($1, $2, $3, $4, $5)
-         RETURNING id`,
-        [businessName, contactName, phone, siteCount ?? 1, notes ?? null]
-      );
-      const row = rows[0];
-      if (!row) {
-        throw new Error('signup insert returned no row');
-      }
-      return row.id;
-    });
-
-    logger.info('signup request received', { signupRequestId: id });
-
-    res.status(201).json({ id, status: 'new' });
-  } catch (error) {
-    next(error);
-  }
 });
 
 export default router;

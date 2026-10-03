@@ -3,6 +3,7 @@ import { insertPayment, openJobsForMatching, recordJobEvent, transitionJob } fro
 import { normaliseConfirmation } from './daraja';
 import { matchPaymentToJob } from './matching';
 import { logger } from '../common/logger';
+import { ingestBillingPayment, payShortcode } from '../billing/service';
 
 export interface IngestOutcome {
   paymentId: string;
@@ -23,6 +24,15 @@ async function resolveTill(shortCode: string): Promise<{ orgId: string; siteId: 
 
 export async function ingestConfirmation(raw: unknown): Promise<IngestOutcome | null> {
   const payment = normaliseConfirmation(raw);
+
+  // Money paid to Forecourt itself (a subscription) arrives on Forecourt's own shortcode, through
+  // this same callback. It is checked first so that no tenant's till can ever shadow it.
+  const billingShortcode = payShortcode();
+  if (billingShortcode && payment.shortCode === billingShortcode) {
+    const billed = await ingestBillingPayment(payment);
+    logger.info('billing payment ingested', { matched: billed.matched, duplicate: billed.duplicate });
+    return null;
+  }
   const till = await resolveTill(payment.shortCode);
 
   if (!till) {

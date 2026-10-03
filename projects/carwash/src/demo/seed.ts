@@ -79,17 +79,30 @@ function jitterPlate(plate: string, seed: number): string {
   return seed % 17 === 0 ? plate.replace('0', 'O') : plate;
 }
 
-async function writePlan(client: PoolClient, orgId: string, plan: DemoPlan, now: Date) {
-  const pinHash = await bcrypt.hash(DEMO_PIN, 10);
-  await client.query('INSERT INTO organisations (id, name, billing_plan) VALUES ($1, $2, $3)', [orgId, DEMO_ORG_NAME, 'growth']);
+export interface WriteOptions {
+  /**
+   * Sample data inside a REAL organisation (see sandbox.ts): no organisation row, no published PIN,
+   * no device secret anyone could know, no phone number a person could sign in with, no till number,
+   * and every row flagged is_demo so it can be told apart from the owner's own records and removed.
+   */
+  sandbox?: boolean;
+}
+
+export async function writePlan(client: PoolClient, orgId: string, plan: DemoPlan, now: Date, options: WriteOptions = {}) {
+  const sandbox = options.sandbox === true;
+  const label = (name: string) => (sandbox ? `${name} (sample)` : name);
+  const pinHash = await bcrypt.hash(sandbox ? randomUUID() : DEMO_PIN, 10);
+  if (!sandbox) {
+    await client.query('INSERT INTO organisations (id, name, billing_plan) VALUES ($1, $2, $3)', [orgId, DEMO_ORG_NAME, 'growth']);
+  }
 
   const siteIds: Record<string, string> = {};
   const bayIds = new Map<string, string>();
   for (const site of plan.sites) {
     const { rows } = await client.query(
-      `INSERT INTO sites (org_id, name, timezone, till_number, opens_minute, closes_minute, litres_per_wash, cash_ratio)
-       VALUES ($1, $2, 'Africa/Nairobi', $3, 360, 1140, $4, $5) RETURNING id`,
-      [orgId, site.name, site.till, site.litresPerWash, site.cashRatio]
+      `INSERT INTO sites (org_id, name, timezone, till_number, opens_minute, closes_minute, litres_per_wash, cash_ratio, is_demo)
+       VALUES ($1, $2, 'Africa/Nairobi', $3, 360, 1140, $4, $5, $6) RETURNING id`,
+      [orgId, label(site.name), sandbox ? null : site.till, site.litresPerWash, site.cashRatio, sandbox]
     );
     siteIds[site.key] = rows[0].id;
     for (const bay of site.bays) {
@@ -101,18 +114,30 @@ async function writePlan(client: PoolClient, orgId: string, plan: DemoPlan, now:
   const serviceIds = new Map<string, string>();
   for (const service of plan.services) {
     const { rows } = await client.query(
-      `INSERT INTO services (org_id, name, list_price_cents, expected_water_l, expected_duration_s, commission_rate)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-      [orgId, service.name, service.listPriceCents, service.expectedWaterL, service.expectedDurationS, service.commissionRate]
+      `INSERT INTO services (org_id, name, list_price_cents, expected_water_l, expected_duration_s, commission_rate, is_demo)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id`,
+      [orgId, label(service.name), service.listPriceCents, service.expectedWaterL, service.expectedDurationS, service.commissionRate, sandbox]
     );
     serviceIds.set(service.key, rows[0].id);
   }
 
   const personIds = new Map<string, string>();
+  let sampleSerial = 0;
   for (const person of plan.people) {
+    sampleSerial += 1;
+    // A sample person has no real phone number and a disabled account: nobody can sign in as them.
     const { rows } = await client.query(
-      `INSERT INTO users (org_id, site_id, role, display_name, phone, pin_hash) VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
-      [orgId, person.siteKey ? siteIds[person.siteKey] : null, person.role, person.displayName, person.phone, pinHash]
+      `INSERT INTO users (org_id, site_id, role, display_name, phone, pin_hash, status, is_demo) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING id`,
+      [
+        orgId,
+        person.siteKey ? siteIds[person.siteKey] : null,
+        person.role,
+        label(person.displayName),
+        sandbox ? `sample-${orgId.slice(0, 8)}-${sampleSerial}` : person.phone,
+        pinHash,
+        sandbox ? 'disabled' : 'active',
+        sandbox
+      ]
     );
     personIds.set(person.key, rows[0].id);
   }
@@ -122,14 +147,14 @@ async function writePlan(client: PoolClient, orgId: string, plan: DemoPlan, now:
   const devices: Array<{ id: string; siteKey: string; bay: string | null; type: string; secretHash: string }> = [];
   for (const site of plan.sites) {
     for (const bay of site.bays) {
-      const hash = await bcrypt.hash(demoSecret(site.key, bay, 'flow_meter'), 10);
+      const hash = await bcrypt.hash(sandbox ? randomUUID() : demoSecret(site.key, bay, 'flow_meter'), 10);
       const { rows } = await client.query(
         `INSERT INTO devices (org_id, site_id, bay_id, type, firmware, secret_hash) VALUES ($1,$2,$3,'flow_meter','fm-2.4.1',$4) RETURNING id`,
         [orgId, siteIds[site.key], bayIds.get(`${site.key}|${bay}`), hash]
       );
       devices.push({ id: rows[0].id, siteKey: site.key, bay, type: 'flow_meter', secretHash: hash });
     }
-    const cameraHash = await bcrypt.hash(demoSecret(site.key, 'gate', 'camera'), 10);
+    const cameraHash = await bcrypt.hash(sandbox ? randomUUID() : demoSecret(site.key, 'gate', 'camera'), 10);
     const camera = await client.query(
       `INSERT INTO devices (org_id, site_id, type, firmware, secret_hash) VALUES ($1,$2,'camera','cam-1.9.0',$3) RETURNING id`,
       [orgId, siteIds[site.key], cameraHash]
@@ -137,7 +162,7 @@ async function writePlan(client: PoolClient, orgId: string, plan: DemoPlan, now:
     devices.push({ id: camera.rows[0].id, siteKey: site.key, bay: null, type: 'camera', secretHash: cameraHash });
     if (site.silentBay) {
       // A pump monitor that stopped reporting three days ago.
-      const hash = await bcrypt.hash(demoSecret(site.key, site.silentBay, 'pump_monitor'), 10);
+      const hash = await bcrypt.hash(sandbox ? randomUUID() : demoSecret(site.key, site.silentBay, 'pump_monitor'), 10);
       await client.query(
         `INSERT INTO devices (org_id, site_id, bay_id, type, firmware, secret_hash, last_seen, last_sequence)
          VALUES ($1,$2,$3,'pump_monitor','pm-1.2.0',$4, $5, 4120)`,
@@ -299,7 +324,7 @@ async function writePlan(client: PoolClient, orgId: string, plan: DemoPlan, now:
     }
   }
 
-  await client.query("UPDATE devices SET last_seen = now() WHERE type = 'camera'");
+  await client.query("UPDATE devices SET last_seen = now() WHERE type = 'camera' AND site_id = ANY($1::uuid[])", [Object.values(siteIds)]);
 
   // Consumables: a shampoo and a wax draw per site per day, and a weekly restock.
   for (const site of plan.sites) {

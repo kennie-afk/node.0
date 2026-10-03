@@ -10,6 +10,7 @@ import bcrypt from 'bcrypt';
 import { withOrg, withoutTenant } from '../persistence/pool';
 import { ConflictError, NotFoundError } from '../domain/errors';
 import { generatePin, normalisePhone } from './phone';
+import { createSubscription } from '../billing/service';
 
 const PIN_ROUNDS = 10;
 
@@ -89,6 +90,8 @@ export async function provisionOrganisation(input: ProvisionInput): Promise<Prov
        VALUES ($1, NULL, 'owner', $2, $3, $4) RETURNING id`,
       [orgId, input.ownerName, phone, pinHash]
     );
+    // Every organisation starts a free trial the moment it exists: nobody is ever without a subscription.
+    await createSubscription(client, orgId);
     return { siteId, ownerId: owner.rows[0]!.id };
   });
 

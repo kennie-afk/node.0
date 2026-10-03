@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 import { env, isProduction } from '../config/env';
 import { logger } from '../common/logger';
 import { AppError, UnauthorizedError } from '../domain/errors';
+import { currentStatus } from '../billing/service';
+import { writesAllowed } from '../billing/state';
 
 export interface Principal {
   userId: string;
@@ -73,6 +75,26 @@ export const requireRole =
     }
     next();
   };
+
+/**
+ * A suspended (long-unpaid) organisation keeps every record and every read; it cannot change its
+ * configuration or run reconciliation actions until it pays. Capture paths - telemetry, M-Pesa
+ * confirmations, a worker's job events - are NOT gated, so no data is ever lost while an account is
+ * behind. Paying reactivates immediately.
+ */
+export const requireWritable = async (req: Request, _res: Response, next: NextFunction) => {
+  try {
+    const status = await currentStatus(req.principal!.orgId);
+    if (!writesAllowed(status)) {
+      return next(
+        new AppError(402, 'subscription-suspended', 'This account is read-only until the Forecourt subscription is paid. Your data is safe; open Billing to pay.')
+      );
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const notFound = (req: Request, res: Response) => {
   res.status(404).json({ code: 'not-found', message: `No route matches ${req.method} ${req.originalUrl}` });

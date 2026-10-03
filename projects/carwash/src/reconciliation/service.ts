@@ -77,6 +77,17 @@ export async function closeDay(
       }))
     );
 
+    // Record that this day was checked, even if it was clean and wrote no flags.
+    await client.query(
+      `INSERT INTO day_closes (org_id, site_id, business_day, cars_detected, jobs_recorded, expected_cents, received_cents, gap_cents, flags)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       ON CONFLICT (site_id, business_day) DO UPDATE SET
+         cars_detected = EXCLUDED.cars_detected, jobs_recorded = EXCLUDED.jobs_recorded,
+         expected_cents = EXCLUDED.expected_cents, received_cents = EXCLUDED.received_cents,
+         gap_cents = EXCLUDED.gap_cents, flags = EXCLUDED.flags, closed_at = now()`,
+      [orgId, siteId, day, result.vehiclesDetected, result.jobsRecorded, result.expectedRevenue, result.receivedRevenue, result.gap, result.discrepancies.length]
+    );
+
     return { result, report: renderDailyReport(result), discrepanciesWritten };
   });
 }

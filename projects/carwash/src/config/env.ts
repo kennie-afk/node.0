@@ -36,17 +36,46 @@ const schema = z.object({
     .string()
     .default('')
     .transform((value) => value.split(',').map((item) => item.trim()).filter(Boolean)),
+  API_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(120),
   LOGIN_RATE_LIMIT_PER_WINDOW: z.coerce.number().int().positive().default(5),
   LOGIN_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
   TELEMETRY_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(120),
+  // ---- Forecourt's own subscription billing (every price and period here is PROVISIONAL) ----
+  // 'mock' lets an owner simulate paying from the console and needs no shortcode; 'live' takes real
+  // M-Pesa confirmations on BILLING_SHORTCODE through the same Daraja callback the tills use.
+  BILLING_MODE: z.enum(['mock', 'live']).default('mock'),
+  BILLING_SHORTCODE: z.string().trim().min(3).max(20).optional(),
+  BILLING_PRICE_STARTER_KES: z.coerce.number().int().positive().default(3500),
+  BILLING_PRICE_GROWTH_KES: z.coerce.number().int().positive().default(3000),
+  BILLING_GROWTH_MAX_SITES: z.coerce.number().int().positive().default(5),
+  BILLING_TRIAL_DAYS: z.coerce.number().int().nonnegative().default(14),
+  BILLING_ISSUE_LEAD_DAYS: z.coerce.number().int().nonnegative().default(3),
+  BILLING_SUSPEND_AFTER_DAYS: z.coerce.number().int().nonnegative().default(14),
+  BILLING_RUN_INTERVAL_MINUTES: z.coerce.number().int().positive().default(60),
+  // ---- signup verification ----
+  SIGNUP_CODE_TTL_MINUTES: z.coerce.number().int().positive().default(15),
+  SIGNUP_CODE_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
+  SIGNUP_RESEND_COOLDOWN_SECONDS: z.coerce.number().int().nonnegative().default(60),
+  // 'mock' only logs and records the message; there is deliberately no real SMS provider wired in
+  NOTIFY_PROVIDER: z.enum(['mock']).default('mock'),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   SHUTDOWN_GRACE_MS: z.coerce.number().int().nonnegative().default(10000)
 });
 
 export type Env = z.infer<typeof schema>;
 
+const schemaChecked = schema.superRefine((value, context) => {
+  if (value.BILLING_MODE === 'live' && !value.BILLING_SHORTCODE) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['BILLING_SHORTCODE'],
+      message: 'BILLING_SHORTCODE is required when BILLING_MODE=live'
+    });
+  }
+});
+
 function load(): Env {
-  const parsed = schema.safeParse(process.env);
+  const parsed = schemaChecked.safeParse(process.env);
   if (!parsed.success) {
     const detail = parsed.error.issues
       .map((issue) => `  ${issue.path.join('.') || '(root)'}: ${issue.message}`)
