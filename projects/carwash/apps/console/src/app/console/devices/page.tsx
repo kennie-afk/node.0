@@ -63,7 +63,7 @@ export default async function DevicesPage() {
                   <td className={`px-3.5 py-2.5 text-[0.8125rem] ${seen.stale ? "font-medium text-[var(--color-warn)]" : ""}`}>{seen.text}</td>
                   <td className="px-3.5 py-2.5 text-[0.8125rem] tabular-nums">{device.lastSequence.toLocaleString()}</td>
                   <td className="px-3.5 py-2.5">
-                    <Badge value={seen.stale ? "quiet" : "live"} dot />
+                    <Badge value={seen.stale ? "quiet" : "live"} />
                   </td>
                 </tr>
               );

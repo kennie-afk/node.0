@@ -258,13 +258,6 @@
 .ui-badge.tone-bad { color: var(--ui-bad); background: rgba(var(--c-bad-rgb), 0.11); border-color: rgba(var(--c-bad-rgb), 0.28); }
 .ui-badge.tone-info { color: var(--ui-info); background: rgba(var(--c-info-rgb), 0.11); border-color: rgba(var(--c-info-rgb), 0.28); }
 .ui-badge.tone-accent { color: var(--ui-accent); background: var(--ui-accent-soft); border-color: rgba(var(--c-accent-rgb), 0.3); }
-.ui-badge::before {
-  content: '';
-  width: 6px; height: 6px; border-radius: 50%;
-  background: currentColor;
-  opacity: 0.85;
-  flex: none;
-}
 
 /* ---- forms -------------------------------------------------------------------------- */
 .ui-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
