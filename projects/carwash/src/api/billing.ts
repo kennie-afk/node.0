@@ -10,11 +10,25 @@ import { z } from 'zod';
 import { authenticate, requireRole } from './middleware';
 import { env } from '../config/env';
 import { getBillingView, payShortcode } from '../billing/service';
+import { billingConfig } from '../billing/config';
 import { ingestConfirmation } from '../mpesa/service';
 import { withOrg } from '../persistence/pool';
 import { BadRequestError, NotFoundError } from '../domain/errors';
 
 const router = Router();
+
+/** Public: the pricing page reads this, so what it shows is always what billing will charge. */
+router.get('/pricing', (_req, res) => {
+  const config = billingConfig();
+  res.json({
+    currency: 'KES',
+    trialDays: config.trialDays,
+    starterCents: config.starterCents,
+    growthCents: config.growthCents,
+    growthMaxSites: config.growthMaxSites,
+    provisional: true
+  });
+});
 
 router.get('/billing', authenticate, requireRole('owner', 'manager'), async (req, res, next) => {
   try {

@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import { Rail, type RailItem } from "@/components/rail";
 import { readSession } from "@/lib/session";
+import { StatusBanner } from "@/components/status-banner";
 
 const ITEMS: RailItem[] = [
   { href: "/console", label: "Overview", icon: "home" },
+  { href: "/console/get-started", label: "Start", icon: "start" },
   { href: "/console/flags", label: "Flags", icon: "flags" },
   { href: "/console/jobs", label: "Jobs", icon: "jobs" },
   { href: "/console/payments", label: "Payments", icon: "payments" },
@@ -12,7 +14,9 @@ const ITEMS: RailItem[] = [
   { href: "/console/services", label: "Prices", icon: "services" },
   { href: "/console/team", label: "Team", icon: "team" },
   { href: "/console/devices", label: "Devices", icon: "devices" },
-  { href: "/console/report", label: "Report", icon: "report" }
+  { href: "/console/found", label: "Found", icon: "report" },
+  { href: "/console/report", label: "Report", icon: "report" },
+  { href: "/console/billing", label: "Billing", icon: "billing" }
 ];
 
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {
@@ -26,7 +30,10 @@ export default async function ConsoleLayout({ children }: { children: React.Reac
     <div className="flex min-h-screen bg-[var(--color-canvas)]">
       <Rail items={ITEMS} displayName={session.displayName} role={session.role} />
       <main className="flex-1 px-6 py-9 md:px-10 lg:px-14">
-        <div className="mx-auto max-w-5xl">{children}</div>
+        <div className="mx-auto max-w-5xl">
+          <StatusBanner role={session.role} />
+          {children}
+        </div>
       </main>
     </div>
   );

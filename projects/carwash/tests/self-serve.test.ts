@@ -198,6 +198,56 @@ describe.runIf(on)('self-serve signup, billing, sample data and the summary (rea
     expect(orgs).toBe(1);
   });
 
+  it('takes a Daraja confirmation with the secret in the registered URL as well as in a header, and refuses a wrong one', async () => {
+    await load();
+    const owner = await selfServe('Webhook Wash');
+    const ref = (await billing.getBillingView(owner.orgId)).billingRef;
+    const secret = process.env.MPESA_CALLBACK_SECRET!;
+    const body = confirmation({ BillRefNumber: ref, TransAmount: 3500 });
+
+    const wrong = await request(app).post('/v1/hooks/pay/not-the-secret/confirmation').send(body);
+    expect(wrong.body).toEqual({ ResultCode: 1, ResultDesc: 'Rejected' });
+    expect((await asOwner(owner.orgId, 'SELECT count(*)::int AS n FROM billing_payments')).rows[0].n).toBe(0);
+
+    const viaPath = await request(app).post(`/v1/hooks/pay/${secret}/confirmation`).send(body);
+    expect(viaPath.body).toEqual({ ResultCode: 0, ResultDesc: 'Accepted' });
+    const viaHeader = await request(app).post('/v1/webhooks/mpesa/confirmation').set('x-callback-secret', secret).send(body);
+    expect(viaHeader.body).toEqual({ ResultCode: 0, ResultDesc: 'Accepted' });
+    // delivered twice, applied once
+    expect((await asOwner(owner.orgId, 'SELECT count(*)::int AS n FROM billing_payments')).rows[0].n).toBe(1);
+  });
+
+  it('registers a real device whose secret is shown once, stored only as a hash, and works against the ingestion service', async () => {
+    await load();
+    const owner = await selfServe('Device Wash');
+    const site = (await request(app).get('/v1/sites').set(owner.auth)).body[0];
+    const bay = (await request(app).get(`/v1/sites/${site.id}`).set(owner.auth)).body.bays[0];
+
+    expect((await request(app).post('/v1/devices').set(owner.auth).send({ siteId: site.id, type: 'toaster' })).status).toBe(400);
+    const made = await request(app).post('/v1/devices').set(owner.auth).send({ siteId: site.id, bayId: bay.id, type: 'flow_meter' });
+    expect(made.status).toBe(201);
+    expect(made.body.secret).toMatch(/^[0-9a-f]{48}$/);
+
+    const stored = (await asOwner(owner.orgId, 'SELECT secret_hash FROM devices WHERE id = $1', [made.body.id])).rows[0].secret_hash;
+    expect(stored).toMatch(/^\$2[aby]\$/);
+    expect(stored).not.toContain(made.body.secret);
+
+    const { createIngestionApp } = await import('../src/ingestion/server');
+    const ingest = createIngestionApp();
+    const reading = { deviceId: made.body.id, readings: [{ sequence: 1, ts: new Date().toISOString(), metric: 'water_litres', value: 12.5 }] };
+    const accepted = await request(ingest).post('/v1/telemetry').set('x-device-id', made.body.id).set('x-device-secret', made.body.secret).send(reading);
+    expect(accepted.status).toBe(202);
+    expect(accepted.body.stored).toBe(1);
+    const refused = await request(ingest).post('/v1/telemetry').set('x-device-id', made.body.id).set('x-device-secret', 'not-the-secret').send(reading);
+    expect(refused.status).toBe(401);
+
+    // another organisation cannot register a device on this site
+    const stranger = await selfServe('Stranger Wash');
+    expect((await request(app).post('/v1/devices').set(stranger.auth).send({ siteId: site.id, type: 'camera' })).status).toBe(404);
+    // and only an owner can register at all
+    expect((await request(app).get('/v1/devices').set(owner.auth)).body.some((d: { id: string }) => d.id === made.body.id)).toBe(true);
+  });
+
   // ---- billing ------------------------------------------------------------------------------
 
   it('issues the invoice before the trial ends, once, with no gaps in the numbering however often the runner passes', async () => {

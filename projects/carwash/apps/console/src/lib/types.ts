@@ -172,3 +172,68 @@ export function parseClock(value: string): number | null {
 }
 
 export const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+export interface Invoice {
+  id: string;
+  number: string;
+  periodStart: string;
+  periodEnd: string;
+  siteCount: number;
+  planCode: string;
+  amountCents: number;
+  paidCents: number;
+  status: string;
+  issuedAt: string;
+}
+
+export interface Billing {
+  mode: "mock" | "live";
+  status: "trial" | "active" | "past_due" | "suspended" | "cancelled";
+  writesAllowed: boolean;
+  trialEndsAt: string;
+  coveredUntil: string;
+  suspendsAt: string;
+  daysLeft: number;
+  billingRef: string;
+  billedSites: number;
+  quote: { planCode: string; siteCount: number; unitCents: number; amountCents: number };
+  creditCents: number;
+  outstandingCents: number;
+  pay: { shortcode: string; accountNumber: string; amountCents: number } | null;
+  invoices: Invoice[];
+}
+
+export interface ChecklistStep {
+  key: string;
+  title: string;
+  detail: string;
+  done: boolean;
+  href: string;
+}
+
+export interface Onboarding {
+  steps: ChecklistStep[];
+  completed: number;
+  total: number;
+  sample: { loaded: boolean; canLoad: boolean };
+  hasRealActivity: boolean;
+}
+
+export interface Summary {
+  scope: "real" | "sample" | "none";
+  windowDays: number;
+  from: string;
+  to: string;
+  daysChecked: number;
+  carsDetected: number;
+  jobsRecorded: number;
+  expectedCents: number;
+  receivedCents: number;
+  gapCents: number;
+  flagsRaised: number;
+  openFlags: number;
+  flaggedCents: number;
+  sites: { name: string; daysChecked: number; expectedCents: number; receivedCents: number; gapCents: number; flags: number }[];
+  topFlags: { type: string; label: string; count: number; estimatedCents: number }[];
+  text: string;
+}

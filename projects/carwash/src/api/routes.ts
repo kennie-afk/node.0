@@ -116,8 +116,14 @@ router.post(
   }
 );
 
-router.post('/webhooks/mpesa/confirmation', async (req, res) => {
-  const secret = req.header('x-callback-secret');
+/**
+ * Accepts a Daraja C2B confirmation. The shared secret may arrive in the `x-callback-secret` header
+ * (when a proxy in front adds it) or as the last path segment of the registered URL, because a
+ * registered callback URL is the one thing Daraja is certain to call exactly as registered. Whether
+ * Daraja accepts a particular URL shape or can send custom headers is a registration detail that has
+ * NOT been verified against the real service.
+ */
+async function acceptConfirmation(req: import('express').Request, res: import('express').Response, presented: string | undefined) {
   const remote = req.ip ?? '';
 
   if (env.MPESA_ALLOWED_IPS.length > 0 && !env.MPESA_ALLOWED_IPS.includes(remote)) {
@@ -125,7 +131,7 @@ router.post('/webhooks/mpesa/confirmation', async (req, res) => {
     return res.status(200).json(DARAJA_REJECTED);
   }
 
-  if (!secretMatches(secret, env.MPESA_CALLBACK_SECRET)) {
+  if (!secretMatches(presented, env.MPESA_CALLBACK_SECRET)) {
     logger.warn('daraja callback with a bad secret', { requestId: req.id });
     return res.status(200).json(DARAJA_REJECTED);
   }
@@ -145,10 +151,16 @@ router.post('/webhooks/mpesa/confirmation', async (req, res) => {
     });
     return res.status(200).json(DARAJA_REJECTED);
   }
-});
+}
+
+router.post('/webhooks/mpesa/confirmation', (req, res) => acceptConfirmation(req, res, req.header('x-callback-secret')));
+router.post('/hooks/pay/:secret/confirmation', (req, res) => acceptConfirmation(req, res, req.params.secret));
 
 router.post('/webhooks/mpesa/validation', (_req, res) => {
   res.status(200).json(DARAJA_ACCEPTED);
+});
+router.post('/hooks/pay/:secret/validation', (req, res) => {
+  res.status(200).json(secretMatches(req.params.secret, env.MPESA_CALLBACK_SECRET) ? DARAJA_ACCEPTED : DARAJA_REJECTED);
 });
 
 export default router;

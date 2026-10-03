@@ -5,7 +5,7 @@ import { SignupForm } from "@/app/signup/form";
 
 export const metadata: Metadata = {
   title: "Get started with Forecourt",
-  description: "Tell us about your car wash and we'll get your site set up."
+  description: "Start a 14-day free trial. No card, no setup fee."
 };
 
 export default function SignupPage() {
@@ -20,7 +20,7 @@ export default function SignupPage() {
                 Get started
               </h1>
               <p className="mt-1 text-[0.8125rem] text-[var(--color-muted)]">
-                Tell us about your site — we&apos;ll set you up personally.
+                Start your free trial. Set up in minutes, no card needed.
               </p>
             </div>
           </Link>

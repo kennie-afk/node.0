@@ -68,7 +68,8 @@ export function renderSummaryText(summary: Omit<Summary, 'text'>, organisation: 
     lines.push('');
     lines.push(`${summary.flagsRaised} thing${summary.flagsRaised === 1 ? '' : 's'} to look at:`);
     for (const flag of summary.topFlags) {
-      lines.push(`- ${flag.label}: ${flag.count} (${formatKsh(flag.estimatedCents as Cents)} at stake)`);
+      const stake = flag.estimatedCents > 0 ? ` (${formatKsh(flag.estimatedCents as Cents)} at stake)` : '';
+      lines.push(`- ${flag.label}: ${flag.count}${stake}`);
     }
   } else {
     lines.push('');

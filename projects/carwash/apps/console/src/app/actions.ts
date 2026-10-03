@@ -38,38 +38,69 @@ export async function signOut(): Promise<void> {
 
 export interface SignupState {
   error: string | null;
-  done: boolean;
+  /** set once the details are in and a code is waiting to be entered */
+  pending: { id: string; delivery: "sent" | "logged" | "failed"; phone: string; expiresInMinutes: number } | null;
 }
 
-export async function requestSignup(
-  _previous: SignupState,
-  form: FormData
-): Promise<SignupState> {
+export async function requestSignup(_previous: SignupState, form: FormData): Promise<SignupState> {
   const businessName = String(form.get("businessName") ?? "").trim();
   const contactName = String(form.get("contactName") ?? "").trim();
   const phone = String(form.get("phone") ?? "").trim();
   const siteCountRaw = String(form.get("siteCount") ?? "").trim();
-  const notes = String(form.get("notes") ?? "").trim();
 
   if (!businessName || !contactName || !phone) {
-    return { error: "Business name, your name and phone number are required.", done: false };
+    return { error: "Business name, your name and phone number are required.", pending: null };
   }
 
   const siteCount = siteCountRaw ? Number.parseInt(siteCountRaw, 10) : undefined;
 
   try {
-    await api.signup({
+    const result = await api.signup({
       businessName,
       contactName,
       phone,
-      siteCount: siteCount && Number.isFinite(siteCount) ? siteCount : undefined,
-      notes: notes || undefined
+      siteCount: siteCount && Number.isFinite(siteCount) ? siteCount : undefined
     });
+    return { error: null, pending: { id: result.id, delivery: result.delivery, phone, expiresInMinutes: result.expiresInMinutes } };
   } catch (caught) {
-    return { error: describeError(caught), done: false };
+    return { error: describeError(caught), pending: null };
   }
+}
 
-  return { error: null, done: true };
+export interface VerifyState {
+  error: string | null;
+  notice: string | null;
+}
+
+export async function verifySignup(_previous: VerifyState, form: FormData): Promise<VerifyState> {
+  const id = String(form.get("id") ?? "");
+  const code = String(form.get("code") ?? "").trim();
+  const pin = String(form.get("pin") ?? "").trim();
+  const confirm = String(form.get("confirm") ?? "").trim();
+
+  if (!/^\d{6}$/.test(code)) return { error: "Enter the six-digit code.", notice: null };
+  if (!/^\d{6}$/.test(pin)) return { error: "Choose a PIN of exactly six digits.", notice: null };
+  if (pin !== confirm) return { error: "The two PINs are not the same.", notice: null };
+
+  try {
+    const result = await api.verifySignup({ id, code, pin });
+    await writeSession({ token: result.token, displayName: result.displayName, role: result.role }, result.expiresInSeconds);
+  } catch (caught) {
+    return { error: describeError(caught), notice: null };
+  }
+  redirect("/console/get-started");
+}
+
+export async function resendSignupCode(_previous: VerifyState, form: FormData): Promise<VerifyState> {
+  try {
+    const result = await api.resendCode(String(form.get("id") ?? ""));
+    return {
+      error: null,
+      notice: result.delivery === "sent" ? "A new code is on its way." : "A new code was issued. Ask your Forecourt contact for it."
+    };
+  } catch (caught) {
+    return { error: describeError(caught), notice: null };
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -245,4 +276,47 @@ export async function resolveFlag(_previous: FormState, form: FormData): Promise
   if (failed) return failed;
   revalidatePath("/console/flags");
   redirect("/console/flags");
+}
+
+
+// ---- first hour: sample data, quick reconciliation, paying the subscription ------------------
+
+export async function loadSample(): Promise<void> {
+  try {
+    await api.send("POST", "/v1/sandbox", {});
+  } catch (caught) {
+    redirect(`/console/get-started?error=${encodeURIComponent(describeError(caught))}`);
+  }
+  revalidatePath("/console", "layout");
+  redirect("/console/found");
+}
+
+export async function removeSample(): Promise<void> {
+  try {
+    await api.send("DELETE", "/v1/sandbox");
+  } catch (caught) {
+    redirect(`/console/get-started?error=${encodeURIComponent(describeError(caught))}`);
+  }
+  revalidatePath("/console", "layout");
+  redirect("/console/get-started");
+}
+
+export async function checkRecentDays(): Promise<void> {
+  try {
+    await api.send("POST", "/v1/reconcile/recent", { days: 14 });
+  } catch (caught) {
+    redirect(`/console/found?error=${encodeURIComponent(describeError(caught))}`);
+  }
+  revalidatePath("/console", "layout");
+  redirect("/console/found");
+}
+
+export async function simulatePayment(): Promise<void> {
+  try {
+    await api.send("POST", "/v1/billing/mock-payment", {});
+  } catch (caught) {
+    redirect(`/console/billing?error=${encodeURIComponent(describeError(caught))}`);
+  }
+  revalidatePath("/console", "layout");
+  redirect("/console/billing");
 }

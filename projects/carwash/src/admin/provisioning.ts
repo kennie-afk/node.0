@@ -5,7 +5,7 @@
  * organisation row is inserted under the very id the session is scoped to). No privileged
  * connection is needed, and provisioning cannot write into any other tenant.
  */
-import { randomUUID } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import { withOrg, withoutTenant } from '../persistence/pool';
 import { ConflictError, NotFoundError } from '../domain/errors';
@@ -102,6 +102,46 @@ export async function provisionOrganisation(input: ProvisionInput): Promise<Prov
   }
 
   return { orgId, phone, pin, pinWasGenerated: input.pin === undefined, ...ids };
+}
+
+export const DEVICE_TYPES = ['flow_meter', 'pump_monitor', 'beam', 'doser', 'machine', 'camera'] as const;
+export type DeviceType = (typeof DEVICE_TYPES)[number];
+
+export interface RegisteredDevice {
+  id: string;
+  secret: string;
+}
+
+/**
+ * Registers a real device (a flow meter, a plate camera) so it can post telemetry. The secret is
+ * random, returned once, and kept only as a bcrypt hash: a device is a credential, not an address.
+ * Without this, only the demo seed could create devices, so the water and camera signals - the
+ * non-human witnesses the whole product rests on - could not be switched on for a real site.
+ */
+export async function registerDevice(
+  orgId: string,
+  input: { siteId: string; bayId?: string | null; type: DeviceType; firmware?: string }
+): Promise<RegisteredDevice> {
+  if (!DEVICE_TYPES.includes(input.type)) {
+    throw new ConflictError(`device type must be one of ${DEVICE_TYPES.join(', ')}`);
+  }
+  const secret = randomBytes(24).toString('hex');
+  const secretHash = await bcrypt.hash(secret, PIN_ROUNDS);
+
+  const id = await withOrg(orgId, async (client) => {
+    const site = await client.query('SELECT 1 FROM sites WHERE id = $1', [input.siteId]);
+    if (site.rows.length === 0) throw new NotFoundError('that site was not found');
+    if (input.bayId) {
+      const bay = await client.query('SELECT 1 FROM bays WHERE id = $1 AND site_id = $2', [input.bayId, input.siteId]);
+      if (bay.rows.length === 0) throw new NotFoundError('that bay is not at that site');
+    }
+    const { rows } = await client.query<{ id: string }>(
+      `INSERT INTO devices (org_id, site_id, bay_id, type, firmware, secret_hash) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      [orgId, input.siteId, input.bayId ?? null, input.type, input.firmware ?? null, secretHash]
+    );
+    return rows[0]!.id;
+  });
+  return { id, secret };
 }
 
 export interface SignupRow {

@@ -5,6 +5,7 @@
  *   signups [status]                         list signup requests
  *   provision <signup-id|latest> [--site NAME] [--till CODE] [--phone NUMBER]
  *   create-org --business NAME --owner NAME --phone NUMBER [--site NAME] [--till CODE]
+ *   device:add --org ID --site ID --type flow_meter|camera|... [--bay ID]   register a real device; prints its secret once
  *   messages [N]                             recent outbound messages (read a verification code to relay it)
  *   billing:run                              issue due invoices and refresh statuses now
  *   billing:show <org-id>                    subscription, account number and invoices
@@ -16,7 +17,7 @@
  * The owner's PIN is generated here, printed once and stored only as a bcrypt hash.
  */
 import { closeMigrationPool, closePool } from '../persistence/pool';
-import { listSignups, provisionFromSignup, provisionOrganisation, ProvisionResult } from './provisioning';
+import { DEVICE_TYPES, DeviceType, listSignups, provisionFromSignup, provisionOrganisation, ProvisionResult, registerDevice } from './provisioning';
 import { recentMessages } from '../notify/provider';
 import { assignUnmatched, getBillingView, listUnmatched, recordManualPayment, runBillingCycle, setUnitPriceOverride } from '../billing/service';
 import { formatKsh, Cents } from '../domain/money';
@@ -81,6 +82,18 @@ async function main(): Promise<void> {
       tillNumber: flag(args, 'till')
     });
     printCredentials(result, business);
+    return;
+  }
+
+  if (command === 'device:add') {
+    const org = flag(args, 'org');
+    const site = flag(args, 'site');
+    const type = flag(args, 'type') as DeviceType | undefined;
+    if (!org || !site || !type || !DEVICE_TYPES.includes(type)) {
+      throw new Error(`usage: device:add --org ID --site ID --type ${DEVICE_TYPES.join('|')} [--bay ID]`);
+    }
+    const device = await registerDevice(org, { siteId: site, bayId: flag(args, 'bay') ?? null, type });
+    console.log(`device id : ${device.id}\nsecret    : ${device.secret}   (shown once - it is not stored)`);
     return;
   }
 

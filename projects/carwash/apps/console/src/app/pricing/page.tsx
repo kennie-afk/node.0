@@ -2,38 +2,39 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { buttonClass, secondaryButtonClass } from "@/components/ui";
+import { api } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "Forecourt pricing",
   description: "One price per site, per month. No setup fee, no percentage of your revenue."
 };
 
-const TIERS = [
-  {
-    name: "Starter",
-    plan: "starter",
-    sites: "1 site",
-    price: "KES 3,500",
-    detail: "Per site, per month. For a single-bay or single-site operation."
-  },
-  {
-    name: "Growth",
-    plan: "growth",
-    sites: "2–5 sites",
-    price: "KES 3,000",
-    detail: "Per site, per month. For an owner running more than one location.",
-    highlight: true
-  },
-  {
-    name: "Multi-site",
-    plan: "custom",
-    sites: "6+ sites",
-    price: "Talk to us",
-    detail: "Volume pricing for a chain of sites, billed on one invoice."
-  }
-];
+const kes = (cents: number) => `KES ${(cents / 100).toLocaleString("en-KE")}`;
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const pricing = await api.pricing();
+  const TIERS = [
+    {
+      name: "Starter",
+      sites: "1 site",
+      price: kes(pricing.starterCents),
+      detail: "Per site, per month. For a single-bay or single-site operation."
+    },
+    {
+      name: "Growth",
+      sites: `2–${pricing.growthMaxSites} sites`,
+      price: kes(pricing.growthCents),
+      detail: "Per site, per month. For an owner running more than one location.",
+      highlight: true
+    },
+    {
+      name: "Multi-site",
+      sites: `${pricing.growthMaxSites + 1}+ sites`,
+      price: "Talk to us",
+      detail: "Volume pricing for a chain of sites, billed on one invoice."
+    }
+  ];
+
   return (
     <main className="min-h-screen bg-[var(--color-canvas)] text-[var(--color-ink)]">
       <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
@@ -87,13 +88,14 @@ export default function PricingPage() {
         </div>
 
         <p className="mt-6 text-center text-[0.75rem] text-[var(--color-faint)]">
-          A flat fee, not a share of what the site earns. Introductory pricing; confirmed when we
-          set you up.
+          A flat fee, not a share of what the site earns. Start with a {pricing.trialDays}-day free
+          trial: no card, no setup fee. Introductory pricing, subject to change before you are
+          invoiced.
         </p>
 
         <div className="mt-7 text-center">
           <Link href="/signup" className={`${buttonClass} px-6 py-2.5 text-[0.875rem]`}>
-            Get started
+            Start free trial
           </Link>
           <Link
             href="/"

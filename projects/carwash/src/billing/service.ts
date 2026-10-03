@@ -278,6 +278,8 @@ export interface BillingView {
   writesAllowed: boolean;
   trialEndsAt: Date;
   coveredUntil: Date;
+  /** when an unpaid account becomes read-only */
+  suspendsAt: Date;
   daysLeft: number;
   billingRef: string;
   billedSites: number;
@@ -325,6 +327,7 @@ export async function getBillingView(orgId: string, now: Date = new Date(), conf
       writesAllowed: writesAllowed(status),
       trialEndsAt: sub.trialEndsAt,
       coveredUntil: covered,
+      suspendsAt: addDays(covered, config.suspendAfterDays),
       daysLeft: Math.max(0, Math.ceil((covered.getTime() - now.getTime()) / 86_400_000)),
       billingRef: sub.billingRef,
       billedSites: priced.siteCount,

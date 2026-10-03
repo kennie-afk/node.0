@@ -53,7 +53,7 @@ export default function LandingPage() {
         </p>
         <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link href="/signup" className={`${buttonClass} px-6 py-2.5 text-[0.875rem]`}>
-            Get started
+            Start free trial
           </Link>
           <Link href="/pricing" className={`${secondaryButtonClass} px-6 py-2.5 text-[0.875rem]`}>
             See pricing

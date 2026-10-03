@@ -41,6 +41,17 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set and at least 32 characters}
       MPESA_CALLBACK_SECRET: ${MPESA_CALLBACK_SECRET:?MPESA_CALLBACK_SECRET must be set and at least 16 characters}
       CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # Forecourt's own subscription (prices and periods are provisional; see README "Billing")
+      BILLING_MODE: ${BILLING_MODE:-mock}
+      # this compose file is the local / demo path; a real deployment sets BILLING_MODE=live and removes this
+      BILLING_ALLOW_MOCK_IN_PRODUCTION: ${BILLING_ALLOW_MOCK_IN_PRODUCTION:-true}
+      BILLING_SHORTCODE: ${BILLING_SHORTCODE:-}
+      BILLING_PRICE_STARTER_KES: ${BILLING_PRICE_STARTER_KES:-3500}
+      BILLING_PRICE_GROWTH_KES: ${BILLING_PRICE_GROWTH_KES:-3000}
+      BILLING_TRIAL_DAYS: ${BILLING_TRIAL_DAYS:-14}
+      BILLING_SUSPEND_AFTER_DAYS: ${BILLING_SUSPEND_AFTER_DAYS:-14}
+      SIGNUP_RESEND_COOLDOWN_SECONDS: ${SIGNUP_RESEND_COOLDOWN_SECONDS:-60}
+      API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-120}
       API_PORT: 4000
     ports:
       - "${API_PORT:-4000}:4000"

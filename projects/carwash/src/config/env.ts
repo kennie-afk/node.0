@@ -44,7 +44,10 @@ const schema = z.object({
   // 'mock' lets an owner simulate paying from the console and needs no shortcode; 'live' takes real
   // M-Pesa confirmations on BILLING_SHORTCODE through the same Daraja callback the tills use.
   BILLING_MODE: z.enum(['mock', 'live']).default('mock'),
-  BILLING_SHORTCODE: z.string().trim().min(3).max(20).optional(),
+  // an empty value (compose and .env.example pass one) means "not set"
+  // production refuses mock billing unless this is set on purpose (see superRefine below)
+  BILLING_ALLOW_MOCK_IN_PRODUCTION: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+  BILLING_SHORTCODE: z.preprocess((value) => (typeof value === 'string' && value.trim() === '' ? undefined : value), z.string().trim().min(3).max(20).optional()),
   BILLING_PRICE_STARTER_KES: z.coerce.number().int().positive().default(3500),
   BILLING_PRICE_GROWTH_KES: z.coerce.number().int().positive().default(3000),
   BILLING_GROWTH_MAX_SITES: z.coerce.number().int().positive().default(5),
@@ -70,6 +73,15 @@ const schemaChecked = schema.superRefine((value, context) => {
       code: z.ZodIssueCode.custom,
       path: ['BILLING_SHORTCODE'],
       message: 'BILLING_SHORTCODE is required when BILLING_MODE=live'
+    });
+  }
+  // Mock billing lets an owner "pay" without paying. Left on by mistake in a real deployment it would
+  // hand out free months, so production refuses it unless someone says, in writing, that they mean it.
+  if (value.NODE_ENV === 'production' && value.BILLING_MODE === 'mock' && !value.BILLING_ALLOW_MOCK_IN_PRODUCTION) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['BILLING_MODE'],
+      message: 'BILLING_MODE=mock lets owners simulate paying; set BILLING_MODE=live with a BILLING_SHORTCODE, or BILLING_ALLOW_MOCK_IN_PRODUCTION=true for a demo'
     });
   }
 });

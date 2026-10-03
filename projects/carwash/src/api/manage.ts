@@ -13,7 +13,7 @@ import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '.
 import { assertTransition, EVENT_RESULTING_STATE, JobEventType, JobState } from '../domain/job';
 import { normalisePlate } from '../domain/plate';
 import { insertPayment, recordJobEvent, transitionJob } from '../persistence/repositories';
-import { phoneInUse } from '../admin/provisioning';
+import { DEVICE_TYPES, phoneInUse, registerDevice } from '../admin/provisioning';
 import { normalisePhone } from '../admin/phone';
 
 const router = Router();
@@ -409,7 +409,25 @@ router.put('/users/:id', authenticate, owner, requireWritable, async (req, res, 
   }
 });
 
-// ---- devices (read only) ---------------------------------------------------------------------
+const deviceCreate = z.object({
+  siteId: uuid,
+  bayId: uuid.nullable().optional(),
+  type: z.enum(DEVICE_TYPES),
+  firmware: z.string().max(40).optional()
+});
+
+// The secret is in this response and nowhere else, ever: it is stored only as a hash.
+router.post('/devices', authenticate, owner, requireWritable, async (req, res, next) => {
+  try {
+    const body = parse(deviceCreate, req.body);
+    const device = await registerDevice(req.principal!.orgId, body);
+    res.status(201).json({ id: device.id, secret: device.secret, note: 'Copy the secret now. It cannot be shown again.' });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ---- devices ---------------------------------------------------------------------
 
 router.get('/devices', authenticate, async (req, res, next) => {
   try {

@@ -1,6 +1,6 @@
 import express from 'express';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { env } from '../config/env';
 import { logger } from '../common/logger';
 import { closePool, pool } from '../persistence/pool';
@@ -34,7 +34,7 @@ export function createIngestionApp() {
       limit: env.TELEMETRY_RATE_LIMIT_PER_MINUTE,
       standardHeaders: true,
       legacyHeaders: false,
-      keyGenerator: (req) => String(req.header('x-device-id') ?? req.ip ?? 'unknown')
+      keyGenerator: (req) => String(req.header('x-device-id') ?? ipKeyGenerator(req.ip ?? 'unknown'))
     })
   );
 

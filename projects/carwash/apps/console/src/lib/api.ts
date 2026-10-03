@@ -79,9 +79,36 @@ export interface SignupRequest {
 export interface SignupResult {
   id: string;
   status: string;
+  delivery: "sent" | "logged" | "failed";
+  expiresInMinutes: number;
 }
 
+export interface VerifyResult extends LoginResult {
+  orgId: string;
+  siteId: string;
+}
+
+export interface Pricing {
+  currency: string;
+  trialDays: number;
+  starterCents: number;
+  growthCents: number;
+  growthMaxSites: number;
+  provisional: boolean;
+}
+
+/** What the pricing page shows if the API cannot be reached: the same defaults the API ships with. */
+export const FALLBACK_PRICING: Pricing = {
+  currency: "KES",
+  trialDays: 14,
+  starterCents: 350_000,
+  growthCents: 300_000,
+  growthMaxSites: 5,
+  provisional: true
+};
+
 export const api = {
+  pricing: () => request<Pricing>("/v1/pricing", undefined, "").catch(() => FALLBACK_PRICING),
   get: <T>(path: string) => request<T>(path),
   post: <T>(path: string) => request<T>(path, { method: "POST" }),
   send: <T>(method: "POST" | "PUT" | "DELETE", path: string, body?: unknown) =>
@@ -108,6 +135,18 @@ export const api = {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(signup)
       },
+      ""
+    ),
+  verifySignup: (body: { id: string; code: string; pin: string }) =>
+    request<VerifyResult>(
+      "/v1/signup/verify",
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+      ""
+    ),
+  resendCode: (id: string) =>
+    request<SignupResult>(
+      "/v1/signup/resend",
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) },
       ""
     )
 };

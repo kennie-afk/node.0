@@ -19,7 +19,9 @@ export type IconName =
   | "report"
   | "services"
   | "team"
-  | "devices";
+  | "devices"
+  | "start"
+  | "billing";
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {
   const paths: Record<IconName, ReactNode> = {
@@ -78,6 +80,18 @@ export function Icon({ name, className }: { name: IconName; className?: string }
       <>
         <rect x="6" y="6" width="12" height="12" rx="2" />
         <path d="M9.5 3v3M14.5 3v3M9.5 18v3M14.5 18v3M3 9.5h3M3 14.5h3M18 9.5h3M18 14.5h3" />
+      </>
+    ),
+    start: (
+      <>
+        <rect x="4.5" y="3.5" width="15" height="17" rx="2" />
+        <path d="m8.5 9 1.6 1.6L13 7.7M8.5 15.5h7" />
+      </>
+    ),
+    billing: (
+      <>
+        <rect x="3.5" y="6" width="17" height="12" rx="2" />
+        <path d="M3.5 10h17M7 14.5h3" />
       </>
     ),
     report: (
