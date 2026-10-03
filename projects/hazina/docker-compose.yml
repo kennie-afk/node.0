@@ -1,0 +1,75 @@
+name: hazina
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hazina}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-hazina}
+    volumes:
+      - hazina-data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5441}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hazina}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build: .
+    command: ["node", "dist/persistence/migrate.js"]
+    environment: &db
+      DATABASE_URL: postgres://hazina_app:${HAZINA_APP_PASSWORD:?HAZINA_APP_PASSWORD must be set and at least 12 characters}@postgres:5432/${POSTGRES_DB:-hazina}
+      DATABASE_MIGRATION_URL: postgres://${POSTGRES_USER:-hazina}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-hazina}
+      HAZINA_APP_PASSWORD: ${HAZINA_APP_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set and at least 32 characters}
+      MPESA_CALLBACK_SECRET: ${MPESA_CALLBACK_SECRET:?MPESA_CALLBACK_SECRET must be set and at least 16 characters}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      <<: *db
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      # Hazina's own subscription: PROVISIONAL prices, see README "Billing"
+      BILLING_MODE: ${BILLING_MODE:-mock}
+      # lets a signed-in person simulate a payment arriving on their paybill; this compose file is the local / demo path
+      MPESA_SIMULATOR: ${MPESA_SIMULATOR:-true}
+      MPESA_SIMULATOR_ALLOW_IN_PRODUCTION: ${MPESA_SIMULATOR_ALLOW_IN_PRODUCTION:-true}
+      # this compose file is the local / demo path; a real deployment sets BILLING_MODE=live and removes this
+      BILLING_ALLOW_MOCK_IN_PRODUCTION: ${BILLING_ALLOW_MOCK_IN_PRODUCTION:-true}
+      BILLING_SHORTCODE: ${BILLING_SHORTCODE:-}
+      BILLING_PRICE_SACCO_SMALL_KES: ${BILLING_PRICE_SACCO_SMALL_KES:-3500}
+      BILLING_PRICE_SACCO_MEDIUM_KES: ${BILLING_PRICE_SACCO_MEDIUM_KES:-6000}
+      BILLING_PRICE_LENDER_KES: ${BILLING_PRICE_LENDER_KES:-10000}
+      BILLING_TRIAL_DAYS: ${BILLING_TRIAL_DAYS:-14}
+      BILLING_SUSPEND_AFTER_DAYS: ${BILLING_SUSPEND_AFTER_DAYS:-14}
+      SIGNUP_RESEND_COOLDOWN_SECONDS: ${SIGNUP_RESEND_COOLDOWN_SECONDS:-60}
+      LOGIN_RATE_LIMIT_PER_WINDOW: ${LOGIN_RATE_LIMIT_PER_WINDOW:-5}
+      API_RATE_LIMIT_PER_MINUTE: ${API_RATE_LIMIT_PER_MINUTE:-240}
+      API_PORT: 4300
+    ports:
+      - "${API_PORT:-4300}:4300"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  console:
+    build: ./apps/console
+    restart: unless-stopped
+    environment:
+      HAZINA_API_URL: http://api:4300
+    ports:
+      - "${CONSOLE_PORT:-3800}:3800"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  hazina-data:
