@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Forecourt">
   <defs>
     <linearGradient id="fc" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0ea5e9"/>
-      <stop offset="100%" stop-color="#0369a1"/>
+      <stop offset="0%" stop-color="#4f7df3"/>
+      <stop offset="100%" stop-color="#1d4ed8"/>
     </linearGradient>
   </defs>
   <path d="M42 150h172" stroke="url(#fc)" stroke-width="14" stroke-linecap="round" fill="none"/>

@@ -1,7 +1,7 @@
 # Church CMS console: design language
 
 This replaces the earlier "dense, 6px radius, 12px root, no shadows" rules for this app. The CMS
-keeps its own orange identity; everything else follows SmartRE (`java.0/smartRE-front`) and the
+keeps its own plum identity; everything else follows SmartRE (`java.0/smartRE-front`) and the
 SmartSeason worked example (`java.0/smartSeason/apps/web/DESIGN.md`).
 
 ## What was taken from SmartRE
@@ -21,12 +21,12 @@ SmartSeason worked example (`java.0/smartSeason/apps/web/DESIGN.md`).
 
 | Token | Light | Dark | Use |
 |---|---|---|---|
-| `--c-bg` | #ffffff | #0e0d0c | canvas; light mode is pure white everywhere |
-| `--c-surface` | #ffffff | #181614 | cards, sidebar, inputs |
-| `--c-raised` | #ffffff | #211e1b | table header, hover, chips |
-| `--c-text` / `-2` / `--c-muted` | #1c1917 / #44403c / #5d5851 | #f6f2ed / #d6cfc6 / #aaa297 | text; muted passes 4.5:1 |
-| `--c-border` / `-strong` | #e9e3da / #d4ccc0 | #2d2925 / #433d36 | hairlines, inputs |
-| `--c-accent` (+hover, soft) | #c2501a | #ee8444 | the orange |
+| `--c-bg` | #ffffff | #0e0c10 | canvas; light mode is pure white everywhere |
+| `--c-surface` | #ffffff | #17141a | cards, sidebar, inputs |
+| `--c-raised` | #ffffff | #201c24 | table header, hover, chips |
+| `--c-text` / `-2` / `--c-muted` | #1c1917 / #44403c / #5b5560 | #f5f1f6 / #d5ced8 / #a79eac | text; muted passes 4.5:1 |
+| `--c-border` / `-strong` | #eae5ee / #d5cddb | #2c2731 / #413a48 | hairlines, inputs |
+| `--c-accent` (+hover, soft) | #a21caf | #d27fe0 | the plum |
 | ok / warn / bad / info | green, amber, red, blue | brighter variants | badges, deltas; each has an `-rgb` token for tints |
 
 Themes: `data-theme="light|dark"` on `<html>`, restored before first paint by `/theme-init.js`,

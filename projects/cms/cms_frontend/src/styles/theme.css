@@ -6,23 +6,23 @@
  */
 :root {
   color-scheme: dark;
-  --c-bg: #0e0d0c;
-  --c-surface: #181614;
-  --c-raised: #211e1b;
-  --c-input: #141210;
-  --c-fill: #26221f;
-  --c-fill-strong: #3a352f;
-  --c-border: #2d2925;
-  --c-border-strong: #433d36;
-  --c-text: #f6f2ed;
-  --c-text-2: #d6cfc6;
-  --c-muted: #aaa297;
-  /* Brand accent: orange. Re-brand by changing these (and the light ones below). */
-  --c-accent: #ee8444;
-  --c-accent-rgb: 238, 132, 68;
-  --c-accent-hover: #f59a60;
-  --c-accent-deep: #f7b07f;
-  --c-on-accent: #1a0d04;
+  --c-bg: #0e0c10;
+  --c-surface: #17141a;
+  --c-raised: #201c24;
+  --c-input: #131016;
+  --c-fill: #25212a;
+  --c-fill-strong: #39333f;
+  --c-border: #2c2731;
+  --c-border-strong: #413a48;
+  --c-text: #f5f1f6;
+  --c-text-2: #d5ced8;
+  --c-muted: #a79eac;
+  /* Brand accent: plum. Re-brand by changing these (and the light ones below). */
+  --c-accent: #d27fe0;
+  --c-accent-rgb: 210, 127, 224;
+  --c-accent-hover: #dc97e8;
+  --c-accent-deep: #e8b4f0;
+  --c-on-accent: #2a0a30;
   --c-accent-soft: rgba(var(--c-accent-rgb), 0.14);
   --c-ok: #4ade80;
   --c-ok-rgb: 74, 222, 128;
@@ -34,7 +34,7 @@
   --c-info-rgb: 94, 184, 255;
   --c-ok-bg: #1f3a1f;
   --c-bad-bg: #3f1e1e;
-  --c-scrollbar: #433d36;
+  --c-scrollbar: #413a48;
   --c-scrim: rgba(0, 0, 0, 0.6);
 }
 
@@ -45,16 +45,16 @@
   --c-raised: #ffffff;
   --c-input: #ffffff;
   --c-fill: #ffffff;
-  --c-fill-strong: #e4ddd2;
-  --c-border: #e9e3da;
-  --c-border-strong: #d4ccc0;
+  --c-fill-strong: #e5dfe9;
+  --c-border: #eae5ee;
+  --c-border-strong: #d5cddb;
   --c-text: #1c1917;
   --c-text-2: #44403c;
-  --c-muted: #5d5851;
-  --c-accent: #c2501a;
-  --c-accent-rgb: 194, 80, 26;
-  --c-accent-hover: #a54314;
-  --c-accent-deep: #8a3510;
+  --c-muted: #5b5560;
+  --c-accent: #a21caf;
+  --c-accent-rgb: 162, 28, 175;
+  --c-accent-hover: #86168f;
+  --c-accent-deep: #6b1073;
   --c-on-accent: #ffffff;
   --c-accent-soft: rgba(var(--c-accent-rgb), 0.09);
   --c-ok: #15803d;
@@ -67,6 +67,6 @@
   --c-info-rgb: 29, 111, 184;
   --c-ok-bg: #dcfce7;
   --c-bad-bg: #fee2e2;
-  --c-scrollbar: #d4ccc0;
+  --c-scrollbar: #d5cddb;
   --c-scrim: rgba(28, 25, 23, 0.45);
 }

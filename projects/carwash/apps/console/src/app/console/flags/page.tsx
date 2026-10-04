@@ -113,7 +113,7 @@ export default async function FlagsPage({
               ) : null}
             </div>
 
-            {Object.keys(flag.evidence ?? {}).length > 0 ? (
+            {Object.entries(flag.evidence ?? {}).filter(([, value]) => typeof value !== "object").length > 0 ? (
               <dl className="mt-3 grid gap-x-6 gap-y-2 border-t border-[var(--color-line)] pt-3 sm:grid-cols-3">
                 {Object.entries(flag.evidence)
                   .filter(([, value]) => typeof value !== "object")
