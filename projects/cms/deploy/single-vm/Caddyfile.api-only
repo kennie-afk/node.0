@@ -1,0 +1,51 @@
+# API-only mode: use this when the console stays on Vercel (or any other static host) and only the
+# API runs on this VM. The browser then makes cross-origin requests, so CORS_ORIGINS in .env must list
+# the console's exact origin (e.g. https://church-cms-seven.vercel.app). Slower than same-origin mode
+# for a first request (a CORS preflight per new route/method, cached by the browser for a while).
+{
+	admin off
+	email {$ACME_EMAIL:admin@localhost}
+	servers {
+		protocols h1 h2 h3
+		trusted_proxies static {$TRUSTED_PROXIES}
+		client_ip_headers CF-Connecting-IP X-Forwarded-For
+	}
+}
+
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		-Server
+		Strict-Transport-Security "max-age=63072000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "no-referrer"
+		Cross-Origin-Resource-Policy "cross-origin"
+	}
+
+	handle /healthz {
+		respond "ok" 200
+	}
+
+	handle {
+		reverse_proxy api:4400 {
+			header_up X-Forwarded-For {client_ip}
+			header_up -X-Real-IP
+			flush_interval -1
+			transport http {
+				dial_timeout 3s
+				response_header_timeout 60s
+				keepalive 2m
+				keepalive_idle_conns 64
+			}
+			lb_try_duration 2s
+		}
+	}
+
+	log {
+		output stdout
+		format console
+		level WARN
+	}
+}

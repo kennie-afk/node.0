@@ -33,9 +33,19 @@ export class TenantRepository<M extends Model> {
 
   async list(options: ListOptions): Promise<Page<M>> {
     const { limit, offset } = toOffset(options.pagination);
+    const where = this.scoped(options.where);
+
+    // Counting through a LEFT JOIN with COUNT(DISTINCT id) is the dominant cost of a plain list on a large
+    // table. When no include narrows the result (none is `required`) and the filter does not reach into
+    // one, the joined rows cannot change the count, so count the table alone.
+    if (!narrowsByInclude(options.include, where)) {
+      const rows = await this.model.findAll({ where, include: options.include, order: options.order, limit, offset });
+      const count = await this.model.count({ where });
+      return toPage(rows, count, options.pagination);
+    }
 
     const { rows, count } = await this.model.findAndCountAll({
-      where: this.scoped(options.where),
+      where,
       include: options.include,
       order: options.order,
       limit,
@@ -87,4 +97,25 @@ export class TenantRepository<M extends Model> {
     const record = await this.findByIdOrFail(id);
     await record.destroy();
   }
+}
+
+/**
+ * True when a joined table can change which rows match: an inner-joined (or filtered) include, or a
+ * filter whose KEY names a joined column ("$family.name$" or "family.name"). Only keys are inspected:
+ * plain values such as an email address legitimately contain dots.
+ */
+function narrowsByInclude(include: unknown, where: unknown): boolean {
+  const joins = Array.isArray(include) ? include : include ? [include] : [];
+  if (joins.some((entry) => (entry as { required?: boolean }).required === true || (entry as { where?: unknown }).where !== undefined)) return true;
+  const keyReachesJoin = (node: unknown): boolean => {
+    if (Array.isArray(node)) return node.some(keyReachesJoin);
+    if (node && typeof node === 'object') {
+      const record = node as Record<string | symbol, unknown>;
+      return [...Object.keys(record), ...Object.getOwnPropertySymbols(record)].some(
+        (key) => (typeof key === 'string' && (key.startsWith('$') || key.includes('.'))) || keyReachesJoin(record[key])
+      );
+    }
+    return false;
+  };
+  return keyReachesJoin(where);
 }

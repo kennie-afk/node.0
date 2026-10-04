@@ -1,6 +1,14 @@
-# Render Blueprint for a free-tier CMS DEMO. Not for real users: free web services sleep after
-# ~15 minutes idle, and the free Postgres expires. Deploy: Render dashboard > New > Blueprint,
-# point it at this repo. Prices, limits and field names are from memory; check Render's docs.
+# SUPERSEDED. Do not use this for anything people depend on. The recommended free, always-on setup is
+# deploy/single-vm/ (one VM, Caddy, Postgres, PgBouncer, Redis, worker): see deploy/single-vm/README.md.
+#
+# Why this file is not recommended any more:
+#   - free web services sleep after ~15 minutes idle and take a minute or more to wake: the opposite of fast;
+#   - the free Postgres expires after a short period (the deployment this file produced stopped answering);
+#   - no background worker on the free tier, so queued and recurring jobs never run;
+#   - a sleeping service drops Safaricom callbacks, so M-Pesa has to stay in mock mode.
+# It is kept only as a record of what a no-cost Render demo looks like. Render Blueprint for a free-tier CMS
+# DEMO. Not for real users. Deploy: Render dashboard > New > Blueprint, point it at this repo. Prices, limits and
+# field names are from memory; check Render's docs.
 #
 # Differences from cmsbackend/docker-compose.yml, on purpose:
 #   - no PgBouncer (not needed at demo scale; the app connects to Postgres directly)

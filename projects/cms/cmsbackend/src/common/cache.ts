@@ -106,6 +106,14 @@ export interface CacheOptions {
   ttlSeconds?: number;
 }
 
+/**
+ * Concurrent requests for the same missing key share ONE computation instead of each running the
+ * (expensive) query: when a popular report's entry expires, the first caller recomputes it and the
+ * rest wait for that result. Without this, 30 simultaneous requests are 30 identical multi-second
+ * queries and the tail latency is the queue behind them.
+ */
+const inFlight = new Map<string, Promise<unknown>>();
+
 export async function cached<T>(churchId: number, name: string, params: unknown, compute: () => Promise<T>, options: CacheOptions = {}): Promise<T> {
   const backing = activeStore();
   if (!backing) return compute();
@@ -120,11 +128,29 @@ export async function cached<T>(churchId: number, name: string, params: unknown,
   } catch {
     return compute();
   }
-  const fresh = await compute();
-  try {
-    await backing.set(key, JSON.stringify(fresh), ttl);
-  } catch {
-    /* an uncacheable result is still a correct result */
+  const pending = inFlight.get(key);
+  if (pending) {
+    try {
+      return (await pending) as T;
+    } catch {
+      // The request that started this computation failed or was cancelled (its transaction goes with
+      // it); that is no reason for us to fail too, so compute our own.
+      return compute();
+    }
   }
-  return fresh;
+  const work = (async () => {
+    const fresh = await compute();
+    try {
+      await backing.set(key, JSON.stringify(fresh), ttl);
+    } catch {
+      /* an uncacheable result is still a correct result */
+    }
+    return fresh;
+  })();
+  inFlight.set(key, work);
+  try {
+    return await work;
+  } finally {
+    inFlight.delete(key);
+  }
 }

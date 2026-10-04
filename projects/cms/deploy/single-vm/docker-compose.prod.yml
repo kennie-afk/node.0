@@ -1,0 +1,211 @@
+# Church CMS on ONE VM: Caddy (HTTPS, HTTP/3, compression, the console's static files) ->
+# API -> PgBouncer -> Postgres, plus a worker and Redis. Nothing is published except 80/443.
+#
+#   ./scripts/generate-env.sh --site cms.example.com --cors https://cms.example.com
+#   ./scripts/up.sh
+#
+# Two database roles, on purpose: the OWNER (POSTGRES_USER) only runs migrations; the API and the
+# worker connect as APP_DB_USER, which is neither owner nor superuser, because owners and superusers
+# bypass row-level security. The API refuses to start in production under a privileged role.
+name: cms
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "5" }
+
+x-hardening: &hardening
+  read_only: true
+  tmpfs: [/tmp]
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+
+x-api-env: &api-env
+  NODE_ENV: production
+  PORT: 4400
+  METRICS_PORT: 9100
+  # Through PgBouncer as the application role. Statement timeouts live on the role itself
+  # (migration 20260930120000) because PgBouncer does not forward startup parameters.
+  DATABASE_URL: postgres://${APP_DB_USER:-cms_app}:${APP_DB_PASSWORD:?run scripts/generate-env.sh}@pgbouncer:5432/${POSTGRES_DB:-cms}
+  DATABASE_SSL: "false"
+  DB_STATEMENT_TIMEOUT_MS: "0"
+  DB_POOL_MAX: ${DB_POOL_MAX:-12}
+  JWT_SECRET: ${JWT_SECRET:?run scripts/generate-env.sh}
+  JWT_TTL_MINUTES: ${JWT_TTL_MINUTES:-60}
+  # Exact origins, comma separated, no trailing slash. No wildcards: the API compares strings.
+  CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS to the origin(s) the console is served from}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+  REDIS_URL: redis://redis:6379
+  RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-600}
+  LOGIN_RATE_LIMIT_MAX: ${LOGIN_RATE_LIMIT_MAX:-5}
+  WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-4}
+  # Safaricom and the SMS provider stay in mock mode until someone configures and tests them.
+  MPESA_MODE: ${MPESA_MODE:-mock}
+  SMS_MODE: ${SMS_MODE:-mock}
+
+services:
+  caddy:
+    build:
+      context: ../..
+      dockerfile: deploy/single-vm/Dockerfile.edge
+      args:
+        # Empty = the console calls /api on its own origin (Caddy forwards it). Set only if the
+        # console is served from somewhere else (e.g. Vercel); then use Caddyfile.api-only.
+        VITE_API_URL: ${PUBLIC_API_URL:-}
+        VITE_DEMO_LOGINS: ${DEMO_LOGINS:-false}
+    image: cms-edge
+    restart: always
+    logging: *logging
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?run scripts/generate-env.sh --site <hostname>}
+      ACME_EMAIL: ${ACME_EMAIL:-admin@localhost}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1/32}
+      CONSOLE_ORIGIN: ${CONSOLE_ORIGIN:-}
+    volumes:
+      - ./${CADDYFILE:-Caddyfile}:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: ${CADDY_MEM:-256m}
+    depends_on:
+      api:
+        condition: service_healthy
+
+  api:
+    build: ../../cmsbackend
+    image: cms-api
+    restart: always
+    logging: *logging
+    <<: *hardening
+    environment: *api-env
+    mem_limit: ${API_MEM:-1536m}
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:4400/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+      start_interval: 1s
+    stop_grace_period: 20s
+
+  worker:
+    image: cms-api
+    restart: always
+    logging: *logging
+    <<: *hardening
+    command: ["node", "-r", "module-alias/register", "dist/worker.js"]
+    environment: *api-env
+    mem_limit: ${WORKER_MEM:-768m}
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:9100/metrics"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+      start_interval: 1s
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    stop_grace_period: 30s
+
+  # One-shot: applies migrations as the OWNER, directly to Postgres (it takes a session advisory
+  # lock, which does not survive transaction pooling), then exits. Safe to run on every deploy.
+  migrate:
+    build: ../../cmsbackend
+    image: cms-api
+    command: ["node", "scripts/migrate-locked.js"]
+    <<: *hardening
+    logging: *logging
+    environment:
+      NODE_ENV: production
+      MIGRATE_DATABASE_URL: postgres://${POSTGRES_USER:-cms}:${POSTGRES_PASSWORD:?run scripts/generate-env.sh}@postgres:5432/${POSTGRES_DB:-cms}
+      DATABASE_SSL: "false"
+      APP_DB_USER: ${APP_DB_USER:-cms_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.23.1-p2
+    restart: always
+    logging: *logging
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ${POSTGRES_DB:-cms}
+      DB_USER: ${APP_DB_USER:-cms_app}
+      DB_PASSWORD: ${APP_DB_PASSWORD}
+      AUTH_TYPE: scram-sha-256
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: "1000"
+      DEFAULT_POOL_SIZE: ${PGBOUNCER_POOL_SIZE:-20}
+      MAX_PREPARED_STATEMENTS: "200"
+    mem_limit: 128m
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 5432"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+      start_interval: 1s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    logging: *logging
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cms}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?run scripts/generate-env.sh}
+      POSTGRES_DB: ${POSTGRES_DB:-cms}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./postgres/tuned.conf:/etc/postgresql/tuned.conf:ro
+    # Tuning lives in ONE file (postgres/tuned.conf, rewritten by generate-env.sh for this VM's RAM),
+    # included through the stock config, so it survives an image upgrade.
+    command: ["postgres", "-c", "config_file=/etc/postgresql/tuned.conf"]
+    shm_size: 512m
+    mem_limit: ${PG_MEM:-6g}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cms} -d ${POSTGRES_DB:-cms}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+      start_interval: 1s
+
+  # Rate limits, response cache. Not a database: losing it loses nothing that matters (jobs live in
+  # Postgres, idempotency keys live in Postgres), so no persistence, bounded memory, evict oldest.
+  redis:
+    image: redis:7-alpine
+    restart: always
+    logging: *logging
+    command: ["redis-server", "--appendonly", "no", "--save", "", "--maxmemory", "192mb", "--maxmemory-policy", "allkeys-lru"]
+    mem_limit: 256m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+      start_interval: 1s
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:

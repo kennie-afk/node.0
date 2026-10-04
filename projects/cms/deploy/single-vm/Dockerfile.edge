@@ -1,0 +1,29 @@
+# The edge: Caddy serving the console's static files (pre-compressed with brotli and gzip at build
+# time, so no CPU is spent compressing them per request) and forwarding /api to the API.
+# Build context is projects/cms (see docker-compose.prod.yml).
+ARG NODE_IMAGE=node:22-alpine
+ARG CADDY_IMAGE=caddy:2-alpine
+
+FROM ${NODE_IMAGE} AS build
+WORKDIR /app
+# Empty means "same origin, under /api".
+ARG VITE_API_URL=
+ARG VITE_DEMO_LOGINS=false
+ENV VITE_API_URL=$VITE_API_URL VITE_DEMO_LOGINS=$VITE_DEMO_LOGINS
+COPY cms_frontend/package.json cms_frontend/package-lock.json ./
+RUN npm ci
+COPY cms_frontend/ .
+RUN npm run build
+# Pre-compress every text asset once. Caddy's file_server { precompressed } picks the .br/.gz file.
+RUN node -e "\
+const fs=require('fs'),path=require('path'),zlib=require('zlib');\
+const ext=new Set(['.js','.css','.html','.svg','.json','.txt','.xml','.map','.webmanifest']);\
+(function walk(d){for(const f of fs.readdirSync(d)){const p=path.join(d,f);\
+if(fs.statSync(p).isDirectory()){walk(p);continue}\
+if(!ext.has(path.extname(p)))continue;const b=fs.readFileSync(p);if(b.length<512)continue;\
+fs.writeFileSync(p+'.br',zlib.brotliCompressSync(b,{params:{[zlib.constants.BROTLI_PARAM_QUALITY]:11,[zlib.constants.BROTLI_PARAM_SIZE_HINT]:b.length}}));\
+fs.writeFileSync(p+'.gz',zlib.gzipSync(b,{level:9}))}})('dist')"
+
+FROM ${CADDY_IMAGE}
+COPY --from=build /app/dist /srv
+EXPOSE 80 443 443/udp

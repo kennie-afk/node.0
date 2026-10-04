@@ -1,0 +1,61 @@
+# Postgres settings for this VM. generate-env.sh fills the @...@ values from the machine's RAM; edit the
+# generated postgres/tuned.conf (not this template) for hand tuning, then `docker compose restart postgres`.
+#
+# Because the server is started with -c config_file=<this file>, it must also say where the data
+# directory and the access-control files are (the default is "next to the config file").
+data_directory = '/var/lib/postgresql/data'
+hba_file = '/var/lib/postgresql/data/pg_hba.conf'
+ident_file = '/var/lib/postgresql/data/pg_ident.conf'
+listen_addresses = '*'        # reachable only on the compose network: nothing is published
+port = 5432
+
+# Connections: the API and worker go through PgBouncer (pool of ~20), so Postgres itself needs few.
+max_connections = 60
+superuser_reserved_connections = 5
+
+# Memory (sized for @RAM_MB@ MB of RAM on this machine)
+shared_buffers = @SHARED_BUFFERS@
+effective_cache_size = @EFFECTIVE_CACHE@
+work_mem = @WORK_MEM@
+maintenance_work_mem = @MAINT_MEM@
+huge_pages = try
+
+# Storage: SSD/NVMe-backed block volume
+random_page_cost = 1.1
+effective_io_concurrency = 200
+wal_compression = on
+wal_buffers = 16MB
+checkpoint_timeout = 15min
+checkpoint_completion_target = 0.9
+max_wal_size = @MAX_WAL@
+min_wal_size = 512MB
+
+# Durability stays ON: a church ledger must never lose a posted entry. (synchronous_commit = off
+# would be faster and can lose the last ~0.6 s of commits on a crash; deliberately not set.)
+synchronous_commit = on
+fsync = on
+full_page_writes = on
+
+# Planner and background work
+jit = off                      # JIT compile time hurts short OLTP queries
+default_statistics_target = 200
+autovacuum_vacuum_scale_factor = 0.05
+autovacuum_analyze_scale_factor = 0.02
+autovacuum_max_workers = 3
+
+# Visibility: slow queries and per-statement stats (CREATE EXTENSION pg_stat_statements is done by up.sh)
+shared_preload_libraries = 'pg_stat_statements'
+pg_stat_statements.max = 5000
+pg_stat_statements.track = top
+track_io_timing = on
+log_min_duration_statement = 250
+log_checkpoints = on
+log_lock_waits = on
+log_temp_files = 10MB
+timezone = 'UTC'
+log_timezone = 'UTC'
+lc_messages = 'en_US.utf8'
+lc_monetary = 'en_US.utf8'
+lc_numeric = 'en_US.utf8'
+lc_time = 'en_US.utf8'
+default_text_search_config = 'pg_catalog.english'

@@ -3,6 +3,46 @@ import { MemoryCacheStore, bumpTenantCache, cached, setCacheStore } from '../src
 
 afterEach(() => setCacheStore(null));
 
+describe('report cache: concurrent misses', () => {
+  it('runs one computation for many simultaneous requests for the same missing key', async () => {
+    setCacheStore(new MemoryCacheStore());
+    let runs = 0;
+    const slow = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 40));
+      return { n: ++runs };
+    };
+    const results = await Promise.all(Array.from({ length: 25 }, () => cached(3, 'stampede', { q: 1 }, slow)));
+    expect(runs).toBe(1);
+    expect(new Set(results.map((r) => r.n))).toEqual(new Set([1]));
+  });
+
+  it('does not share work between churches or between different parameters', async () => {
+    setCacheStore(new MemoryCacheStore());
+    let runs = 0;
+    const slow = async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      return ++runs;
+    };
+    await Promise.all([cached(1, 'r', { a: 1 }, slow), cached(2, 'r', { a: 1 }, slow), cached(1, 'r', { a: 2 }, slow)]);
+    expect(runs).toBe(3);
+  });
+
+  it('lets waiters compute for themselves when the first computation fails', async () => {
+    setCacheStore(new MemoryCacheStore());
+    let attempts = 0;
+    const flaky = async () => {
+      attempts += 1;
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      if (attempts === 1) throw new Error('first request was cancelled');
+      return 'ok';
+    };
+    const settled = await Promise.allSettled([cached(5, 'f', {}, flaky), cached(5, 'f', {}, flaky), cached(5, 'f', {}, flaky)]);
+    expect(settled[0].status).toBe('rejected');
+    expect(settled[1]).toMatchObject({ status: 'fulfilled', value: 'ok' });
+    expect(settled[2]).toMatchObject({ status: 'fulfilled', value: 'ok' });
+  });
+});
+
 describe('report cache', () => {
   it('computes once per key until the church version moves', async () => {
     setCacheStore(new MemoryCacheStore());

@@ -350,6 +350,10 @@ textarea.ui-input { resize: vertical; min-height: 76px; line-height: 1.5; }
 
 .ui-filterbar { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
 .ui-filterbar .ui-field { min-width: 140px; }
+/* A select sizes itself to its longest option, so a select that loads its options after first paint
+   (accounts, funds) used to widen and shove its neighbours sideways or onto a new row. A fixed width
+   keeps the bar still while the data arrives; long labels are clipped, the full text is in the list. */
+.ui-filterbar .ui-field select { width: 12rem; max-width: 100%; text-overflow: ellipsis; }
 .ui-filterbar .is-grow { flex: 1; min-width: 200px; }
 
 /* ---- feedback ----------------------------------------------------------------------- */

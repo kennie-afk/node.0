@@ -1,0 +1,7 @@
+.env
+.env.bak.*
+backups/
+postgres/tuned.conf
+backups/
+.env
+*.dump
