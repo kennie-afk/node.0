@@ -57,7 +57,7 @@ export default async function OverviewPage() {
         <Card title="Work" description="What the site says it did.">
           <dl className="space-y-3">
             {[
-              ["Jobs recorded", String(data.jobs)],
+              ["Jobs recorded", data.jobs.toLocaleString("en-KE")],
               ["Still open", String(data.openJobs)],
               ["Sites", String(data.sites)],
               ["Devices reporting", String(data.devices)]
@@ -73,7 +73,7 @@ export default async function OverviewPage() {
         <Card title="Money" description="What reached the owner's account.">
           <dl className="space-y-3">
             {[
-              ["Payments received", String(data.payments)],
+              ["Payments received", data.payments.toLocaleString("en-KE")],
               ["Not matched to a job", String(data.unmatchedPayments)]
             ].map(([label, value]) => (
               <div key={label} className="flex items-center justify-between">

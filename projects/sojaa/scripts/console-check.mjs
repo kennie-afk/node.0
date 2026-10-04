@@ -27,7 +27,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await puppeteer.launch({ executablePath: process.env.CHROME ?? '/usr/bin/google-chrome', headless: true, args: ['--no-sandbox'] });
 const page = await browser.newPage();
-await page.setViewport({ width: 1440, height: 900 });
+await page.setViewport({ width: Number(process.env.VW ?? 1440), height: Number(process.env.VH ?? 900), deviceScaleFactor: Number(process.env.DSF ?? 1) });
 const errors = [];
 page.on('pageerror', (e) => errors.push(`${String(e).slice(0, 160)} @ ${page.url()}`));
 page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/i.test(m.text())) errors.push(`${m.text().slice(0, 160)} @ ${page.url()}`); });
@@ -189,9 +189,9 @@ await go('/console/guards');
 t = await text();
 check('the guards list shows numbered guards, a search, and the CSV link', /G0001/.test(t) && (await rowCount()) === 24 && (await links('/files/exports/guards.csv')).length === 1);
 check('the guards page says registration numbers are not verified', /cannot verify/i.test(t));
+await shot('07-guards');
 await go('/console/guards?q=Wanjiku');
 check('searching guards finds the right one on the server', (await rowCount()) === 1 && /Wanjiku Kamau/.test(await text()));
-await shot('07-guards');
 await page.evaluate(() => document.querySelector('a[href^="/console/guards/"]').click());
 await page.waitForFunction(() => /\/console\/guards\/[0-9a-f-]{36}/i.test(location.pathname), { timeout: 15000 });
 await waitText('Check-in PIN');
@@ -434,7 +434,7 @@ await shot('25-mobile-check');
 check('the phone page has no sideways scroll at phone width', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
 await go('/console/roster');
 check('the roster grid scrolls inside its card at phone width, not the page', await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1));
-await page.setViewport({ width: 1440, height: 900 });
+await page.setViewport({ width: Number(process.env.VW ?? 1440), height: Number(process.env.VH ?? 900), deviceScaleFactor: Number(process.env.DSF ?? 1) });
 await go('/console/attendance');
 check('a supervisor can check in and correct from the board', (await hasButton('Check in')) || (await hasButton('Check out')) || /Correct/.test(await text()));
 

@@ -34,7 +34,7 @@ export default async function TelemetryPage() {
 
       {water.length > 0 ? (
         <div className="mb-5 grid gap-3 sm:grid-cols-3">
-          <Stat label="Total litres" value={litres.toFixed(0)} hint="across the window held" />
+          <Stat label="Total litres" value={Math.round(litres).toLocaleString("en-KE")} hint="across the window held" />
           <Stat
             label="Implied washes"
             value={String(Math.floor(litres / 60))}

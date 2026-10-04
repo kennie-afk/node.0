@@ -27,7 +27,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const browser = await puppeteer.launch({ executablePath: process.env.CHROME ?? '/usr/bin/google-chrome', headless: true, args: ['--no-sandbox'] });
 const page = await browser.newPage();
-await page.setViewport({ width: 1440, height: 900 });
+await page.setViewport({ width: Number(process.env.VW ?? 1440), height: Number(process.env.VH ?? 900), deviceScaleFactor: Number(process.env.DSF ?? 1) });
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/i.test(m.text())) errors.push(m.text()); });
@@ -222,6 +222,8 @@ await waitText('M-Pesa statement');
 t = await text();
 check('borrower page shows a parsed statement with figures and flags', /Average monthly inflow/i.test(t) && /Indicative ceiling/i.test(t));
 check('payslip and ID checks show their flags', /Payslip add-up check/i.test(t) && /ID number format check/i.test(t) && /Earlier checks/i.test(t));
+await page.evaluate(() => { const h = [...document.querySelectorAll('*')].find((e) => e.children.length === 0 && /Average monthly inflow/i.test(e.textContent || '')); if (h) h.scrollIntoView({ block: 'start' }); window.scrollBy(0, -140); });
+await sleep(400);
 await shot('14-borrower-intake');
 await page.evaluate(() => window.scrollTo(0, 0));
 await go('/console/billing');

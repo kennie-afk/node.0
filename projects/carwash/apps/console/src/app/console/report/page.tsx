@@ -38,7 +38,7 @@ export default async function ReportPage({
         <>
           <div className="mb-5 grid gap-3 sm:grid-cols-4">
             <Stat label="Cars detected" value={String(report.vehiclesDetected)} />
-            <Stat label="Jobs recorded" value={String(report.jobsRecorded)} />
+            <Stat label="Jobs recorded" value={report.jobsRecorded.toLocaleString("en-KE")} />
             <Stat label="Expected" value={ksh(report.expectedCents)} />
             <Stat
               label="Gap"

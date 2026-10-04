@@ -1,3 +1,4 @@
+import { evidenceLabel, evidenceValue } from "@/lib/evidence";
 import Link from "next/link";
 import { api, describeError } from "@/lib/api";
 import { ksh, type Discrepancy } from "@/lib/types";
@@ -120,9 +121,9 @@ export default async function FlagsPage({
                   .map(([key, value]) => (
                     <div key={key}>
                       <dt className="text-[0.625rem] font-medium uppercase tracking-[0.06em] text-[var(--color-faint)]">
-                        {key.replaceAll("_", " ")}
+                        {evidenceLabel(key)}
                       </dt>
-                      <dd className="mt-0.5 text-[0.8125rem] tabular-nums">{String(value)}</dd>
+                      <dd className="mt-0.5 text-[0.8125rem] tabular-nums">{evidenceValue(value)}</dd>
                     </div>
                   ))}
               </dl>

@@ -1,3 +1,4 @@
+import { evidenceLabel, evidenceValue } from "@/lib/evidence";
 import Link from "next/link";
 import { api, describeError } from "@/lib/api";
 import { readSession } from "@/lib/session";
@@ -54,7 +55,7 @@ export default async function FlagPage({ params }: { params: Promise<{ id: strin
               items={[
                 ["Site", flag.site],
                 ["Business day", String(flag.businessDay).slice(0, 10)],
-                ...scalars.map(([key, value]) => [key.replaceAll("_", " "), typeof value === "number" ? String(Math.round(value * 100) / 100) : String(value)] as [string, string])
+                ...scalars.map(([key, value]) => [evidenceLabel(key), evidenceValue(value)] as [string, string])
               ]}
             />
             {lists.map(([key, value]) => (
