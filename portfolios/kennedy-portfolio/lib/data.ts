@@ -425,6 +425,7 @@ export const projects = [
     ],
     tech: ["TypeScript", "Express", "PostgreSQL", "Zod", "Row-level security", "Next.js"],
     image: "/images/dawa.jpg",
+    github: "https://github.com/kennie-afk/node.0/tree/main/projects/dawa",
   },
   {
     id: 11,
@@ -444,6 +445,7 @@ export const projects = [
     ],
     tech: ["TypeScript", "Express", "PostgreSQL", "Zod", "Row-level security", "Next.js"],
     image: "/images/hazina.jpg",
+    github: "https://github.com/kennie-afk/node.0/tree/main/projects/hazina",
   },
   {
     id: 12,
@@ -463,6 +465,7 @@ export const projects = [
     ],
     tech: ["TypeScript", "Express", "PostgreSQL", "Zod", "Row-level security", "Next.js"],
     image: "/images/sojaa.jpg",
+    github: "https://github.com/kennie-afk/node.0/tree/main/projects/sojaa",
   },
 ];
 
