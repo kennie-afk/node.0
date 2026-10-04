@@ -13,7 +13,7 @@ The live catalogue is at **`/ui-kit`** (dev server only; it is tree-shaken out o
 | Rule | Value |
 | --- | --- |
 | Root font size | 14px. Scale: `2xs` 11 · `xs` 12 · `sm` 13 · `base` 14 · `lg` 15 · `xl` 15 · `2xl` 18 · `3xl` 20 (CSS vars `--fs-*`). 11-12px only for captions, hints and badges |
-| Type | Fraunces for page titles, card titles and headline figures; Manrope for everything else. Page title `3xl`; table cells `sm`; column headers `xs` uppercase |
+| Type | Space Grotesk for everything (700 for titles, 500 for buttons). Page title `3xl`; table cells `sm`; column headers `xs` uppercase |
 | Radius | 8px controls, 12px cards (`--ui-radius`, `--ui-radius-lg`) |
 | Depth | 1px hairline border; shadow only on floating layers (menus, toasts, drawer) |
 | Hover | Colour changes; **nothing moves** (no translate, scale or press nudge) |

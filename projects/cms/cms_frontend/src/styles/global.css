@@ -3,18 +3,19 @@
 @layer base {
   html {
     font-size: 14px;
-    font-family: var(--ui-font-body, 'Manrope Variable', ui-sans-serif, system-ui, sans-serif);
+    font-family: var(--ui-font-body, 'Space Grotesk Variable', ui-sans-serif, system-ui, sans-serif);
     -webkit-font-smoothing: antialiased;
   }
 
   body {
-    font-family: var(--ui-font-body, 'Manrope Variable', ui-sans-serif, system-ui, sans-serif);
+    font-family: var(--ui-font-body, 'Space Grotesk Variable', ui-sans-serif, system-ui, sans-serif);
     font-size: 1rem;
     line-height: 1.5;
   }
 
   h1, h2 {
-    font-family: var(--ui-font-head, 'Fraunces Variable', Georgia, serif);
+    font-family: var(--ui-font-head, 'Space Grotesk Variable', ui-sans-serif, system-ui, sans-serif);
+    font-weight: 700;
   }
 
   a {
