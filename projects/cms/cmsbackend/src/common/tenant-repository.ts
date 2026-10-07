@@ -4,18 +4,29 @@ import {
   Includeable,
   Model,
   ModelStatic,
+  Op,
   Order,
   WhereOptions
 } from 'sequelize';
 import { currentChurchId } from './tenant-context';
 import { NotFoundError } from '../utils/errors';
 import { Page, Pagination, toOffset, toPage } from './pagination';
+import { decodeCursor, KeysetPage, toKeysetPage } from './keyset';
 
 export interface ListOptions {
   pagination: Pagination;
   where?: WhereOptions;
   include?: Includeable[];
   order?: Order;
+}
+
+export interface KeysetOptions {
+  where?: WhereOptions;
+  include?: Includeable[];
+  /** Sort columns (attribute names), the last one unique (the id), each with its own direction. */
+  sort: Array<[string, 'ASC' | 'DESC']>;
+  limit: number;
+  cursor?: string | null;
 }
 
 export class TenantRepository<M extends Model> {
@@ -54,6 +65,31 @@ export class TenantRepository<M extends Model> {
     });
 
     return toPage(rows, count, options.pagination);
+  }
+
+  /**
+   * Cursor paging with no count(*): fetches limit+1 rows after the cursor and returns an opaque
+   * `nextCursor`. The cursor is the sort-column values of the last row seen, so deep pages cost the
+   * same as the first and never skip or repeat rows when data changes. A malformed cursor is ignored
+   * (restarts from the top) rather than trusted.
+   */
+  async listKeyset(options: KeysetOptions): Promise<KeysetPage<M>> {
+    const { sort, limit } = options;
+    const after = decodeCursor<unknown[]>(options.cursor);
+    const clauses: WhereOptions[] = [];
+    if (Array.isArray(after) && after.length === sort.length) {
+      // (a > x) OR (a = x AND b > y) OR ...: strict lexicographic "after", with mixed directions.
+      for (let i = 0; i < sort.length; i++) {
+        const term: Record<string, unknown> = {};
+        for (let j = 0; j < i; j++) term[sort[j][0]] = after[j];
+        term[sort[i][0]] = { [sort[i][1] === 'ASC' ? Op.gt : Op.lt]: after[i] };
+        clauses.push(term as WhereOptions);
+      }
+    }
+    const base = this.scoped(options.where);
+    const where = clauses.length ? ({ [Op.and]: [base, { [Op.or]: clauses }] } as WhereOptions) : base;
+    const rows = await this.model.findAll({ where, include: options.include, order: sort.map(([c, d]) => [c, d]) as Order, limit: limit + 1 });
+    return toKeysetPage(rows, limit, (row) => sort.map(([c]) => (row as any).get(c)));
   }
 
   async findById(id: number, options: Omit<FindOptions, 'where'> = {}): Promise<M | null> {

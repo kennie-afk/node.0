@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authenticate, requirePermission, requireWritable } from './middleware';
 import { businessDayNow, ctxOf, pickBranch, wrap } from '../common/context';
-import { inBranch, inOrg, isoDay, parse, queryInt, queryString } from './helpers';
+import { inBranch, inOrg, isoDay, pageLimit, parse, queryInt, queryString } from './helpers';
 import { approveSchema, approveStocktake, cancelStocktake, countsSchema, currentStocktake, getStocktake, recordCounts, startStocktake } from '../stocktake/service';
 import { closeDay, closeSchema, listCloses, previewClose } from '../close/service';
 import { listPayables, paySupplierInvoice, supplierPaymentSchema } from '../payables/service';
@@ -57,7 +57,7 @@ router.get('/close', requirePermission('day_close'), wrap(async (req, res) => {
 
 // ---- supplier payables ----
 router.get('/payables', requirePermission('suppliers'), wrap(async (req, res) => {
-  res.json(await inOrg(req, (client, ctx) => listPayables(client, ctx.branchId, { openOnly: req.query.open === 'true' })));
+  res.json(await inOrg(req, (client, ctx) => listPayables(client, ctx.branchId, { openOnly: req.query.open === 'true', supplierId: queryString(req.query.supplierId), limit: pageLimit(req.query.limit, 100, 300), offset: queryInt(req.query.offset, 0) })));
 }));
 router.post('/payables/:id/payments', requireWritable, wrap(async (req, res) => {
   const input = parse(supplierPaymentSchema, req.body);

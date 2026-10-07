@@ -19,8 +19,8 @@ export default async function Overview() {
     waiting("/v1/loans?status=applied&limit=100"),
     waiting("/v1/loans?status=appraised&limit=100"),
     waiting("/v1/loans?status=approved&limit=100"),
-    can(role, "withdraw_approve") ? waiting("/v1/savings?status=pending_approval&limit=200", "list") : Promise.resolve(null),
-    can(role, "recon") ? waiting("/v1/mpesa/payments?status=unmatched&limit=200", "list") : Promise.resolve(null)
+    can(role, "withdraw_approve") ? waiting("/v1/savings?status=pending_approval&limit=100") : Promise.resolve(null),
+    can(role, "recon") ? waiting("/v1/mpesa/payments?status=unmatched&limit=100") : Promise.resolve(null)
   ]);
   const sacco = (settings?.organisation.kind ?? "sacco") === "sacco";
   const incomplete = onboarding && onboarding.doneCount < onboarding.total;

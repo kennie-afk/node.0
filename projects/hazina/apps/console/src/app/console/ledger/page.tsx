@@ -2,13 +2,13 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { readSession } from "@/lib/session";
 import { can } from "@/lib/roles";
-import { addAccount, postJournal, reverseJournal, setAccountActive } from "@/app/actions";
+import { addAccount, closePeriod, postJournal, reopenPeriod, reverseJournal, runAccrual, runDividend, runPenalties, runProvisioning, setAccountActive } from "@/app/actions";
 import { ActionForm } from "@/components/forms";
-import type { Account, BalanceSheet, IncomeStatement, JournalPage, Line, TrialBalance } from "@/lib/types";
+import type { Account, BalanceSheet, DividendRun, IncomeStatement, JournalPage, Line, PeriodStatus, Provisioning, Settings, TrialBalance } from "@/lib/types";
 import { Badge, Card, Download, EmptyState, Field, Notice, PageHeader, Pager, Stat, Table, cell, inputClass, num, rowClass, secondaryButtonClass, selectClass } from "@/components/ui";
 import { day, ksh, label, today } from "@/lib/format";
 
-const VIEWS = [["journal", "Journal"], ["trial", "Trial balance"], ["income", "Income statement"], ["balance", "Balance sheet"], ["accounts", "Chart of accounts"]] as const;
+const VIEWS = [["journal", "Journal"], ["trial", "Trial balance"], ["income", "Income statement"], ["balance", "Balance sheet"], ["accounts", "Chart of accounts"], ["closing", "Month end"]] as const;
 
 export default async function Ledger({ searchParams }: { searchParams: Promise<{ view?: string; before?: string; from?: string; to?: string; asOf?: string; source?: string }> }) {
   const sp = await searchParams;
@@ -26,6 +26,7 @@ export default async function Ledger({ searchParams }: { searchParams: Promise<{
       {view === "income" ? <Income from={sp.from} to={sp.to} /> : null}
       {view === "balance" ? <Balance asOf={sp.asOf} /> : null}
       {view === "accounts" ? <Accounts role={role} /> : null}
+      {view === "closing" ? <Closing role={role} /> : null}
     </>
   );
 }
@@ -156,6 +157,66 @@ async function Accounts({ role }: { role: string }) {
           </ActionForm>
         </Card>
       ) : null}
+    </div>
+  );
+}
+
+async function Closing({ role }: { role: string }) {
+  const post = can(role, "journal_post");
+  const [period, prov, settings] = await Promise.all([api.get<PeriodStatus>("/v1/periods"), api.get<Provisioning>("/v1/provisioning"), api.get<Settings>("/v1/settings")]);
+  const sacco = settings.organisation.kind === "sacco";
+  const dividends = sacco ? await api.get<DividendRun[]>("/v1/dividends") : [];
+  return (
+    <div className="grid gap-5 lg:grid-cols-2">
+      <div className="flex flex-col gap-5">
+        <Card title="Daily runs" description="These run by themselves every night (Nairobi time). Run them here to see the effect now; a repeat adds nothing.">
+          <div className="flex flex-wrap gap-4">
+            {can(role, "penalties_run") ? (<>
+              <ActionForm action={runAccrual} submit="Accrue interest due" button={secondaryButtonClass} className="flex"><span className="sr-only">Accrue interest</span></ActionForm>
+              <ActionForm action={runPenalties} submit="Charge penalties" button={secondaryButtonClass} className="flex"><span className="sr-only">Charge penalties</span></ActionForm>
+            </>) : <span className="text-[0.8125rem] text-[var(--color-muted)]">Your role cannot run these.</span>}
+          </div>
+          <p className="mt-3 text-[0.75rem] text-[var(--color-muted)]">Interest on an instalment is booked as income, against accrued interest receivable, on the day it falls due. A penalty is charged once per overdue instalment per month.</p>
+        </Card>
+        <Card title="Close the books" description="After closing, nothing can be posted on or before the closing day. Money that arrives for a closed day is booked on the first open day.">
+          <p className="mb-3 text-[0.8125rem]">{period.lockedThrough ? <>Closed through <strong>{day(period.lockedThrough)}</strong>.</> : "No period is closed."}</p>
+          {post ? (
+            <ActionForm action={closePeriod} submit="Close through this day">
+              <Field label="Close through"><input name="through" type="date" required max={today()} className={inputClass} /></Field>
+              <Field label="Note"><input name="note" placeholder="e.g. September accounts agreed" className={inputClass} /></Field>
+            </ActionForm>
+          ) : null}
+          {role === "owner" && period.lockedThrough ? (
+            <div className="mt-4 border-t border-[var(--color-line)] pt-4">
+              <ActionForm action={reopenPeriod} submit="Reopen" button={secondaryButtonClass}>
+                <Field label="Reopen back to" hint="Leave empty to reopen everything. A reason is required and is recorded."><input name="through" type="date" className={inputClass} /></Field>
+                <Field label="Why"><input name="note" required minLength={3} className={inputClass} /></Field>
+              </ActionForm>
+            </div>
+          ) : null}
+        </Card>
+      </div>
+      <div className="flex flex-col gap-5">
+        <Card title="Loan loss provision" description="Required provision by days late, as at today.">
+          <Notice tone="warn">Illustrative percentages, <strong>not regulatory guidance</strong>. Set them under Settings with your accountant.</Notice>
+          <div className="mt-3"><Table head={["Days late", "Loans", "Exposure", "Rate", "Required"]}>
+            {prov.preview.buckets.map((b) => <tr key={b.bucket} className={rowClass}><td className={cell}>{b.bucket === "current" ? "Not late" : b.bucket}</td><td className={num}>{b.loans}</td><td className={num}>{ksh(b.exposureCents)}</td><td className={num}>{b.rateBp / 100}%</td><td className={num}>{ksh(b.requiredCents)}</td></tr>)}
+            <tr className={rowClass}><td className={`${cell} font-medium`} colSpan={4}>Required</td><td className={`${num} font-medium`}>{ksh(prov.preview.requiredCents)}</td></tr>
+          </Table></div>
+          {post ? <div className="mt-3"><ActionForm action={runProvisioning} submit="Post the provision" button={secondaryButtonClass} className="flex"><span className="sr-only">Post provision</span></ActionForm></div> : null}
+        </Card>
+        {sacco ? (
+          <Card title="Savings interest and share dividends" description="A rate on each member's balance at the period end (not an average). One run per kind per period.">
+            {post ? (
+              <ActionForm action={runDividend} submit="Run">
+                <Field label="Kind"><select name="kind" className={selectClass}><option value="savings_interest">Interest on savings</option><option value="share_dividend">Dividend on shares (credited to savings)</option></select></Field>
+                <div className="grid grid-cols-2 gap-2"><Field label="Period end"><input name="periodEnd" type="date" required max={today()} className={inputClass} /></Field><Field label="Rate (% a year)"><input name="rate" inputMode="decimal" required className={inputClass} /></Field></div>
+              </ActionForm>
+            ) : null}
+            {dividends.length > 0 ? <div className="mt-4"><Table head={["Period end", "Kind", "Rate", "Members", "Total"]}>{dividends.map((d) => <tr key={d.id} className={rowClass}><td className={cell}>{day(d.periodEnd)}</td><td className={cell}>{label(d.kind)}</td><td className={num}>{d.rateBp / 100}%</td><td className={num}>{d.members}</td><td className={num}>{ksh(d.totalCents)}</td></tr>)}</Table></div> : null}
+          </Card>
+        ) : null}
+      </div>
     </div>
   );
 }

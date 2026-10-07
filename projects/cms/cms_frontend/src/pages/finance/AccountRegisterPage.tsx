@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Card, DataTable, DateInput, Field, FilterBar, formatDate, LoadMore, PageHeader } from '../../ui';
+import { Button, Card, DataTable, DateInput, Field, FilterBar, formatDate, LoadMore, PageHeader } from '../../ui';
 import { accountRegister, type Register, type RegisterRow } from '../../api/financeApi';
+import { downloadCsv } from '../../api/reportsApi';
 import { normalizeError, type ApiError } from '../../api/http';
 import { Money } from '../../features/finance/components/common';
 import { FundSelect } from '../../features/finance/components/Selectors';
@@ -41,7 +42,7 @@ export default function AccountRegisterPage() {
 
   return (
     <div className="ui-page ui-stack">
-      <PageHeader title={head ? `${head.account.code} · ${head.account.name}` : 'Account register'} subtitle={head ? `Opening balance ${head.openingBalance}` : undefined} crumbs={[{ label: 'Chart of accounts', to: '/finance/accounts' }]} />
+      <PageHeader title={head ? `${head.account.code} · ${head.account.name}` : 'Account register'} subtitle={head ? `Opening balance ${head.openingBalance}` : undefined} crumbs={[{ label: 'Chart of accounts', to: '/finance/accounts' }]} actions={<Button size="sm" variant="secondary" onClick={() => downloadCsv(`/reports/general-ledger/${id}`, { from: from || undefined, to: to || undefined, fundId: fundId ?? undefined, limit: 500 }, 'account-register.csv').catch((failure) => setError(normalizeError(failure)))}>Download CSV (up to 500 lines)</Button>} />
       <FilterBar>
         <Field label="From">{(c) => <DateInput {...c} value={from} onChange={setFrom} />}</Field>
         <Field label="To">{(c) => <DateInput {...c} value={to} onChange={setTo} />}</Field>

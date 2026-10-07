@@ -20,7 +20,7 @@ describe.runIf(on)('tenant isolation (real Postgres, RLS on, restricted applicat
     expect((await get(b.owner.auth, '/v1/products')).body.items).toHaveLength(0);
     expect((await get(b.owner.auth, `/v1/sales/${sale.saleId}`)).status).toBe(404);
     expect((await get(b.owner.auth, `/v1/customers/${cust.id}/statement`)).status).toBe(404);
-    expect((await get(b.owner.auth, '/v1/customers')).body).toHaveLength(0);
+    expect((await get(b.owner.auth, '/v1/customers')).body.items).toHaveLength(0);
     // B cannot use A's product, A's branch, or void/pay/return A's sale
     expect((await sell(b.owner.auth, { lines: [{ productId: pa, qty: 1 }], payments: [] })).status).toBe(404);
     expect((await get(b.owner.auth, `/v1/stock?branchId=${a.branchId}`)).status).toBe(404);
@@ -136,15 +136,15 @@ describe.runIf(on)('roles, sessions and the audit trail', () => {
     await expect(pool.withOrg(t.orgId, (c) => c.query(`DELETE FROM audit_events`))).rejects.toThrow(/permission denied/);
   });
 
-  it('rate-limits sign-in attempts per number', async () => {
+  it('stops guessing at one number: the account locks after a few wrong PINs, whatever the address, and another number is unaffected', async () => {
     await boot();
     const { env } = await import('../src/config/env');
-    const limit = env.LOGIN_RATE_LIMIT_PER_WINDOW;
     const phone = nextPhone();
     const statuses: number[] = [];
-    for (let i = 0; i < limit + 3; i += 1) statuses.push((await signIn(phone, '000000')).status);
-    expect(statuses.slice(0, limit).every((s) => s === 401)).toBe(true);
-    expect(statuses.slice(limit).every((s) => s === 429)).toBe(true);
+    // (the per-address limiter is configured looser than the lockout, so what stops this is the account lock)
+    for (let i = 0; i < env.LOGIN_LOCKOUT_THRESHOLD + 3; i += 1) statuses.push((await signIn(phone, '000000')).status);
+    expect(statuses.slice(0, env.LOGIN_LOCKOUT_THRESHOLD).every((s) => s === 401)).toBe(true);
+    expect(statuses.slice(env.LOGIN_LOCKOUT_THRESHOLD).every((s) => s === 429)).toBe(true);
     // another number is unaffected
     expect((await signIn(nextPhone(), '000000')).status).toBe(401);
   });
@@ -310,7 +310,7 @@ describe.runIf(on)('onboarding, sample data, scanning and the track-and-trace lo
     expect(alerts.expired.length).toBeGreaterThan(0);
     expect(alerts.expiring.length).toBeGreaterThan(0);
     expect(alerts.lowStock.length).toBeGreaterThan(0);
-    const sales = (await get(t.owner.auth, `/v1/sales?branchId=${sampleId}`)).body;
+    const sales = (await get(t.owner.auth, `/v1/sales?branchId=${sampleId}`)).body.items;
     expect(sales.length).toBe(5);
     expect(sales.map((s: any) => s.status)).toContain('pending_payment');
     await assertLedgerAgrees(t);

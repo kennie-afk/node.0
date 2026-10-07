@@ -14,7 +14,9 @@ interface Schedule {
 
 export const SCHEDULES: Schedule[] = [
   { name: 'maintenance.purge', everySeconds: 3600, jobType: 'maintenance.purge' },
-  { name: 'ledger.verify-all', everySeconds: 23 * 3600, notBeforeHourUtc: 2, jobType: 'ledger.verify-all', payload: () => ({ day: new Date().toISOString().slice(0, 10) }) }
+  { name: 'ledger.verify-all', everySeconds: 23 * 3600, notBeforeHourUtc: 2, jobType: 'ledger.verify-all', payload: () => ({ day: new Date().toISOString().slice(0, 10) }) },
+  // After the nightly verification (which runs from 02:00 UTC) so a head is only pinned once the chain checked out.
+  { name: 'chain.head-export-all', everySeconds: 23 * 3600, notBeforeHourUtc: 3, jobType: 'chain.head-export-all', payload: () => ({ day: new Date().toISOString().slice(0, 10) }) }
 ];
 
 /**

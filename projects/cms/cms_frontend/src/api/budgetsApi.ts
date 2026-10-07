@@ -73,3 +73,15 @@ export const activateBudget = (id: number) => http.post<Budget>(`/budgets/${id}/
 export const closeBudget = (id: number) => http.post<Budget>(`/budgets/${id}/close`);
 export const copyBudget = (id: number, body: { fiscalYearId: number; name: string; upliftPercent: number }) => http.post<Budget>(`/budgets/${id}/copy`, body);
 export const getVariance = (id: number, query: { groupBy?: string; throughMonth?: number; fundId?: number; accountId?: number }) => http.get<Variance>(`/budgets/${id}/variance`, query);
+
+export interface BudgetCheck {
+  hasBudget: boolean;
+  budgeted: number;
+  actual: number;
+  committed: number;
+  remaining: number;
+  exceeded: boolean;
+  warning: string | null;
+}
+/** Would this spend fit what is left of the budget for the account and fund? Amounts in minor units in the answer. */
+export const checkBudget = (q: { accountId: number; fundId: number; amount: string; date: string }) => http.get<BudgetCheck>('/budgets/check', q);

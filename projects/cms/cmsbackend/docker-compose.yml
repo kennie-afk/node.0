@@ -13,6 +13,9 @@ name: cms
 
 x-api-env: &api-env
   NODE_ENV: production
+  # This compose file is the local stack: the providers stay mock, and say so. A real deployment sets
+  # MPESA_MODE=daraja and SMS_MODE=africastalking and drops the next line.
+  ALLOW_MOCK_PROVIDERS_IN_PRODUCTION: ${ALLOW_MOCK_PROVIDERS_IN_PRODUCTION:-true}
   PORT: 4400
   METRICS_PORT: 9100
   # Through PgBouncer, as the application role. Statement timeouts are set on the role itself

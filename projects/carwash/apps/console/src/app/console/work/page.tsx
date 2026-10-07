@@ -1,6 +1,6 @@
 import { api, describeError } from "@/lib/api";
-import { ksh, type Job, type Service, type Site, type SiteDetail } from "@/lib/types";
-import { Badge, Card, EmptyState, Notice, PageHeader, buttonClass, dangerButtonClass, secondaryButtonClass } from "@/components/ui";
+import { ksh, type Job, type Page, type Service, type Site, type SiteDetail } from "@/lib/types";
+import { Badge, Card, EmptyState, Notice, PageHeader, buttonClass, inputClass, secondaryButtonClass } from "@/components/ui";
 import { declareCash, moveJob } from "@/app/actions";
 import { NewJobForm } from "./new-job-form";
 
@@ -10,7 +10,8 @@ interface Me {
   role: string;
 }
 
-const OPEN = new Set(["created", "in_progress", "awaiting_payment", "paid"]);
+// open work is fetched state by state, so an old open job is never pushed off a newest-first page by closed ones
+const OPEN_STATES = ["created", "in_progress", "awaiting_payment", "paid"];
 
 /** The one action that moves a job to its next state, and the plain words for where it is now. */
 const NEXT: Record<string, { type: string; label: string; hint: string } | undefined> = {
@@ -26,12 +27,17 @@ export default async function WorkPage({ searchParams }: { searchParams: Promise
   let services: Service[] = [];
   let sites: Site[] = [];
   let bays: { id: string; label: string }[] = [];
+  let mayAuthorise = false;
 
   try {
     const me = await api.get<Me>("/v1/me");
+    mayAuthorise = me.role !== "worker";
     [services, sites] = await Promise.all([api.get<Service[]>("/v1/services"), api.get<Site[]>("/v1/sites")]);
     const siteId = me.siteId ?? (sites.length === 1 ? sites[0]!.id : "");
-    jobs = (await api.get<Job[]>(`/v1/jobs${siteId ? `?siteId=${siteId}` : ""}`)).filter((job) => OPEN.has(job.state));
+    const pages = await Promise.all(
+      OPEN_STATES.map((state) => api.get<Page<Job>>(`/v1/jobs?state=${state}&limit=100${siteId ? `&siteId=${siteId}` : ""}`))
+    );
+    jobs = pages.flatMap((page) => page.items).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     if (siteId) bays = (await api.get<SiteDetail>(`/v1/sites/${siteId}`)).bays;
     services = services.filter((service) => service.active);
     if (me.siteId) sites = sites.filter((site) => site.id === me.siteId);
@@ -78,8 +84,14 @@ export default async function WorkPage({ searchParams }: { searchParams: Promise
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
                       {job.state === "awaiting_payment" ? (
-                        <form action={declareCash}>
+                        <form action={declareCash} className="flex flex-wrap items-center gap-2">
                           <input type="hidden" name="jobId" value={job.id} />
+                          {mayAuthorise ? (
+                            <>
+                              <input name="amount" type="number" min="1" step="1" placeholder={`${job.quotedCents / 100}`} aria-label="Amount received, if different from the quote" className={`${inputClass} !mt-0 w-24`} />
+                              <input name="reason" placeholder="why, if different" aria-label="Why the amount differs" className={`${inputClass} !mt-0 w-36`} />
+                            </>
+                          ) : null}
                           <button type="submit" className={buttonClass}>
                             Cash received
                           </button>
@@ -115,7 +127,8 @@ export default async function WorkPage({ searchParams }: { searchParams: Promise
       </div>
       <p className="mt-4 text-[0.75rem] text-[var(--color-faint)]">
         M-Pesa payments match to the job by plate and amount on their own. If a customer pays cash, press Cash received: it is checked
-        against the water and the work, not taken on trust.
+        against the water and the work, not taken on trust. Cash is recorded at the quoted price; if the customer paid a different
+        amount, a supervisor or manager has to record it and say why.
       </p>
     </>
   );

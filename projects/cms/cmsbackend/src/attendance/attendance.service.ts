@@ -9,6 +9,7 @@ const service = createCrudService<Attendance>(db.Attendance, 'Attendance', {
     { model: db.Sermon, as: 'attendedSermon', attributes: ['id', 'title', 'datePreached'] }
   ],
   order: [['attendanceDate', 'DESC'], ['id', 'ASC']],
+  keysetSort: [['attendanceDate', 'DESC'], ['id', 'ASC']],
   references: {
     memberId: { model: db.Member, label: 'Member' },
     eventId: { model: db.Event, label: 'Event' },

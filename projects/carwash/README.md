@@ -39,8 +39,29 @@ a divergence between two of them.
   per-minute buckets in one transaction, and a replayed sequence is dropped rather
   than double counted. Sequence gaps are detected and reported, not silently
   swallowed.
-- Postgres schema with `org_id` on every tenant table, row level security as a
-  second line of defence, and monthly partitioning on the two tables that grow.
+- Postgres schema with `org_id` on every tenant table (including `job_services`, since migration 0013),
+  forced row level security as a second line of defence, and monthly partitioning on the two tables that grow.
+- Sessions that end when they should: every request checks the account (active, role, site, token version),
+  so a suspended person, a demoted manager, a signed-out phone or a changed PIN stops working at once, not at
+  token expiry. Change-my-PIN, manager PIN reset and sign-out are real endpoints with console screens.
+- Site scoping: anyone tied to a site (every attendant, any manager given a site) sees and acts on that site
+  only, on every list, every detail and the close action.
+- Cash is not taken on trust: an attendant can only record the quoted price; a different amount needs a
+  supervisor, manager or owner, a reason, and is written to the audit trail with both figures. An amount that
+  differs with nobody's authorisation raises `cash_amount_mismatch`.
+- Rules for the two witnesses that used to be defined but silent: `device_silent` (a flow meter, pump monitor or
+  machine counter that sent nothing within N minutes of a job at its bay) and `supply_pilferage`, whose baseline
+  now comes from each service's `consumables` (per wash) instead of an empty object.
+- Refunds: a supervisor, manager or owner can void a paid job. The payment is stamped reversed and an append-only
+  `payment_reversals` row records who and why; the job stops counting as work done and a day already closed is
+  recomputed without the sale. Forecourt records the refund, it does not send the money back.
+- Every list is keyset-paged (`limit`, `after`, a `next` cursor) and filterable (state, plate, worker, site, date
+  range, channel, matched, severity, name, role). CSV exports of jobs, payments, flags and the commission report
+  stream the full filtered set, page by page, and defuse spreadsheet formulas.
+- A commission report per attendant (`/v1/reports/commissions`, console Earnings) from paid, un-voided work.
+- Reports are reads: `GET /v1/report` serves a day as it was last reconciled and never writes. Reconciling a
+  day is `POST /v1/sites/close` (the console's Close day button) and the nightly runner.
+- Scheduled maintenance for the tables that only grow (see "Operations"), and backup and restore-drill scripts.
 
 ## Scale, honestly
 
@@ -260,18 +281,88 @@ day is clean, so nothing in the demo is a false alarm.
 npm test                          # unit tests, no database
 FORECOURT_INTEGRATION=1 ...       # against a real migrated Postgres, as the restricted role (RLS on):
                                   # provisioning, the write API, job lifecycle, Daraja matching,
-                                  # cross-organisation isolation, demo seed
+                                  # cross-organisation isolation, demo seed, and the hardening suite (cash variance, site scoping, session
+                                  # revocation, keyset paging, maintenance, unclaimed payments, refunds, exports)
 ```
 
-See the header of `tests/integration.test.ts` for the exact environment.
+See the header of `tests/integration.test.ts` for the exact environment. `tests/hardening.test.ts` raises the API's
+per-minute rate limit for itself, because it makes a few thousand requests from one address.
 
 ### Known limits of the demo data
 
-`supply_pilferage` needs a per-wash consumable baseline that the reconciliation service does not
-yet load (it passes an empty one), so the inventory movements are stored but never flagged.
-`device_silent` is a defined flag type with no rule behind it, so a quiet device appears on
-Devices but not on Flags. Business days are UTC calendar days; opening hours are compared with
-the site's local clock.
+The demo's services carry no `consumables`, so `supply_pilferage` does not appear in the demo even though the
+rule now has a baseline to work from (set them on a service under Prices to see it). The demo's devices are
+registered at seed time, and `device_silent` never blames a device for days before it existed, so the demo days
+stay clean. Business days are UTC calendar days; opening hours are compared with the site's local clock.
+
+## Operations
+
+### Scheduled maintenance
+
+Started from the API and the ingestion service (and runnable now with `npm run maintenance`). An advisory lock
+means any number of replicas can run it; only one does the work at a time. Configurable in `.env`
+(`RETENTION_*`, `MAINTENANCE_INTERVAL_MINUTES`):
+
+| Data | What happens |
+| --- | --- |
+| per-minute telemetry | older than 35 days: summed into per-hour rows and deleted in one statement per site-day, so no litre is lost or counted twice |
+| per-hour telemetry | deleted after 800 days |
+| raw telemetry | a monthly partition is dropped once the whole month is older than 95 days |
+| idempotency keys | deleted after 3 days |
+| `job_events`, payments, flags, day closes | **never expired**: they are the evidence |
+
+Reconciling an old day still sees its water, because the day's telemetry query reads the hourly table too.
+
+### Backups and the restore drill
+
+```
+DATABASE_MIGRATION_URL=... sh scripts/backup.sh          # one verified dump, atomically written, old ones pruned
+DATABASE_MIGRATION_URL=... sh scripts/restore-drill.sh   # restores the newest dump into a scratch database, checks it, drops it
+docker compose --profile backup up -d backup            # a daily dump into the forecourt-backups volume
+docker compose --profile backup run --rm backup sh /scripts/restore-drill.sh
+```
+
+The backup role must be a superuser or have `BYPASSRLS`: every tenant table has forced row level security, and
+`pg_dump` refuses rather than silently dumping nothing. The application role is deliberately unable to do this.
+The drill fails if a migration is missing from the restored copy or forced row level security did not come back,
+and prints the elapsed seconds, which is your recovery time. CI runs both scripts against the integration database.
+Run the drill monthly at least; a backup nobody has restored is a hope.
+
+### Production compose
+
+`docker-compose.yml` stays the local and demo path (mock billing, published ports). For a real deployment:
+
+```
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+The overlay turns billing live (and refuses to start without `BILLING_SHORTCODE`), publishes no Postgres port at
+all, binds the API, ingestion and console to 127.0.0.1 for a TLS reverse proxy, sets `restart: always` and requires
+`CORS_ORIGINS`. It needs Docker Compose 2.24 or newer. Never combine it with `docker-compose.demo.yml`.
+
+### Operator tools
+
+```
+npm run unclaimed:list                                    # M-Pesa money paid to a till nobody had registered
+npm run unclaimed:assign <externalRef> <orgId> [siteId]   # move it to that organisation's till; safe to repeat
+npm run admin -- reset-pin --phone 0712345678             # a forgotten PIN (a manager can also do this in Team)
+npm run maintenance                                       # run the upkeep now
+```
+
+`/readyz` answers 503 until every migration this build ships has been applied (a database that is ahead of the
+build, as in a rolling deploy, is still ready).
+
+### Known limits
+
+- Session changes made through one API replica reach another within `SESSION_CACHE_SECONDS` (default 10); set it to 0
+  to check the account on every request.
+- The Overview totals come from `day_closes` up to each site's last closed day before today plus a live count
+  after it. A day in the middle that was never reconciled is not in those totals until it is closed.
+- Raw-telemetry retention drops whole monthly partitions, so raw readings can live up to a month longer than the
+  setting. The per-minute and per-hour tables are the ones reconciliation uses.
+- The attendant's `discountAuthorisedBy` on a new job is still taken as given (it is not checked that it names a
+  supervisor); cash amounts, by contrast, are enforced.
+- Sign-out ends every session of that account, including the same person's other phone.
 
 ## Not built yet
 

@@ -20,3 +20,23 @@ export function monthBounds(month: string): { first: string; last: string; nextF
 export function localDayOf(at: Date): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(at);
 }
+
+/**
+ * Splits `minutes` that begin at `start` into the Nairobi calendar days they fall on. Nairobi has no daylight saving (UTC+3 all year), so
+ * local midnight is a fixed instant. A night shift from 22:00 to 06:00 is 120 minutes on one day and 360 on the next, which is what a
+ * holiday or rest-day premium has to see: the premium belongs to the day worked, not to the day the shift began.
+ */
+export function splitByLocalDay(start: Date, minutes: number): Array<{ day: string; minutes: number }> {
+  const out: Array<{ day: string; minutes: number }> = [];
+  let cursor = start.getTime();
+  let left = minutes;
+  while (left > 0) {
+    const day = localDayOf(new Date(cursor));
+    const nextMidnight = Date.parse(`${addDays(day, 1)}T00:00:00+03:00`);
+    const take = Math.min(left, Math.max(1, Math.round((nextMidnight - cursor) / 60_000)));
+    out.push({ day, minutes: take });
+    left -= take;
+    cursor += take * 60_000;
+  }
+  return out;
+}

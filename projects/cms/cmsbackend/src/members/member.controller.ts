@@ -1,7 +1,8 @@
 import { NextFunction, Request, Response } from 'express';
 import * as memberService from './member.service';
-import { paginationSchema } from '../common/pagination';
+import { keysetParams, paginationSchema, wantsOffsetPaging } from '../common/pagination';
 import { NotFoundError } from '../utils/errors';
+import { listMembersSchema } from './member.schemas';
 
 export const createMember = async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -13,9 +14,23 @@ export const createMember = async (req: Request, res: Response, next: NextFuncti
 
 export const getAllMembers = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const pagination = paginationSchema.parse(req.query);
-    const q = typeof req.query.q === 'string' ? req.query.q.trim().slice(0, 80) : '';
-    res.status(200).json(await memberService.getAllMembers(pagination, {}, q));
+    const { query } = listMembersSchema.parse({ query: req.query });
+    const filter = {
+      q: query.q ?? '',
+      status: query.status,
+      familyId: query.familyId,
+      ministryId: query.ministryId,
+      smallGroupId: query.smallGroupId,
+      joinedFrom: query.joinedFrom,
+      joinedTo: query.joinedTo
+    };
+    // Cursor paging (no count) by default; `page=` keeps the older numbered shape for callers that need a total.
+    if (wantsOffsetPaging(req.query)) {
+      res.status(200).json(await memberService.getAllMembers(paginationSchema.parse(req.query), filter));
+      return;
+    }
+    const { limit, cursor } = keysetParams(req.query);
+    res.status(200).json(await memberService.listMembersKeyset(filter, limit, cursor));
   } catch (error) {
     next(error);
   }
@@ -28,6 +43,14 @@ export const getMemberById = async (req: Request, res: Response, next: NextFunct
       throw new NotFoundError('Member not found.');
     }
     res.status(200).json(member);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMemberProfile = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.status(200).json(await memberService.getMemberProfile(Number(req.params.id)));
   } catch (error) {
     next(error);
   }

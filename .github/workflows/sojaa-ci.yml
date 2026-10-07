@@ -1,0 +1,70 @@
+name: sojaa
+
+on:
+  push:
+    paths:
+      - 'projects/sojaa/**'
+      - '.github/workflows/sojaa-ci.yml'
+  pull_request:
+    paths:
+      - 'projects/sojaa/**'
+
+jobs:
+  # Unit tests, types and the production build: no database.
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/sojaa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: projects/sojaa/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  # The integration tests connect as the restricted application role, so row-level security is in force.
+  # Without them a broken tenant boundary would pass CI, because they are skipped when no database is set.
+  integration:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/sojaa
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sojaa
+          POSTGRES_PASSWORD: ci-owner-pw
+          POSTGRES_DB: sojaa_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U sojaa" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://sojaa_app:ci-app-password-123@localhost:5432/sojaa_test
+      DATABASE_MIGRATION_URL: postgres://sojaa:ci-owner-pw@localhost:5432/sojaa_test
+      SOJAA_APP_PASSWORD: ci-app-password-123
+      JWT_SECRET: ci-jwt-secret-ci-jwt-secret-ci-jwt-secret
+      MPESA_CALLBACK_SECRET: ci-mpesa-secret-1234567
+      NODE_ENV: test
+      SOJAA_INTEGRATION: '1'
+      SIGNUP_RESEND_COOLDOWN_SECONDS: '0'
+      API_RATE_LIMIT_PER_MINUTE: '100000'
+      MPESA_SIMULATOR: 'true'
+      SOJAA_CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: projects/sojaa/package-lock.json
+      - run: npm ci
+      - run: npm run migrate
+      - run: npx vitest run

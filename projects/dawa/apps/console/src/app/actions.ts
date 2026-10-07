@@ -4,9 +4,10 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { api, describeError } from "@/lib/api";
 import { clearSession, writeSession } from "@/lib/session";
-import { toCents } from "@/lib/format";
-import type { Product, ScanResult } from "@/lib/types";
-import { currentBranchId, setBranchCookie } from "@/lib/branch";
+import { ksh, toCents } from "@/lib/format";
+import type { Customer, Page, Product, ScanResult, Supplier } from "@/lib/types";
+import type { PickOption } from "@/components/picker";
+import { bq, currentBranchId, setBranchCookie } from "@/lib/branch";
 
 export interface FormState {
   error: string | null;
@@ -331,5 +332,147 @@ export async function changePin(_previous: FormState, form: FormData): Promise<F
     if (text(form, "newPin") !== text(form, "confirm")) throw new Error("The two PINs are not the same.");
     await api.send("POST", "/v1/auth/pin", { currentPin: text(form, "currentPin"), newPin: text(form, "newPin") });
     return "PIN changed.";
+  });
+}
+
+// ---- pickers: search as you type, never a list of everything ----
+
+export async function pickProducts(query: string): Promise<PickOption[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const found = await api.get<Page<Product>>(`/v1/products?search=${encodeURIComponent(q)}&limit=12`);
+  return found.items.map((p) => ({ id: p.id, label: p.name, hint: [p.strength, p.form].filter(Boolean).join(" "), meta: p.category }));
+}
+export async function pickSuppliers(query: string): Promise<PickOption[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const found = await api.get<Page<Supplier>>(`/v1/suppliers?search=${encodeURIComponent(q)}&limit=12`);
+  return found.items.map((s) => ({ id: s.id, label: s.name }));
+}
+export async function pickCustomers(query: string): Promise<PickOption[]> {
+  const q = query.trim();
+  if (!q) return [];
+  const found = await api.get<Page<Customer>>(`/v1/customers?search=${encodeURIComponent(q)}&limit=8`);
+  return found.items.map((c) => ({ id: c.id, label: c.name, hint: c.creditLimitCents ? `owes ${ksh(c.balanceCents)} of ${ksh(c.creditLimitCents)}` : c.phone ?? "" }));
+}
+
+// ---- unmatched M-Pesa ----
+
+/** The manager types the number of the sale the money belongs to; the till's own record supplies the amount. */
+export async function claimPayment(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const number = text(form, "saleNumber");
+    const found = await api.get<Page<{ id: string; number: string; status: string }>>(`/v1/sales${await bq()}${(await bq()) ? "&" : "?"}q=${encodeURIComponent(number)}&limit=5`);
+    const sale = found.items.find((s) => s.number.toLowerCase() === number.toLowerCase());
+    if (!sale) throw new Error(`No sale numbered ${number} at this branch.`);
+    const out = await api.send<{ paidCents: number; dueCents: number }>("POST", `/v1/mpesa/unmatched/${encodeURIComponent(text(form, "ref"))}/claim`, { saleId: sale.id });
+    return out.dueCents > 0 ? `Applied to ${sale.number}. KSh ${(out.dueCents / 100).toLocaleString("en-KE")} is still due on it.` : `Applied to ${sale.number}. It is paid in full.`;
+  });
+}
+
+// ---- customers' terms, price lists ----
+
+export async function saveCustomerTerms(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    await api.send("PATCH", `/v1/customers/${text(form, "id")}`, {
+      creditLimitCents: toCents(form.get("limit")),
+      priceListId: optional(form, "priceListId") ?? null,
+      active: form.get("active") === "on"
+    });
+    return "Terms saved.";
+  });
+}
+export async function createPriceList(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    await api.send("POST", "/v1/price-lists", { name: text(form, "name") });
+    return "Price list created.";
+  });
+}
+export async function setPriceItem(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const product = text(form, "productId");
+    if (!product) throw new Error("Search for the product first.");
+    await api.send("PUT", `/v1/price-lists/${text(form, "listId")}/items`, { productId: product, priceCents: toCents(form.get("price")) });
+    return "Price saved.";
+  });
+}
+export async function removePriceItem(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    await api.send("DELETE", `/v1/price-lists/${text(form, "listId")}/items/${text(form, "productId")}`);
+    return "Removed from the list.";
+  });
+}
+
+// ---- suppliers, purchase orders, returns, credit, voids ----
+
+export async function updateSupplierAction(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    await api.send("PATCH", `/v1/suppliers/${text(form, "id")}`, { name: text(form, "name"), phone: optional(form, "phone") ?? null, active: form.get("active") === "on" });
+    return "Supplier saved.";
+  });
+}
+
+export interface OrderLineInput { productId: string; qty: number; unitCostCents: number }
+export async function createOrder(input: { supplierId: string; expectedDate?: string; note?: string; lines: OrderLineInput[] }): Promise<FormState & { id?: string }> {
+  try {
+    const out = await api.send<{ id: string; number: string }>("POST", "/v1/purchase-orders", await inBranch(input));
+    refresh();
+    return { error: null, ok: `Order ${out.number} raised.`, id: out.id };
+  } catch (caught) {
+    return { error: describeError(caught), ok: null };
+  }
+}
+export async function receiveOrder(input: { orderId: string; invoiceNumber: string; invoiceDate: string; dueDate?: string; lines: { lineId: string; batchNo: string; expiryDate: string; qty: number; unitCostCents?: number }[]; witness?: { phone: string; pin: string } }): Promise<FormState> {
+  try {
+    const { orderId, ...body } = input;
+    const out = await api.send<{ purchaseOrderStatus: string; warnings: string[] }>("POST", `/v1/purchase-orders/${orderId}/receive`, await inBranch(body));
+    refresh();
+    return { error: null, ok: `Delivery booked. The order is ${out.purchaseOrderStatus}.${out.warnings.length ? ` Watch: ${out.warnings.join(" ")}` : ""}` };
+  } catch (caught) {
+    return { error: describeError(caught), ok: null };
+  }
+}
+export async function cancelOrder(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    await api.send("POST", `/v1/purchase-orders/${text(form, "id")}/cancel`, { reason: text(form, "reason") });
+    return "Order cancelled.";
+  });
+}
+export async function creditNoteAction(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const out = await api.send<{ balanceCents: number }>("POST", "/v1/credit-notes", { invoiceId: text(form, "id"), amountCents: toCents(form.get("amount")), noteNumber: optional(form, "noteNumber") ?? null, reason: text(form, "reason") });
+    return `Credit recorded. KSh ${(out.balanceCents / 100).toLocaleString("en-KE")} is still owed on the invoice.`;
+  });
+}
+export async function voidInvoiceAction(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    await api.send("POST", `/v1/payables/${text(form, "id")}/void`, { reason: text(form, "reason") });
+    return "Invoice voided and its stock taken back out. Enter the corrected invoice under the same number.";
+  });
+}
+export async function setBatchStatusAction(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    await api.send("PATCH", `/v1/stock/batches/${text(form, "batchId")}/status`, await inBranch({ status: text(form, "status"), reason: text(form, "reason") }));
+    return text(form, "status") === "available" ? "Back on sale." : "Held: it will not be sold.";
+  });
+}
+export async function returnToSupplierAction(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const invoiceId = optional(form, "invoiceId");
+    const credit = toCents(form.get("credit"));
+    const witnessPhone = optional(form, "witnessPhone");
+    await api.send("POST", "/v1/supplier-returns", await inBranch({
+      batchId: text(form, "batchId"), qty: Number.parseInt(text(form, "qty"), 10), reason: text(form, "reason"),
+      ...(invoiceId && credit > 0 ? { credit: { invoiceId, amountCents: credit, noteNumber: optional(form, "noteNumber") ?? null } } : {}),
+      ...(witnessPhone ? { witness: { phone: witnessPhone, pin: text(form, "witnessPin") } } : {})
+    }));
+    return "Returned to the supplier.";
+  });
+}
+export async function writeOffExpiredAction(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const out = await api.send<{ batches: number; units: number; valueCents: number; skippedControlled: unknown[] }>("POST", "/v1/stock/writeoff-expired", await inBranch({ reason: optional(form, "reason") ?? "Expired stock written off" }));
+    const skipped = out.skippedControlled.length;
+    return `Wrote off ${out.units} unit(s) in ${out.batches} batch(es), KSh ${(out.valueCents / 100).toLocaleString("en-KE")} at cost.${skipped ? ` ${skipped} controlled batch(es) need a witnessed write-off one by one.` : ""}`;
   });
 }

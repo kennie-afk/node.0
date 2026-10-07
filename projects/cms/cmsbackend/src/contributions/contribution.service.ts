@@ -6,6 +6,7 @@ import {
   ContributionFilter,
   deleteContribution as removeContribution,
   getContribution as loadContribution,
+  listContributionsKeyset,
   listContributionsPaged,
   recordContribution,
   RecordInput,
@@ -28,6 +29,11 @@ export const createContribution = async (input: RecordInput) => {
 export const getAllContributions = async (filter: ContributionFilter, page: number, pageSize: number) => {
   const { t, churchId } = await scope();
   return listContributionsPaged(t, churchId, filter, page, pageSize);
+};
+
+export const getAllContributionsKeyset = async (filter: ContributionFilter, limit: number, cursor?: string) => {
+  const { t, churchId } = await scope();
+  return listContributionsKeyset(t, churchId, filter, limit, cursor);
 };
 
 export const getContributionById = async (id: number) => {

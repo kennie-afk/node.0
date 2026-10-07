@@ -8,6 +8,9 @@ import { requestContext, errorHandler, notFound } from '../api/middleware';
 import { parseBatch } from './batch';
 import { ingestBatch, ingestPlates } from './service';
 import { parsePlateBatch } from './plates';
+import { keepPartitionsAhead } from '../persistence/partitions';
+import { checkReadiness } from '../persistence/readiness';
+import { keepMaintained } from '../persistence/maintenance';
 
 export function createIngestionApp() {
   const app = express();
@@ -21,8 +24,9 @@ export function createIngestionApp() {
 
   app.get('/readyz', async (_req, res) => {
     try {
-      await pool.query('SELECT 1');
-      res.status(200).json({ status: 'ready' });
+      const state = await checkReadiness();
+      if (state.ready) return res.status(200).json({ status: 'ready', migration: state.version });
+      res.status(503).json({ status: 'not-ready', reason: state.reason, pending: state.pending });
     } catch {
       res.status(503).json({ status: 'not-ready', reason: 'database unreachable' });
     }
@@ -93,7 +97,13 @@ async function main(): Promise<void> {
     logger.info('ingestion listening', { port: env.INGESTION_PORT });
   });
 
+  // Telemetry is the table that fills fastest, so the process that writes it also keeps its partitions ahead.
+  const partitionTimer = keepPartitionsAhead();
+  const maintenanceTimer = keepMaintained();
+
   const stop = () => {
+    clearInterval(partitionTimer);
+    clearInterval(maintenanceTimer);
     server.close(async () => {
       await closePool().catch(() => undefined);
       process.exit(0);

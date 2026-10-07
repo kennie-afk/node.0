@@ -1,6 +1,6 @@
 /** Rosters, attendance, patrols, incidents. */
 import { Router } from 'express';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import { throttle } from './throttle';
 import { z } from 'zod';
 import { authenticate, requirePermission, requireWritable } from './middleware';
 import { wrap } from '../common/context';
@@ -105,22 +105,23 @@ router.post('/shifts/:id/override', ...guarded, wrap(async (req, res) => {
 
 /**
  * A guard checking in alone. Unauthenticated by session: the guard's own phone number and PIN are the credential, and the failures are
- * throttled per phone number (never per address: every console request comes from the console's one address).
+ * throttled in Postgres (see throttle.ts): the guesser's address+phone key locks first, and a guard on another address is not affected.
  */
-const guardLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true,
-  keyGenerator: (req) => {
-    try {
-      return `guard:${normalisePhone(String(req.body?.phone ?? ''))}`;
-    } catch {
-      return `ip:${ipKeyGenerator(req.ip ?? 'unknown')}`;
-    }
-  },
-  message: { code: 'too-many-attempts', message: 'Too many attempts. Try again in a few minutes, or ask your supervisor.' }
+const guardLimiter = throttle({
+  scope: 'guard',
+  attackerLimit: 10,
+  windowSeconds: 15 * 60,
+  attackerBaseLockSeconds: 60,
+  attackerMaxLockSeconds: 3600,
+  accountLimit: 200,
+  accountLockSeconds: 300,
+  message: 'Too many attempts. Try again in a few minutes, or ask your supervisor.'
+}, (req) => {
+  try {
+    return normalisePhone(String(req.body?.phone ?? ''));
+  } catch {
+    return String(req.body?.phone ?? '').slice(0, 24);
+  }
 });
 router.post('/guard/check', guardLimiter, wrap(async (req, res) => {
   const body = parse(z.object({ phone: z.string().min(6).max(20), pin: z.string().min(4).max(12), kind: z.enum(['in', 'out']), fix: fixSchema }), req.body);

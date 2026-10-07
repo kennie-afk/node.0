@@ -36,6 +36,12 @@ export default async function SettingsPage() {
               <Field label="Invoices bill" hint="Scheduled: the whole scheduled shift when the guard was there for (nearly) all of it. Actual: only the minutes between check-in and check-out."><select name="billBasis" defaultValue={s.billBasis} className={selectClass}><option value="scheduled">Scheduled hours of verified shifts</option><option value="actual">Verified minutes only</option></select></Field>
             </div>
           </Card>
+          <Card title="Leave and absence (your choice)">
+            <div className="flex flex-col gap-3">
+              <div className="grid grid-cols-2 gap-2"><Field label="Annual leave days a year" hint="Placeholder 21: check your contracts and the Employment Act."><input name="annualLeaveDays" type="number" min={0} max={366} defaultValue={s.annualLeaveDays} className={inputClass} /></Field><Field label="Sick leave days a year" hint="Blank = no limit."><input name="sickLeaveDays" type="number" min={0} max={366} defaultValue={s.sickLeaveDays ?? ""} className={inputClass} /></Field></div>
+              <Field label="Absence deduction" hint="Off by default: leave is recorded but pay does not change. Deductions use calendar-day proration of basic pay and allowances. Sojaa does not say whether you may deduct; that is your contract and the law."><select name="absenceDeduction" defaultValue={s.absenceDeduction} className={selectClass}><option value="off">Off: never reduce pay for absence</option><option value="unpaid_leave">Deduct approved unpaid leave</option><option value="unpaid_leave_and_missed">Deduct unpaid leave and days with a missed shift</option></select></Field>
+            </div>
+          </Card>
         </div>
       </ActionForm>
     </>

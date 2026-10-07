@@ -13,7 +13,8 @@ import { logger } from '../common/logger';
 import { wrap } from '../common/context';
 import { inOrg, parse, queryInt, queryString } from './helpers';
 import { DARAJA_ACCEPTED, DARAJA_REJECTED } from '../mpesa/daraja';
-import { assignPayment, assignSchema, ignorePayment, ingestConfirmation, listPayments, paybillOf } from '../mpesa/service';
+import { assignPayment, assignSchema, ignorePayment, ingestConfirmation, listPaymentPage, paybillOf } from '../mpesa/service';
+import { compareStatement, reconciliationReport, statementSchema } from '../mpesa/reconciliation';
 import { BadRequestError, NotFoundError } from '../domain/errors';
 
 const router = Router();
@@ -47,7 +48,19 @@ router.post('/mpesa/c2b/:secret/confirmation', async (req, res) => {
 });
 
 router.get('/mpesa/payments', authenticate, requirePermission('recon'), wrap(async (req, res) => {
-  res.json(await inOrg(req, (client) => listPayments(client, { status: queryString(req.query.status), limit: Math.min(200, queryInt(req.query.limit, 50)) || 50 })));
+  res.json(await inOrg(req, (client) => listPaymentPage(client, {
+    status: queryString(req.query.status), search: queryString(req.query.search), after: queryString(req.query.after), limit: Math.min(200, queryInt(req.query.limit, 50)) || 50
+  })));
+}));
+router.get('/mpesa/reconciliation', authenticate, requirePermission('recon'), wrap(async (req, res) => {
+  const today = new Date(Date.now() + 3 * 3_600_000).toISOString().slice(0, 10);
+  const to = queryString(req.query.to) ?? today;
+  const from = queryString(req.query.from) ?? new Date(Date.parse(to) - 29 * 86_400_000).toISOString().slice(0, 10);
+  res.json(await inOrg(req, (client) => reconciliationReport(client, from, to)));
+}));
+router.post('/mpesa/reconciliation/statement', authenticate, requirePermission('recon'), wrap(async (req, res) => {
+  const body = parse(statementSchema, req.body);
+  res.json(await inOrg(req, (client) => compareStatement(client, body)));
 }));
 router.post('/mpesa/payments/:id/assign', authenticate, requirePermission('recon'), requireWritable, wrap(async (req, res) => {
   const body = parse(assignSchema, req.body);

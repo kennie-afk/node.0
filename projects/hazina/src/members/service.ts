@@ -10,6 +10,7 @@ import { Ctx, audit, pickBranch } from '../common/context';
 import { normalisePhone } from '../admin/phone';
 import { memberBalance } from '../ledger/service';
 import { CODES } from '../ledger/chart';
+import { likeContains, numberSeq } from '../common/search';
 
 export const memberSchema = z.object({
   fullName: z.string().trim().min(2).max(160),
@@ -88,17 +89,18 @@ export async function listMembers(client: PoolClient, opts: { search?: string; s
     where.push(`status = $${params.length}`);
   }
   if (opts.search) {
-    params.push(`%${opts.search.toLowerCase()}%`);
+    params.push(likeContains(opts.search));
     const like = `$${params.length}`;
     params.push(opts.search);
     where.push(`(lower(full_name) LIKE ${like} OR lower(member_no) LIKE ${like} OR id_number = $${params.length} OR phone LIKE ${like})`);
   }
   if (opts.after) {
-    params.push(opts.after);
-    where.push(`member_no > $${params.length}`);
+    // page on the numeric sequence: as text 'M100000' sorts before 'M99999'
+    params.push(numberSeq(opts.after));
+    where.push(`member_seq > $${params.length}`);
   }
   params.push(opts.limit + 1);
-  const rows = (await client.query(`SELECT * FROM members ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY member_no LIMIT $${params.length}`, params)).rows;
+  const rows = (await client.query(`SELECT * FROM members ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY member_seq LIMIT $${params.length}`, params)).rows;
   const more = rows.length > opts.limit;
   const items = rows.slice(0, opts.limit).map(toRow);
   return { items, nextCursor: more ? items[items.length - 1]!.memberNo : null };
@@ -112,12 +114,11 @@ export async function getMemberRow(client: PoolClient, id: string, lock = false)
 
 export async function memberProfile(client: PoolClient, id: string) {
   const row = await getMemberRow(client, id);
-  const [savings, shares, deposits, owed] = await Promise.all([
-    memberBalance(client, id, CODES.savings),
-    memberBalance(client, id, CODES.shares),
-    memberBalance(client, id, CODES.deposits),
-    memberBalance(client, id, CODES.loans)
-  ]);
+  // one at a time: a pg client runs one query at a time, and overlapping calls on it are deprecated
+  const savings = await memberBalance(client, id, CODES.savings);
+  const shares = await memberBalance(client, id, CODES.shares);
+  const deposits = await memberBalance(client, id, CODES.deposits);
+  const owed = await memberBalance(client, id, CODES.loans);
   const loans = (await client.query(`SELECT id, loan_no, status, principal_cents FROM loans WHERE member_id = $1 ORDER BY created_at DESC`, [id])).rows;
   return {
     ...toRow(row),

@@ -22,6 +22,7 @@ import visitorsModels from './visitors/models';
 import careModels from './care/models';
 import rolesModels from './roles/models';
 import dataopsModels from './dataops/models';
+import eventsxModels from './eventsx/models';
 
 export const modelFactories: ModelFactory[] = [
   financeModels,
@@ -39,6 +40,7 @@ export const modelFactories: ModelFactory[] = [
   visitorsModels,
   careModels,
   rolesModels,
-  dataopsModels
+  dataopsModels,
+  eventsxModels
 ];
 

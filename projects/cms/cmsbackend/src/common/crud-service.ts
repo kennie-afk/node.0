@@ -1,11 +1,14 @@
 import { Includeable, Model, ModelStatic, Order, WhereOptions } from 'sequelize';
 import { TenantRepository } from './tenant-repository';
 import { Page, Pagination } from './pagination';
+import { KeysetPage } from './keyset';
 import { BadRequestError } from '../utils/errors';
 
 export interface CrudOptions {
   include?: Includeable[];
   order?: Order;
+  /** Sort for cursor paging: the last entry must be unique (the id). Defaults to newest id first. */
+  keysetSort?: Array<[string, 'ASC' | 'DESC']>;
   /**
    * Foreign keys the caller may set, mapped to the model they point at. A row may only
    * reference rows of the caller's own church; the database foreign key alone cannot
@@ -18,6 +21,7 @@ export interface CrudService<T> {
   repository: TenantRepository<any>;
   create(payload: Partial<T>): Promise<T>;
   list(pagination: Pagination, where?: WhereOptions): Promise<Page<T>>;
+  listKeyset(where: WhereOptions | undefined, limit: number, cursor?: string): Promise<KeysetPage<T>>;
   findById(id: number): Promise<T | null>;
   findByIdOrFail(id: number): Promise<T>;
   update(id: number, changes: Partial<T>): Promise<T>;
@@ -62,6 +66,10 @@ export function createCrudService<T>(
         include: options.include,
         order: options.order
       }) as Promise<Page<T>>;
+    },
+
+    async listKeyset(where, limit, cursor) {
+      return repository.listKeyset({ where, include: options.include, sort: options.keysetSort ?? [['id', 'DESC']], limit, cursor }) as Promise<KeysetPage<T>>;
     },
 
     async findById(id) {

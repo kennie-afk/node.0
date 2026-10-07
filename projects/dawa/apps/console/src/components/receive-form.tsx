@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { receiveDelivery, scanCode } from "@/app/actions";
-import { Badge, Notice, buttonClass, inputClass, secondaryButtonClass, selectClass } from "@/components/ui";
+import { pickProducts, pickSuppliers, receiveDelivery, scanCode } from "@/app/actions";
+import { Picker } from "@/components/picker";
+import { Badge, Notice, buttonClass, inputClass, secondaryButtonClass } from "@/components/ui";
 import { toCents } from "@/lib/format";
-import type { Product, Supplier } from "@/lib/types";
 
-interface Row { key: string; productId: string; batchNo: string; expiryDate: string; qty: string; cost: string; serials: string[] }
-const blank = (): Row => ({ key: Math.random().toString(36).slice(2), productId: "", batchNo: "", expiryDate: "", qty: "", cost: "", serials: [] });
+interface Row { key: string; productId: string; productName: string; category: string; batchNo: string; expiryDate: string; qty: string; cost: string; serials: string[] }
+const blank = (): Row => ({ key: Math.random().toString(36).slice(2), productId: "", productName: "", category: "otc", batchNo: "", expiryDate: "", qty: "", cost: "", serials: [] });
 const today = () => new Date().toISOString().slice(0, 10);
 
-export function ReceiveForm({ suppliers, products }: { suppliers: Supplier[]; products: Product[] }) {
+export function ReceiveForm() {
   const [supplierId, setSupplierId] = useState("");
   const [invoiceNumber, setInvoiceNumber] = useState("");
   const [invoiceDate, setInvoiceDate] = useState(today());
@@ -22,8 +22,7 @@ export function ReceiveForm({ suppliers, products }: { suppliers: Supplier[]; pr
   const [result, setResult] = useState<{ error: string | null; ok: string | null; warnings?: string[] } | null>(null);
   const [working, start] = useTransition();
 
-  const byId = new Map(products.map((p) => [p.id, p]));
-  const needsWitness = rows.some((r) => byId.get(r.productId)?.category === "controlled");
+  const needsWitness = rows.some((r) => r.category === "controlled");
 
   async function onScan() {
     const input = scan.trim();
@@ -47,7 +46,7 @@ export function ReceiveForm({ suppliers, products }: { suppliers: Supplier[]; pr
         next[at] = row;
         return next;
       }
-      const fresh: Row = { key: Math.random().toString(36).slice(2), productId: product.id, batchNo: s.batchNo!, expiryDate: s.expiryDate!, qty: "1", cost: "", serials: s.serial ? [s.serial] : [] };
+      const fresh: Row = { key: Math.random().toString(36).slice(2), productId: product.id, productName: product.name, category: product.category, batchNo: s.batchNo!, expiryDate: s.expiryDate!, qty: "1", cost: "", serials: s.serial ? [s.serial] : [] };
       return [...current.filter((r) => r.productId || r.batchNo), fresh];
     });
     setNote({ tone: "good", text: `${product.name} · batch ${s.batchNo} · expires ${s.expiryDate}` });
@@ -73,7 +72,7 @@ export function ReceiveForm({ suppliers, products }: { suppliers: Supplier[]; pr
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-surface)] p-4 sm:grid-cols-4">
-        <select className={selectClass} value={supplierId} onChange={(e) => setSupplierId(e.target.value)} aria-label="Supplier"><option value="">Supplier…</option>{suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select>
+        <Picker search={pickSuppliers} placeholder="Supplier: search by name" onPick={(o) => setSupplierId(o?.id ?? "")} />
         <input className={inputClass} placeholder="Supplier invoice no." value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
         <input className={inputClass} type="date" aria-label="Invoice date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
         <input className={inputClass} type="date" aria-label="Due date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} title="Due date" />
@@ -91,11 +90,10 @@ export function ReceiveForm({ suppliers, products }: { suppliers: Supplier[]; pr
             {["Product", "Batch", "Expiry", "Qty", "Unit cost (KES)", "Serials", ""].map((h) => <th key={h} className="px-3 py-2.5 font-medium">{h}</th>)}</tr></thead>
           <tbody>
             {rows.map((r, i) => {
-              const p = byId.get(r.productId);
               const set = (patch: Partial<Row>) => setRows((cur) => cur.map((x, j) => (j === i ? { ...x, ...patch } : x)));
               return (
                 <tr key={r.key} className="border-b border-[var(--color-line)] last:border-0">
-                  <td className="px-3 py-2"><select className={`${selectClass} !mt-0 min-w-44`} value={r.productId} onChange={(e) => set({ productId: e.target.value })} aria-label="Product"><option value="">Choose…</option>{products.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}</select>{p && p.category !== "otc" ? <div className="mt-1"><Badge value={p.category} /></div> : null}</td>
+                  <td className="min-w-56 px-3 py-2"><Picker key={`${r.key}:${r.productId}`} search={pickProducts} placeholder="Search for the product" initial={r.productId ? { id: r.productId, label: r.productName } : null} onPick={(o) => set({ productId: o?.id ?? "", productName: o?.label ?? "", category: o?.meta ?? "otc" })} />{r.category !== "otc" && r.productId ? <div className="mt-1"><Badge value={r.category} /></div> : null}</td>
                   <td className="px-3 py-2"><input className={`${inputClass} !mt-0 w-28`} value={r.batchNo} onChange={(e) => set({ batchNo: e.target.value })} aria-label="Batch number" /></td>
                   <td className="px-3 py-2"><input className={`${inputClass} !mt-0 w-36`} type="date" value={r.expiryDate} onChange={(e) => set({ expiryDate: e.target.value })} aria-label="Expiry date" /></td>
                   <td className="px-3 py-2"><input className={`${inputClass} !mt-0 w-20 text-right`} inputMode="numeric" value={r.qty} onChange={(e) => set({ qty: e.target.value })} aria-label="Quantity" /></td>

@@ -11,7 +11,7 @@ import { PoolClient } from 'pg';
 import { z } from 'zod';
 import { CODES } from '../ledger/chart';
 import { AccountType, debitNormal } from '../ledger/chart';
-import { portfolioSummary } from '../reports/portfolio';
+import { parAmount, portfolioSummary } from '../reports/portfolio';
 
 export const measureSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('ledger_balance'), codes: z.array(z.string().regex(/^[0-9]{4,8}$/)).min(1).max(20) }),
@@ -93,7 +93,7 @@ async function evaluate(client: PoolClient, measure: Measure, c: Ctx): Promise<n
       c.portfolio ??= await portfolioSummary(client);
       const row = c.portfolio.par.find((p) => p.days === measure.days);
       if (row) return measure.kind === 'par_amount' ? row.amountCents : row.percent;
-      const amount = c.portfolio.positions.filter((p) => p.daysOverdue > measure.days).reduce((s, p) => s + p.outstandingPrincipalCents, 0);
+      const amount = await parAmount(client, measure.days);
       return measure.kind === 'par_amount' ? amount : c.portfolio.outstandingPrincipalCents > 0 ? Math.round((amount / c.portfolio.outstandingPrincipalCents) * 10_000) / 100 : 0;
     }
   }
@@ -125,7 +125,7 @@ export async function generate(client: PoolClient, definition: Definition, from:
   if (usesPortfolio) {
     notes.push(`Portfolio-at-risk rows are as at ${todayDay} (the day this was generated): repayment schedules keep no history.${to !== todayDay ? ' The period end differs from that day.' : ''}`);
   }
-  notes.push('Interest income is recognised when received; penalties when charged. See docs/ACCOUNTING.md.');
+  notes.push('Interest income is accrued per instalment when it falls due (paid early, on receipt); penalties when charged. See docs/ACCOUNTING.md.');
   return { title: definition.title, isOfficial: false, banner: NOT_OFFICIAL, period: { from, to }, generatedAt: new Date().toISOString(), sections, notes };
 }
 

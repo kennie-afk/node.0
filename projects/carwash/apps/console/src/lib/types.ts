@@ -25,9 +25,16 @@ export interface Site {
   openFlags: number;
 }
 
+/** What every paged list returns: the rows, and the cursor of the next page (null on the last). */
+export interface Page<T> {
+  items: T[];
+  next: string | null;
+}
+
 export interface Job {
   id: string;
   state: string;
+  site?: string;
   quotedCents: number;
   listCents: number;
   createdAt: string;
@@ -39,6 +46,8 @@ export interface Job {
 
 export interface Payment {
   id: string;
+  site?: string;
+  reversed?: boolean;
   channel: string;
   amountCents: number;
   reference: string | null;
@@ -117,6 +126,7 @@ export interface Service {
   expectedWaterL: number;
   expectedDurationS: number;
   commissionRate: number;
+  consumables?: Record<string, number>;
   active: boolean;
   uses?: number;
 }
@@ -156,7 +166,22 @@ export interface JobDetail {
   closedAt: string | null;
   services: { name: string; unitPriceCents: number; qty: number }[];
   events: { type: string; at: string; payload: Record<string, unknown> }[];
-  payments: { id: string; channel: string; amountCents: number; reference: string | null; receivedAt: string }[];
+  payments: { id: string; channel: string; amountCents: number; reference: string | null; receivedAt: string; reversed?: boolean }[];
+}
+
+export interface ActivityEvent {
+  id: string;
+  type: string;
+  at: string;
+  jobId: string;
+  site: string;
+  actor: string | null;
+  payload: Record<string, unknown>;
+}
+
+export interface CommissionReport {
+  rows: { workerId: string; worker: string; jobs: number; grossCents: number; commissionCents: number }[];
+  totals: { jobs: number; grossCents: number; commissionCents: number };
 }
 
 export function clock(minute: number): string {

@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authenticate, requireWritable } from './middleware';
 import { businessDayNow, wrap } from '../common/context';
-import { inBranch, parse, queryString } from './helpers';
-import { adjustSchema, adjustStock, alerts, controlledRegister, findProductByGtin, listBatches, receiveSchema, receiveStock, stockSummary } from '../inventory/service';
+import { inBranch, pageLimit, parse, queryInt, queryString } from './helpers';
+import { adjustSchema, adjustStock, alerts, batchStatusSchema, controlledRegister, findProductByGtin, listBatches, receiveSchema, receiveStock, setBatchStatus, stockSummary, writeOffExpired } from '../inventory/service';
 import { Gs1Error, parseScan } from '../gs1/parse';
 import { BadRequestError, ForbiddenError } from '../domain/errors';
 
@@ -11,11 +11,11 @@ const router = Router();
 router.use(authenticate);
 
 router.get('/stock', wrap(async (req, res) => {
-  res.json(await inBranch(req, req.query.branchId, async (client, _ctx, branch) => stockSummary(client, branch, await businessDayNow(client, branch.timezone), { search: queryString(req.query.search) })));
+  res.json(await inBranch(req, req.query.branchId, async (client, _ctx, branch) => stockSummary(client, branch, await businessDayNow(client, branch.timezone), { search: queryString(req.query.search), limit: pageLimit(req.query.limit, 100, 500), offset: queryInt(req.query.offset, 0) })));
 }));
 
 router.get('/stock/batches', wrap(async (req, res) => {
-  res.json(await inBranch(req, req.query.branchId, (client, _ctx, branch) => listBatches(client, branch.id, { productId: queryString(req.query.productId), includeEmpty: req.query.includeEmpty === 'true' })));
+  res.json(await inBranch(req, req.query.branchId, (client, _ctx, branch) => listBatches(client, branch.id, { productId: queryString(req.query.productId), search: queryString(req.query.search), includeEmpty: req.query.includeEmpty === 'true', status: queryString(req.query.status), limit: pageLimit(req.query.limit, 200, 500), offset: queryInt(req.query.offset, 0) })));
 }));
 
 router.get('/stock/alerts', wrap(async (req, res) => {
@@ -25,6 +25,16 @@ router.get('/stock/alerts', wrap(async (req, res) => {
 router.post('/stock/receive', requireWritable, wrap(async (req, res) => {
   const input = parse(receiveSchema, req.body);
   res.status(201).json(await inBranch(req, input.branchId, (client, ctx, branch) => receiveStock(client, ctx, branch, input)));
+}));
+
+router.patch('/stock/batches/:id/status', requireWritable, wrap(async (req, res) => {
+  const input = parse(batchStatusSchema.extend({ branchId: z.string().uuid().optional() }), req.body);
+  res.json(await inBranch(req, input.branchId, (client, ctx, branch) => setBatchStatus(client, ctx, branch, String(req.params.id), input)));
+}));
+
+router.post('/stock/writeoff-expired', requireWritable, wrap(async (req, res) => {
+  const input = parse(z.object({ branchId: z.string().uuid().optional(), reason: z.string().trim().min(3).max(300).default('Expired stock written off') }), req.body ?? {});
+  res.json(await inBranch(req, input.branchId, (client, ctx, branch) => writeOffExpired(client, ctx, branch, input.reason)));
 }));
 
 router.post('/stock/adjust', requireWritable, wrap(async (req, res) => {
@@ -65,7 +75,7 @@ router.post('/scan', wrap(async (req, res) => {
 router.get('/controlled/register', wrap(async (req, res) => {
   res.json(await inBranch(req, req.query.branchId, (client, ctx, branch) => {
     if (ctx.role === 'cashier') throw new ForbiddenError('The controlled-drug register is for pharmacists and managers.');
-    return controlledRegister(client, branch.id, queryString(req.query.productId), Number(req.query.limit) || 100);
+    return controlledRegister(client, branch.id, queryString(req.query.productId), pageLimit(req.query.limit, 100, 500), req.query.before === undefined ? undefined : queryInt(req.query.before, 0) || undefined);
   }));
 }));
 

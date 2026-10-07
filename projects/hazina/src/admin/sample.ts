@@ -13,7 +13,7 @@ import { Ctx } from '../common/context';
 import { createMember } from '../members/service';
 import { postDeposit, requestWithdrawal } from '../savings/service';
 import {
-  applyForLoan, appraiseLoan, createProduct, decideLoan, disburseLoan, repayLoan, runPenalties
+  applyForLoan, appraiseLoan, createProduct, decideLoan, disburseLoan, repayLoan, runInterestAccrual, runPenalties
 } from '../loans/service';
 import { addDaysToDay } from '../loans/schedule';
 import { uploadStatement, recordPayslipCheck, recordIdCheck } from '../intake/service';
@@ -114,7 +114,8 @@ export async function seedSampleData(client: PoolClient, orgId: string, kind: 's
   await lend(7, dev.id, 90_000, 18, null, 'appraised', 'Boda boda purchase');
   await lend(8, quick.id, 25_000, 4, null, 'approved', 'Wedding contribution');
 
-  await runPenalties(client, as(ACCOUNTANT, 'accountant'), D);
+  await runPenalties(orgId, ACCOUNTANT, D, { client });
+  await runInterestAccrual(orgId, ACCOUNTANT, D, { client });
 
   // payments from the paybill that nobody could match
   for (const [ref, bill, amount] of [['SMP0UNM001', 'MARY', 2500], ['SMP0UNM002', '', 1000], ['SMP0UNM003', 'M99999', 4000]] as const) {

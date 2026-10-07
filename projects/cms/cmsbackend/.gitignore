@@ -1,2 +1,5 @@
 
 .env
+
+# local object-store driver data (attachments, sermon media, exported chain heads)
+.object-store

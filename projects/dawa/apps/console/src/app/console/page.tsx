@@ -4,8 +4,8 @@ import { api } from "@/lib/api";
 import { readSession } from "@/lib/session";
 import { bq } from "@/lib/branch";
 import { ksh } from "@/lib/format";
-import type { Alerts, ClosePreview, Onboarding, StockRow } from "@/lib/types";
-import { Card, EmptyState, PageHeader, Stat, buttonClass, secondaryButtonClass } from "@/components/ui";
+import type { Alerts, ClosePreview, Onboarding, Page, Product, Unmatched } from "@/lib/types";
+import { Card, EmptyState, Notice, PageHeader, Stat, buttonClass, secondaryButtonClass } from "@/components/ui";
 
 export default async function Overview() {
   const session = await readSession();
@@ -13,11 +13,12 @@ export default async function Overview() {
   if (session.role === "cashier") redirect("/console/sell");
   const q = await bq();
   const manager = session.role === "owner" || session.role === "manager";
-  const [alerts, stock, onboarding, today] = await Promise.all([
+  const [alerts, products, onboarding, today, unmatched] = await Promise.all([
     api.get<Alerts>(`/v1/stock/alerts${q}`).catch(() => null),
-    api.get<StockRow[]>(`/v1/stock${q}`).catch(() => [] as StockRow[]),
+    api.get<Page<Product> & { total: number }>("/v1/products?limit=1").catch(() => null),
     api.get<Onboarding>("/v1/onboarding").catch(() => null),
-    manager ? api.get<ClosePreview>(`/v1/close/preview${q}`).catch(() => null) : Promise.resolve(null)
+    manager ? api.get<ClosePreview>(`/v1/close/preview${q}`).catch(() => null) : Promise.resolve(null),
+    manager ? api.get<Unmatched>(`/v1/mpesa/unmatched${q}${q ? "&" : "?"}limit=1`).catch(() => null) : Promise.resolve(null)
   ]);
   const expiredValue = alerts?.expired.reduce((s, b) => s + b.valueCents, 0) ?? 0;
   const expiringValue = alerts?.expiring.reduce((s, b) => s + b.valueCents, 0) ?? 0;
@@ -35,8 +36,14 @@ export default async function Overview() {
         <Stat label="Expired on the shelf" value={String(alerts?.expired.length ?? 0)} hint={alerts?.expired.length ? `${ksh(expiredValue)} at cost` : "none"} tone={alerts?.expired.length ? "danger" : "good"} />
         <Stat label={`Expiring in ${alerts?.warningDays ?? 90} days`} value={String(alerts?.expiring.length ?? 0)} hint={alerts?.expiring.length ? `${ksh(expiringValue)} at cost` : "none"} tone={alerts?.expiring.length ? "warn" : "good"} />
         <Stat label="Low stock" value={String(alerts?.lowStock.length ?? 0)} hint="at or below the reorder level" tone={alerts?.lowStock.length ? "warn" : "good"} />
-        {today ? <Stat label="Sold today" value={String(today.salesCount)} hint={`${ksh(today.expectedCashCents + today.mpesaCents + today.creditCents + today.pendingCents)} in total`} tone="accent" /> : <Stat label="Products" value={String(stock.length)} tone="accent" />}
+        {today ? <Stat label="Sold today" value={String(today.salesCount)} hint={`${ksh(today.expectedCashCents + today.mpesaCents + today.creditCents + today.pendingCents)} in total`} tone="accent" /> : <Stat label="Products" value={String(products?.total ?? 0)} tone="accent" />}
       </div>
+      {unmatched && unmatched.total > 0 ? (
+        <div className="mt-4"><Notice tone="warn">{unmatched.total} M-Pesa payment{unmatched.total === 1 ? " is" : "s are"} waiting to be matched to a sale. <Link href="/console/mpesa" className="font-medium underline">Match {unmatched.total === 1 ? "it" : "them"}</Link></Notice></div>
+      ) : null}
+      {alerts && alerts.held.length > 0 ? (
+        <div className="mt-4"><Notice tone="info">{alerts.held.length} batch{alerts.held.length === 1 ? " is" : "es are"} held back (quarantined or recalled) and will not be sold. <Link href="/console/batches?status=recalled" className="font-medium underline">See batches</Link></Notice></div>
+      ) : null}
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <Card title="Expired and expiring" description="Return to the supplier while you still can, or write off with a reason.">
           {alerts && (alerts.expired.length > 0 || alerts.expiring.length > 0) ? (

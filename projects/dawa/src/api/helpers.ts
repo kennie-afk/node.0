@@ -33,3 +33,6 @@ export const queryInt = (value: unknown, fallback: number): number => {
   return Number.isInteger(n) && n >= 0 ? n : fallback;
 };
 export const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+
+export { pageLimit, toPage } from '../common/paging';
+export type { Page } from '../common/paging';

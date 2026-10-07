@@ -23,7 +23,7 @@ unbalanced (a deferred trigger checks it at commit; see migration 0003). Every d
 and M-Pesa receipt posts through one function (`ledger/service.ts: postEntry`). The trial balance, income statement and balance sheet are
 sums over those lines and nothing else; the console shows "debits equal credits" and "assets equal liabilities plus equity" and says so
 loudly if either ever fails. A manual entry can be reversed; an entry made by a product feature cannot (it is tied to a schedule or a member
-balance, so it is corrected through that feature). Interest is recognised when received and penalties when charged: `docs/ACCOUNTING.md`.
+balance, so it is corrected through that feature). Interest is accrued per instalment when it falls due (paid early, on receipt) and penalties when charged; received M-Pesa money is held in a suspense liability until applied; closed periods refuse postings: `docs/ACCOUNTING.md`.
 
 ## Members and M-Pesa references
 A member number (`M00001`) and a loan number (`L00001`) come from gap-free counters and are the account number a person quotes when paying

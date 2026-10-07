@@ -20,6 +20,22 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - run: npm run build
+
+  # The console: type-check, unit tests, production bundle.
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/cms/cms_frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 22, cache: npm, cache-dependency-path: projects/cms/cms_frontend/package-lock.json}
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm test
+      - run: npm run build
 
   # The same suite again against a real, migrated Postgres, connected as the least-privilege
   # application role: this is where row-level security, triggers, partitioning and real
@@ -45,7 +61,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: 22, cache: npm, cache-dependency-path: projects/cms/cmsbackend/package-lock.json}
       - run: npm ci
-      - name: Migrate as owner (twice: must be idempotent), then undo and redo the last migration
+      - name: 'Migrate as owner (twice, because it must be idempotent), then undo and redo the last migration'
         run: |
           node scripts/migrate-locked.js
           node scripts/migrate-locked.js

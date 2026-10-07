@@ -1,5 +1,5 @@
 import { withOrg, withoutTenant } from '../persistence/pool';
-import { normaliseConfirmation } from './daraja';
+import { normaliseConfirmation, type NormalisedPayment } from './daraja';
 import { logger } from '../common/logger';
 import { ingestBillingPayment, payShortcode } from '../billing/service';
 import { applyMpesaConfirmation } from '../sales/service';
@@ -10,11 +10,22 @@ export interface IngestOutcome {
   saleId: string | null;
 }
 
+async function keepUnclaimed(payment: NormalisedPayment, raw: unknown): Promise<void> {
+  await withoutTenant(async (client) => {
+    await client.query(
+      `INSERT INTO mpesa_unclaimed (short_code, external_ref, amount_cents, payer_msisdn, bill_ref, received_at, raw)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (external_ref) DO NOTHING`,
+      [payment.shortCode, payment.externalRef, payment.amountCents, payment.payerMsisdn, payment.reference || null, payment.receivedAt, JSON.stringify(raw)]
+    );
+  });
+}
+
 /**
  * One entry point for every M-Pesa confirmation Daraja delivers. Money paid to Dawa itself (a subscription) arrives on
  * Dawa's own shortcode and is handled by billing, checked first so no branch's till can ever shadow it. Anything else
- * is looked up by till number and applied to that branch's sales. A payment for an unknown till is logged and dropped
- * (there is nobody to hold it for); one for a known till that matches no sale is kept for the manager to assign.
+ * is looked up by till number and applied to that branch's sales. A payment for an unknown till is kept in mpesa_unclaimed
+ * for an operator to match; one for a known till that matches no sale is kept for the manager to assign.
  */
 export async function ingestConfirmation(raw: unknown): Promise<IngestOutcome | null> {
   const payment = normaliseConfirmation(raw);
@@ -31,7 +42,10 @@ export async function ingestConfirmation(raw: unknown): Promise<IngestOutcome | 
     return rows[0] as { org_id: string; branch_id: string } | undefined;
   });
   if (!till) {
-    logger.warn('payment for an unknown till', { shortCode: payment.shortCode });
+    // Nobody to hold it for yet, but the money is real and Daraja will not send it again. Keep it so an
+    // operator can match it to the pharmacy once the till is registered.
+    await keepUnclaimed(payment, raw);
+    logger.warn('payment for an unknown till kept for an operator', { shortCode: payment.shortCode, externalRef: payment.externalRef });
     return null;
   }
 

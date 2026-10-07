@@ -3,7 +3,8 @@ import { Router } from 'express';
 import { authenticate, requirePermission } from './middleware';
 import { wrap } from '../common/context';
 import { inOrg, queryString } from './helpers';
-import { toCsv } from '../common/csv';
+import { toCsv, csvCell } from '../common/csv';
+import type { PoolClient } from 'pg';
 import { can } from '../domain/roles';
 import { BadRequestError, NotFoundError } from '../domain/errors';
 import { formatKsh, Cents } from '../domain/money';
@@ -20,6 +21,36 @@ const csv = (res: import('express').Response, name: string, body: string) => {
   res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
   res.send(body);
 };
+
+const STREAM_BATCH = 1000;
+
+/**
+ * Streams a query as CSV through a server-side cursor in the caller's tenant transaction: constant memory,
+ * and no row cap (the old exports silently stopped at 20,000 / 50,000 rows). The header row is sent first.
+ * If the query fails after bytes have gone out the connection is torn down, so a truncated file can never
+ * look complete (the client sees a failed download, not a short CSV).
+ */
+export async function streamCsv(c: PoolClient, res: import('express').Response, name: string, header: string[], sql: string, params: unknown[], map: (row: Record<string, any>) => unknown[]): Promise<void> {
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+  const write = (chunk: string) => (res.write(chunk) ? Promise.resolve() : new Promise<void>((resolve) => res.once('drain', () => resolve())));
+  await c.query(`DECLARE export_cur NO SCROLL CURSOR FOR ${sql}`, params);
+  try {
+    await write(`${header.join(',')}\n`);
+    for (;;) {
+      const { rows } = await c.query(`FETCH ${STREAM_BATCH} FROM export_cur`);
+      if (rows.length === 0) break;
+      await write(rows.map((r) => `${map(r).map(csvCell).join(',')}\n`).join(''));
+      if (res.destroyed) break;
+    }
+    res.end();
+  } catch (error) {
+    res.destroy(error instanceof Error ? error : new Error(String(error)));
+    throw error;
+  } finally {
+    await c.query('CLOSE export_cur').catch(() => undefined);
+  }
+}
 const kes = (c: number | null | undefined) => (c === null || c === undefined ? '' : (c / 100).toFixed(2));
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[ch]!);
 const stamp = () => localDayOf(new Date());
@@ -27,7 +58,7 @@ const stamp = () => localDayOf(new Date());
 router.get('/exports/guards.csv', authenticate, requirePermission('read'), wrap(async (req, res) => {
   const rows = await inOrg(req, async (c, ctx) => {
     const all = [];
-    for (let page = 1; page <= 200; page += 1) {
+    for (let page = 1; ; page += 1) {
       const p = await listGuards(c, ctx, { page, pageSize: 100, status: queryString(req.query.status) });
       all.push(...p.items);
       if (p.items.length < 100) break;
@@ -43,17 +74,17 @@ router.get('/exports/attendance.csv', authenticate, requirePermission('read'), w
   const to = String(req.query.to ?? from);
   if (!isDay(from) || !isDay(to) || to < from) throw new BadRequestError('Give from and to dates, like 2026-10-01.');
   if ((Date.parse(to) - Date.parse(from)) / 86_400_000 > 62) throw new BadRequestError('Export at most 63 days at a time.');
-  const rows = await inOrg(req, async (c, ctx) => {
+  await inOrg(req, async (c, ctx) => {
     const params: unknown[] = [from, to];
     let branch = '';
     if (ctx.branchId) { params.push(ctx.branchId); branch = ' AND s.branch_id = $3'; }
-    return (await c.query(
+    await streamCsv(c, res, `attendance-${from}-${to}.csv`,
+      ['date', 'client', 'site', 'post', 'guard_no', 'guard', 'scheduled_start', 'scheduled_end', 'status', 'check_in', 'check_out', 'in_overridden', 'out_overridden', 'in_geofence', 'in_method', 'overtime_approved_min'],
       `SELECT s.id, to_char(s.start_at AT TIME ZONE '${TZ}', 'YYYY-MM-DD') AS day, si.name AS site, cl.name AS client, p.name AS post, g.guard_no, g.full_name AS guard, s.start_at, s.end_at, s.status, s.overtime_approved_minutes, ${ATTENDANCE_SQL}
          FROM shifts s JOIN sites si ON si.id = s.site_id JOIN clients cl ON cl.id = si.client_id JOIN posts p ON p.id = s.post_id LEFT JOIN guards g ON g.id = s.guard_id
-        WHERE s.start_at >= ($1::date::timestamp AT TIME ZONE '${TZ}') AND s.start_at < (($2::date + 1)::timestamp AT TIME ZONE '${TZ}')${branch} ORDER BY s.start_at, si.name LIMIT 50000`, params)).rows;
+        WHERE s.start_at >= ($1::date::timestamp AT TIME ZONE '${TZ}') AND s.start_at < (($2::date + 1)::timestamp AT TIME ZONE '${TZ}')${branch} ORDER BY s.start_at, si.name, s.id`, params,
+      (r) => [r.day, r.client, r.site, r.post, r.guard_no, r.guard, r.start_at, r.end_at, r.status, r.in_at, r.out_at, r.in_overridden ? 'yes' : '', r.out_overridden ? 'yes' : '', r.in_geofence, r.in_method, r.overtime_approved_minutes]);
   });
-  csv(res, `attendance-${from}-${to}.csv`, toCsv(['date', 'client', 'site', 'post', 'guard_no', 'guard', 'scheduled_start', 'scheduled_end', 'status', 'check_in', 'check_out', 'in_overridden', 'out_overridden', 'in_geofence', 'in_method', 'overtime_approved_min'],
-    rows.map((r) => [r.day, r.client, r.site, r.post, r.guard_no, r.guard, r.start_at, r.end_at, r.status, r.in_at, r.out_at, r.in_overridden ? 'yes' : '', r.out_overridden ? 'yes' : '', r.in_geofence, r.in_method, r.overtime_approved_minutes])));
 }));
 
 router.get('/exports/payroll/:month.csv', authenticate, requirePermission('salary_view'), wrap(async (req, res) => {
@@ -63,9 +94,9 @@ router.get('/exports/payroll/:month.csv', authenticate, requirePermission('salar
     if (!p) throw new NotFoundError('Run payroll for that month first.');
     return (await c.query('SELECT * FROM payslips WHERE period_id = $1 ORDER BY guard_no', [p.id])).rows;
   });
-  const header = ['guard_no', 'name', 'national_id', 'days_employed', 'basic_kes', 'allowance_kes', 'holiday_rest_premium_kes', 'overtime_kes', 'adjustments_kes', 'gross_kes', 'nssf_employee_kes', 'sha_employee_kes', 'housing_employee_kes', 'paye_kes', 'net_kes', 'employer_cost_kes', 'minimum_required_kes', 'below_minimum', 'flags'];
+  const header = ['guard_no', 'name', 'national_id', 'days_employed', 'basic_kes', 'allowance_kes', 'holiday_rest_premium_kes', 'overtime_kes', 'adjustments_kes', 'absence_deduction_kes', 'gross_kes', 'nssf_employee_kes', 'sha_employee_kes', 'housing_employee_kes', 'paye_kes', 'net_kes', 'employer_cost_kes', 'minimum_required_kes', 'below_minimum', 'flags'];
   const ded = (r: Record<string, any>, k: string) => kes((r.deductions as Array<{ kind: string; employeeCents: number }>).find((d) => d.kind === k)?.employeeCents ?? 0);
-  csv(res, `payroll-register-${month}.csv`, toCsv(header, rows.map((r) => [r.guard_no, r.guard_name, r.national_id, r.days_employed, kes(Number(r.basic_cents)), kes(Number(r.allowance_cents)), kes(Number(r.premium_cents)), kes(Number(r.overtime_cents)), kes(Number(r.adjustments_cents)), kes(Number(r.gross_cents)), ded(r, 'nssf'), ded(r, 'sha'), ded(r, 'housing'), ded(r, 'paye'), kes(Number(r.net_cents)), kes(Number(r.employer_cost_cents)), kes(Number(r.min_required_cents)), r.below_minimum ? 'YES' : '', (r.flags as Array<{ code: string }>).map((f) => f.code).join(';')])));
+  csv(res, `payroll-register-${month}.csv`, toCsv(header, rows.map((r) => [r.guard_no, r.guard_name, r.national_id, r.days_employed, kes(Number(r.basic_cents)), kes(Number(r.allowance_cents)), kes(Number(r.premium_cents)), kes(Number(r.overtime_cents)), kes(Number(r.adjustments_cents)), kes(Number(r.absence_deduction_cents ?? 0)), kes(Number(r.gross_cents)), ded(r, 'nssf'), ded(r, 'sha'), ded(r, 'housing'), ded(r, 'paye'), kes(Number(r.net_cents)), kes(Number(r.employer_cost_cents)), kes(Number(r.min_required_cents)), r.below_minimum ? 'YES' : '', (r.flags as Array<{ code: string }>).map((f) => f.code).join(';')])));
 }));
 
 router.get('/exports/compliance/:month.csv', authenticate, requirePermission('reports'), wrap(async (req, res) => {
@@ -77,7 +108,7 @@ router.get('/exports/compliance/:month.csv', authenticate, requirePermission('re
 router.get('/payslips/:id/print', authenticate, requirePermission('salary_view'), wrap(async (req, res) => {
   const { p, org } = await inOrg(req, async (c, ctx) => ({ p: await getPayslip(c, ctx, String(req.params.id)), org: await orgInfo(c) }));
   const k = (n: number) => esc(formatKsh(n as Cents));
-  const lines = [['Basic pay', p.basicCents], ['Allowances', p.allowanceCents], ['Holiday / rest-day premium', p.premiumCents], ['Overtime', p.overtimeCents], ['Adjustments', p.adjustmentsCents]]
+  const lines = [['Basic pay', p.basicCents], ['Allowances', p.allowanceCents], ['Holiday / rest-day premium', p.premiumCents], ['Overtime', p.overtimeCents], ['Adjustments', p.adjustmentsCents], ...(p.absenceDeductionCents ? [['Less: absence deduction (employer setting)', p.absenceDeductionCents]] : [])]
     .filter(([, v]) => (v as number) !== 0 || true).map(([l, v]) => `<tr><td>${esc(l)}</td><td class="n">${k(v as number)}</td></tr>`).join('');
   const ded = (p.deductions as Array<{ label: string; employeeCents: number; applied: boolean }>).map((d) => `<tr><td>${esc(d.label)}${d.applied ? '' : ' <em>(not deducted: table not confirmed or not applicable)</em>'}</td><td class="n">${k(d.employeeCents)}</td></tr>`).join('');
   res.type('html').send(`<!doctype html><html><head><meta charset="utf-8"><title>Payslip ${esc(p.guardNo)} ${esc(p.month)}</title>
@@ -106,13 +137,14 @@ router.get('/invoices/:id/evidence', authenticate, requirePermission('reports'),
 }));
 
 router.get('/exports/incidents.csv', authenticate, requirePermission('read'), wrap(async (req, res) => {
-  const rows = await inOrg(req, async (c, ctx) => {
+  await inOrg(req, async (c, ctx) => {
     const params: unknown[] = [];
     let branch = '';
     if (ctx.branchId) { params.push(ctx.branchId); branch = 'WHERE i.branch_id = $1'; }
-    return (await c.query(`SELECT i.incident_no, i.occurred_at, si.name AS site, i.severity, i.category, g.full_name AS guard, i.narrative FROM incidents i JOIN sites si ON si.id = i.site_id LEFT JOIN guards g ON g.id = i.guard_id ${branch} ORDER BY i.occurred_at DESC LIMIT 20000`, params)).rows;
+    await streamCsv(c, res, `incidents-${stamp()}.csv`, ['incident_no', 'occurred_at', 'site', 'severity', 'category', 'guard', 'narrative'],
+      `SELECT i.incident_no, i.occurred_at, si.name AS site, i.severity, i.category, g.full_name AS guard, i.narrative FROM incidents i JOIN sites si ON si.id = i.site_id LEFT JOIN guards g ON g.id = i.guard_id ${branch} ORDER BY i.occurred_at DESC, i.id`, params,
+      (r) => [r.incident_no, r.occurred_at, r.site, r.severity, r.category, r.guard, r.narrative]);
   });
-  csv(res, `incidents-${stamp()}.csv`, toCsv(['incident_no', 'occurred_at', 'site', 'severity', 'category', 'guard', 'narrative'], rows.map((r) => [r.incident_no, r.occurred_at, r.site, r.severity, r.category, r.guard, r.narrative])));
 }));
 
 void monthBounds;

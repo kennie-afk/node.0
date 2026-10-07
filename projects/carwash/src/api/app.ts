@@ -3,7 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { env } from '../config/env';
-import { pool } from '../persistence/pool';
+import { checkReadiness } from '../persistence/readiness';
 import { errorHandler, notFound, requestContext } from './middleware';
 import routes from './routes';
 import readRoutes from './read';
@@ -11,6 +11,8 @@ import manageRoutes from './manage';
 import signupRoutes from './signup';
 import billingRoutes from './billing';
 import onboardingRoutes from './onboarding';
+import accountRoutes from './account';
+import operationsRoutes from './operations';
 
 export function createApiApp(): Express {
   const app = express();
@@ -37,8 +39,9 @@ export function createApiApp(): Express {
 
   app.get('/readyz', async (_req, res) => {
     try {
-      await pool.query('SELECT 1');
-      res.status(200).json({ status: 'ready' });
+      const state = await checkReadiness();
+      if (state.ready) return res.status(200).json({ status: 'ready', migration: state.version });
+      res.status(503).json({ status: 'not-ready', reason: state.reason, pending: state.pending });
     } catch {
       res.status(503).json({ status: 'not-ready', reason: 'database unreachable' });
     }
@@ -54,6 +57,8 @@ export function createApiApp(): Express {
   app.use('/v1', signupRoutes);
   app.use('/v1', billingRoutes);
   app.use('/v1', onboardingRoutes);
+  app.use('/v1', accountRoutes);
+  app.use('/v1', operationsRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

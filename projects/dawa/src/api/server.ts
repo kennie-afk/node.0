@@ -3,6 +3,7 @@ import { assertBillingSafeForProduction, env } from '../config/env';
 import { logger } from '../common/logger';
 import { assertRlsIsEffective, closePool, pool } from '../persistence/pool';
 import { runBillingCycle } from '../billing/service';
+import { closeRedis, warnIfRateLimitsAreLocal } from '../ratelimit/store';
 
 async function main(): Promise<void> {
   assertBillingSafeForProduction();
@@ -10,6 +11,7 @@ async function main(): Promise<void> {
   await assertRlsIsEffective();
   logger.info('database reachable');
 
+  warnIfRateLimitsAreLocal();
   const server = createApiApp().listen(env.API_PORT, () => {
     logger.info('api listening', { port: env.API_PORT, environment: env.NODE_ENV });
   });
@@ -38,6 +40,7 @@ async function main(): Promise<void> {
     forced.unref();
     server.close(async () => {
       await closePool().catch(() => undefined);
+      closeRedis();
       process.exit(0);
     });
   };

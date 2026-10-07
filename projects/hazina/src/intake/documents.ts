@@ -5,6 +5,7 @@
  * page agrees with itself.
  */
 import { Flag } from './statement';
+import { moneyText } from '../domain/money';
 
 export interface PayslipInput {
   grossCents: number;
@@ -23,7 +24,7 @@ export function checkPayslip(input: PayslipInput): Flag[] {
     flags.push({
       code: 'arithmetic',
       severity: 'high',
-      message: `Gross less the listed deductions is KSh ${(expectedNet / 100).toLocaleString('en-KE')} but the payslip shows net KSh ${(input.netCents / 100).toLocaleString('en-KE')}.`
+      message: `Gross less the listed deductions is KSh ${moneyText(expectedNet)} but the payslip shows net KSh ${moneyText(input.netCents)}.`
     });
   }
   if (input.deductions.length === 0) flags.push({ code: 'no_deductions', severity: 'warn', message: 'No deductions are listed. Most employees have at least tax and a pension or health contribution.' });

@@ -98,8 +98,11 @@ RATE_LIMIT_MAX=600
 LOGIN_RATE_LIMIT_MAX=5
 
 # Real M-Pesa and SMS need Safaricom/provider credentials and a tested callback URL. Leave on mock until then.
+# Production refuses to start on a mock provider unless it is told, in so many words, that this is a demo.
+# Switch to MPESA_MODE=daraja and SMS_MODE=africastalking, then delete the ALLOW line, before taking real money.
 MPESA_MODE=mock
 SMS_MODE=mock
+ALLOW_MOCK_PROVIDERS_IN_PRODUCTION=true
 DEMO_LOGINS=false
 BACKUP_DIR=./backups
 ENV

@@ -61,7 +61,7 @@ describe.runIf(on)('the loan workflow (maker-checker, real Postgres)', () => {
     expect((await post(t.owner.auth, `/v1/loans/${applied.body.id}/decision`, { approve: true })).status).toBe(200);
     expect((await post(t.owner.auth, `/v1/loans/${applied.body.id}/disburse`, { channel: 'cash' })).status).toBe(200);
     const audit = await get(t.owner.auth, '/v1/audit?limit=100');
-    expect(audit.body.some((a: { action: string; detail: { selfChecked?: boolean } }) => a.action === 'loan.approve' && a.detail.selfChecked === true)).toBe(true);
+    expect(audit.body.items.some((a: { action: string; detail: { selfChecked?: boolean } }) => a.action === 'loan.approve' && a.detail.selfChecked === true)).toBe(true);
   });
 
   it('applies product limits, the SACCO savings multiple and guarantor capacity, and refuses a second application in flight', async () => {

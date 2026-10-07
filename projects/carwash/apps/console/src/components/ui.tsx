@@ -166,6 +166,8 @@ const TONE: Record<string, string> = {
   PAID: "bg-[var(--color-good-soft)] text-[var(--color-good)]",
   UNPAID: "bg-[var(--color-warn-soft)] text-[var(--color-warn)]",
   ABANDONED: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
+  VOIDED: "bg-[var(--color-warn-soft)] text-[var(--color-warn)]",
+  REFUNDED: "bg-[var(--color-warn-soft)] text-[var(--color-warn)]",
   PLANNED: "bg-[var(--color-accent-soft)] text-[var(--color-accent)]",
   LISTED: "bg-[var(--color-accent-soft)] text-[var(--color-accent)]"
 };

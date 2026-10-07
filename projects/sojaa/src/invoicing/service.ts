@@ -10,7 +10,7 @@ import { nextCounter, pad } from '../common/counters';
 import { addDays, localDayOf, monthBounds, TZ } from '../common/time';
 import { BadRequestError, ConflictError, NotFoundError } from '../domain/errors';
 import { verifiedMinutes } from '../ops/attendance';
-import { AGEING, ageingBucket, allocateCost, allocatePayment, BillableShift, buildInvoice, daysBetween, Rate } from './compute';
+import { AGEING, allocateCost, allocatePayment, BillableShift, buildInvoice, Rate } from './compute';
 import { ATTENDANCE_SQL } from '../ops/attendance-service';
 
 const monthRe = /^\d{4}-(0[1-9]|1[0-2])$/;
@@ -255,26 +255,33 @@ export async function listPayments(client: PoolClient, opts: { clientId?: string
   return { items: rows.map((r) => ({ id: r.id, clientId: r.client_id, client: r.client, amountCents: Number(r.amount_cents), receivedOn: r.received_on, method: r.method, reference: r.reference, onAccountCents: Number(r.on_account) })), total, page: opts.page, pageSize: opts.pageSize };
 }
 
-/** Who owes what, aged by days past the due date. */
+// days past due as a SQL integer; the buckets mirror ageingBucket() in compute.ts (tests/dashboard-sql.test.ts holds them equal)
+const LATE_SQL = `($1::date - b.due_date)`;
+const AGEING_SUMS = `
+  COALESCE(sum(b.balance) FILTER (WHERE ${LATE_SQL} <= 0), 0)::bigint AS not_due,
+  COALESCE(sum(b.balance) FILTER (WHERE ${LATE_SQL} BETWEEN 1 AND 30), 0)::bigint AS d30,
+  COALESCE(sum(b.balance) FILTER (WHERE ${LATE_SQL} BETWEEN 31 AND 60), 0)::bigint AS d60,
+  COALESCE(sum(b.balance) FILTER (WHERE ${LATE_SQL} BETWEEN 61 AND 90), 0)::bigint AS d90,
+  COALESCE(sum(b.balance) FILTER (WHERE ${LATE_SQL} > 90), 0)::bigint AS d90p`;
+const OPEN_BALANCES = `(SELECT i.client_id, i.due_date, ${BALANCE_SQL} AS balance FROM client_invoices i) b`;
+
+const bucketsOf = (r: Record<string, any>): Record<string, number> => ({ not_due: Number(r.not_due), '1-30': Number(r.d30), '31-60': Number(r.d60), '61-90': Number(r.d90), '90+': Number(r.d90p) });
+
+/** The totals only: one aggregate row, for the dashboard. No per-client rows are loaded. */
+export async function debtorsSummary(client: PoolClient, asOf: string = localDayOf(new Date())) {
+  const r = (await client.query(`SELECT ${AGEING_SUMS}, count(DISTINCT b.client_id)::int AS clients FROM ${OPEN_BALANCES} WHERE b.balance > 0`, [asOf])).rows[0];
+  const totals = bucketsOf(r);
+  return { asOf, totals, totalCents: Object.values(totals).reduce((s, v) => s + v, 0), clients: r.clients as number };
+}
+
+/** Who owes what, aged by days past the due date. Aggregated in SQL, one row per debtor client. */
 export async function debtors(client: PoolClient, asOf: string = localDayOf(new Date())) {
-  const rows = (await client.query(`SELECT i.id, i.client_id, c.name AS client, to_char(i.due_date, 'YYYY-MM-DD') AS due_date, ${BALANCE_SQL} AS balance FROM client_invoices i JOIN clients c ON c.id = i.client_id WHERE (${BALANCE_SQL}) > 0`)).rows;
-  const byClient = new Map<string, { clientId: string; client: string; buckets: Record<string, number>; totalCents: number; invoices: number; oldestDaysOverdue: number }>();
-  const totals: Record<string, number> = Object.fromEntries(AGEING.map((b) => [b, 0]));
-  for (const r of rows) {
-    const bucket = ageingBucket(r.due_date, asOf);
-    const bal = Number(r.balance);
-    let entry = byClient.get(r.client_id);
-    if (!entry) {
-      entry = { clientId: r.client_id, client: r.client, buckets: Object.fromEntries(AGEING.map((b) => [b, 0])), totalCents: 0, invoices: 0, oldestDaysOverdue: 0 };
-      byClient.set(r.client_id, entry);
-    }
-    entry.buckets[bucket] = (entry.buckets[bucket] ?? 0) + bal;
-    entry.totalCents += bal;
-    entry.invoices += 1;
-    entry.oldestDaysOverdue = Math.max(entry.oldestDaysOverdue, daysBetween(r.due_date, asOf));
-    totals[bucket] = (totals[bucket] ?? 0) + bal;
-  }
-  const items = [...byClient.values()].sort((a, b) => b.totalCents - a.totalCents);
+  const rows = (await client.query(
+    `SELECT b.client_id, c.name AS client, ${AGEING_SUMS}, sum(b.balance)::bigint AS total, count(*)::int AS invoices, GREATEST(0, max($1::date - b.due_date))::int AS oldest
+       FROM ${OPEN_BALANCES} JOIN clients c ON c.id = b.client_id WHERE b.balance > 0 GROUP BY b.client_id, c.name ORDER BY sum(b.balance) DESC, c.name, b.client_id`, [asOf])).rows;
+  const items = rows.map((r) => ({ clientId: r.client_id as string, client: r.client as string, buckets: bucketsOf(r), totalCents: Number(r.total), invoices: r.invoices as number, oldestDaysOverdue: r.oldest as number }));
+  const totals: Record<string, number> = Object.fromEntries(AGEING.map((bucket) => [bucket, 0]));
+  for (const i of items) for (const bucket of AGEING) totals[bucket] = (totals[bucket] ?? 0) + (i.buckets[bucket] ?? 0);
   return { asOf, buckets: [...AGEING], totals, totalCents: items.reduce((s, x) => s + x.totalCents, 0), items };
 }
 

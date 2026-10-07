@@ -5,6 +5,8 @@ import { audit, getSettings, orgInfo, wrap } from '../common/context';
 import { inOrg, parse } from './helpers';
 import { checklist } from '../onboarding/service';
 import { env } from '../config/env';
+import { AGEING_BUCKETS } from '../loans/schedule';
+import { likeContains } from '../common/search';
 
 const router = Router();
 
@@ -16,7 +18,9 @@ const settingsSchema = z.object({
   makerChecker: z.enum(['strict', 'relaxed']).optional(),
   withdrawalApprovalCents: z.number().int().min(0).max(100_000_000_000).optional(),
   capacityShareBp: z.number().int().min(100).max(10_000).optional(),
-  financialYearStartMonth: z.number().int().min(1).max(12).optional()
+  financialYearStartMonth: z.number().int().min(1).max(12).optional(),
+  // merged into the current rates: send only the buckets to change
+  provisionRatesBp: z.record(z.enum(AGEING_BUCKETS), z.number().int().min(0).max(10_000)).optional()
 });
 
 router.patch('/settings', authenticate, requirePermission('settings'), requireWritable, wrap(async (req, res) => {
@@ -24,8 +28,9 @@ router.patch('/settings', authenticate, requirePermission('settings'), requireWr
   res.json(await inOrg(req, async (client, ctx) => {
     await client.query(
       `UPDATE org_settings SET maker_checker = COALESCE($1, maker_checker), withdrawal_approval_cents = COALESCE($2, withdrawal_approval_cents),
-              capacity_share_bp = COALESCE($3, capacity_share_bp), financial_year_start_month = COALESCE($4, financial_year_start_month), updated_at = now()`,
-      [body.makerChecker ?? null, body.withdrawalApprovalCents ?? null, body.capacityShareBp ?? null, body.financialYearStartMonth ?? null]
+              capacity_share_bp = COALESCE($3, capacity_share_bp), financial_year_start_month = COALESCE($4, financial_year_start_month),
+              provision_rates_bp = provision_rates_bp || COALESCE($5::jsonb, '{}'::jsonb), updated_at = now()`,
+      [body.makerChecker ?? null, body.withdrawalApprovalCents ?? null, body.capacityShareBp ?? null, body.financialYearStartMonth ?? null, body.provisionRatesBp ? JSON.stringify(body.provisionRatesBp) : null]
     );
     await audit(client, ctx, 'settings.update', 'settings', null, { ...body });
     return getSettings(client);
@@ -39,8 +44,19 @@ router.get('/onboarding', authenticate, requirePermission('read'), wrap(async (r
 router.get('/audit', authenticate, requirePermission('reports'), wrap(async (req, res) => {
   res.json(await inOrg(req, async (client) => {
     const limit = Math.min(200, Number(req.query.limit) || 50);
-    const rows = (await client.query('SELECT id, actor_id, action, entity, entity_id, detail, created_at FROM audit_events ORDER BY id DESC LIMIT $1', [limit])).rows;
-    return rows.map((r) => ({ id: Number(r.id), actorId: r.actor_id, action: r.action, entity: r.entity, entityId: r.entity_id, detail: r.detail, at: r.created_at }));
+    const params: unknown[] = [];
+    const where: string[] = [];
+    const before = Number(req.query.before);
+    if (Number.isSafeInteger(before) && before > 0) { params.push(before); where.push(`id < $${params.length}`); }
+    const action = typeof req.query.action === 'string' && req.query.action.trim() ? req.query.action.trim() : null;
+    if (action) { params.push(likeContains(action)); where.push(`lower(action) LIKE $${params.length}`); }
+    params.push(limit + 1);
+    const rows = (await client.query(`SELECT id, actor_id, action, entity, entity_id, detail, created_at FROM audit_events ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY id DESC LIMIT $${params.length}`, params)).rows;
+    const page = rows.slice(0, limit);
+    return {
+      items: page.map((r) => ({ id: Number(r.id), actorId: r.actor_id, action: r.action, entity: r.entity, entityId: r.entity_id, detail: r.detail, at: r.created_at })),
+      nextBefore: rows.length > limit ? Number(page[page.length - 1].id) : null
+    };
   }));
 }));
 

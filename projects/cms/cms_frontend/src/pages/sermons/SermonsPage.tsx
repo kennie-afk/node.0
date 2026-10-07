@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import ResourcePage from '../../features/resource/ResourcePage';
 import type { PageOf, ResourceConfig } from '../../features/resource/types';
 import { http } from '../../api/http';
@@ -27,7 +28,7 @@ const config: ResourceConfig<Sermon> = {
       header: 'Sermon',
       render: (s) => (
         <span>
-          <strong>{s.title}</strong>
+          <Link to={`/sermons/${s.id}/media`} title="Recordings and notes"><strong>{s.title}</strong></Link>
           {s.summary ? <div className="ui-card-sub">{s.summary.length > 120 ? `${s.summary.slice(0, 120)}...` : s.summary}</div> : null}
         </span>
       )

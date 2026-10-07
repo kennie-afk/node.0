@@ -12,6 +12,8 @@ import { generatePin, normalisePhone } from '../admin/phone';
 import { audit, wrap } from '../common/context';
 import { canGrantRole, ROLES } from '../domain/roles';
 import { inOrg, parse } from './helpers';
+import { limiterStore } from '../ratelimit/store';
+import { assertNotLocked, clearFailures, LockedError, recordFailure } from '../ratelimit/lockout';
 
 const router = Router();
 
@@ -31,6 +33,7 @@ const loginLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
+  store: limiterStore('login'),
   // keyed on the normalised number, so 0712... and 254712... cannot be used to get two sets of attempts
   keyGenerator: (req) => `${ipKeyGenerator(req.ip ?? 'unknown')}|${loginPhone(req.body?.phone)}`,
   message: { code: 'too-many-attempts', message: 'Too many sign in attempts. Try again shortly.' }
@@ -40,11 +43,22 @@ const loginSchema = z.object({ phone: z.string().min(6).max(20), pin: z.string()
 
 router.post('/auth/login', loginLimiter, wrap(async (req, res) => {
   const body = parse(loginSchema, req.body);
-  const row = await withoutTenant(async (client) => (await client.query('SELECT id, org_id, branch_id, role, display_name, pin_hash FROM resolve_login($1)', [loginPhone(body.phone)])).rows[0]);
+  const phone = loginPhone(body.phone);
+  try {
+    await assertNotLocked(phone);
+  } catch (error) {
+    if (error instanceof LockedError) res.setHeader('Retry-After', String(error.retryAfterSeconds));
+    throw error;
+  }
+  const row = await withoutTenant(async (client) => (await client.query('SELECT id, org_id, branch_id, role, display_name, pin_hash FROM resolve_login($1)', [phone])).rows[0]);
   // the same work is done whether or not the number exists, so response time does not reveal which numbers have accounts
   const stored = row?.pin_hash ?? '$2b$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva';
   const matches = await bcrypt.compare(body.pin, stored);
-  if (!row || !matches) throw new UnauthorizedError('Those credentials are not valid.');
+  if (!row || !matches) {
+    await recordFailure(phone);
+    throw new UnauthorizedError('Those credentials are not valid.');
+  }
+  await clearFailures(phone);
   const { token, expiresInSeconds } = signToken({ userId: row.id, orgId: row.org_id, branchId: row.branch_id, role: row.role });
   res.json({ token, expiresInSeconds, displayName: row.display_name, role: row.role, orgId: row.org_id, branchId: row.branch_id });
 }));

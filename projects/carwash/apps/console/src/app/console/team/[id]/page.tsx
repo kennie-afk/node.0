@@ -1,7 +1,7 @@
 import { api, describeError } from "@/lib/api";
 import { readSession } from "@/lib/session";
 import { type Person, type Site } from "@/lib/types";
-import { UserForm } from "@/components/forms";
+import { ResetPinForm, UserForm } from "@/components/forms";
 import { Card, Notice, PageHeader } from "@/components/ui";
 
 export default async function PersonPage({ params }: { params: Promise<{ id: string }> }) {
@@ -22,15 +22,22 @@ export default async function PersonPage({ params }: { params: Promise<{ id: str
       <PageHeader title={person?.displayName ?? "Person"} subtitle="Change their role, site or PIN, or suspend their sign-in." />
       {error ? <Notice tone="danger">{error}</Notice> : null}
       {person ? (
-        session?.role === "owner" ? (
-          <Card>
-            <div className="p-5">
-              <UserForm person={person} sites={sites.map((site) => ({ id: site.id, name: site.name }))} />
-            </div>
-          </Card>
-        ) : (
-          <Notice>Only an owner can change a person.</Notice>
-        )
+        <div className="space-y-5">
+          {session?.role === "owner" ? (
+            <Card>
+              <div className="p-5">
+                <UserForm person={person} sites={sites.map((site) => ({ id: site.id, name: site.name }))} />
+              </div>
+            </Card>
+          ) : (
+            <Notice>Only an owner can change a person&apos;s role, site or status.</Notice>
+          )}
+          {session?.role === "owner" || (session?.role === "manager" && ["worker", "supervisor"].includes(person.role)) ? (
+            <Card title="Forgotten PIN">
+              <ResetPinForm id={person.id} name={person.displayName} />
+            </Card>
+          ) : null}
+        </div>
       ) : null}
     </>
   );

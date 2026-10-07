@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { scanCode, searchProducts, submitSale, type SaleOutcome } from "@/app/actions";
+import { pickCustomers, scanCode, searchProducts, submitSale, type SaleOutcome } from "@/app/actions";
+import { Picker } from "@/components/picker";
 import { Badge, Notice, buttonClass, inputClass, secondaryButtonClass, selectClass } from "@/components/ui";
 import { ksh, toCents } from "@/lib/format";
-import type { Customer, Product } from "@/lib/types";
+import type { Product } from "@/lib/types";
 
 interface Line {
   productId: string;
@@ -17,13 +18,14 @@ interface Line {
 
 const EMPTY_RX = { patientName: "", patientPhone: "", patientAgeYears: "", patientSex: "", prescriberName: "", prescriberRegNo: "", prescriptionRef: "", directions: "" };
 
-export function Pos({ customers, canDiscount }: { customers: Customer[]; canDiscount: boolean }) {
+export function Pos({ canDiscount }: { canDiscount: boolean }) {
   const [lines, setLines] = useState<Line[]>([]);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [scan, setScan] = useState("");
   const [note, setNote] = useState<{ tone: "danger" | "warn" | "good"; text: string } | null>(null);
   const [customerId, setCustomerId] = useState("");
+  const [pickerKey, setPickerKey] = useState(0);
   const [method, setMethod] = useState<"cash" | "mpesa" | "credit">("cash");
   const [tendered, setTendered] = useState("");
   const [mpesaCode, setMpesaCode] = useState("");
@@ -84,7 +86,7 @@ export function Pos({ customers, canDiscount }: { customers: Customer[]; canDisc
   }
 
   function reset() {
-    setLines([]); setQuery(""); setResults([]); setCustomerId(""); setTendered(""); setMpesaCode(""); setDiscount(""); setDiscountReason(""); setRx(EMPTY_RX); setWitness({ phone: "", pin: "" }); setMethod("cash");
+    setLines([]); setQuery(""); setResults([]); setCustomerId(""); setPickerKey((k) => k + 1); setTendered(""); setMpesaCode(""); setDiscount(""); setDiscountReason(""); setRx(EMPTY_RX); setWitness({ phone: "", pin: "" }); setMethod("cash");
     scanRef.current?.focus();
   }
 
@@ -206,10 +208,7 @@ export function Pos({ customers, canDiscount }: { customers: Customer[]; canDisc
           </div>
           {method === "cash" ? <input className={inputClass} placeholder={`Cash received (default ${ksh(total)})`} inputMode="decimal" value={tendered} onChange={(e) => setTendered(e.target.value)} /> : null}
           {method === "mpesa" ? <input className={inputClass} placeholder="M-Pesa code from the customer's phone (leave blank to wait for it)" value={mpesaCode} onChange={(e) => setMpesaCode(e.target.value.toUpperCase())} /> : null}
-          <select className={selectClass} value={customerId} onChange={(e) => setCustomerId(e.target.value)} aria-label="Customer">
-            <option value="">{method === "credit" ? "Choose the customer…" : "Walk-in customer"}</option>
-            {customers.map((c) => <option key={c.id} value={c.id}>{c.name}{c.creditLimitCents ? ` (owes ${ksh(c.balanceCents)} of ${ksh(c.creditLimitCents)})` : ""}</option>)}
-          </select>
+          <Picker key={pickerKey} search={pickCustomers} placeholder={method === "credit" ? "Search for the customer by name or phone" : "Customer (optional): search by name or phone"} onPick={(o) => setCustomerId(o?.id ?? "")} />
           {outcome?.error ? <div className="mt-3"><Notice tone="danger">{outcome.error}</Notice></div> : null}
           {outcome?.sale ? (
             <div className="mt-3"><Notice tone={outcome.sale.status === "completed" ? "good" : "warn"}>

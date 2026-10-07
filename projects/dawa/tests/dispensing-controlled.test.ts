@@ -22,7 +22,7 @@ describe.runIf(on)('prescription dispensing and the controlled-drug register (re
 
     const ok = await sell(pharmacist.auth, { lines: [rxLine(rx, 2)], payments: [{ method: 'cash', amountCents: 10000 }] });
     expect(ok.status).toBe(201);
-    const log = (await get(pharmacist.auth, '/v1/dispensing')).body;
+    const log = (await get(pharmacist.auth, '/v1/dispensing')).body.items;
     expect(log).toHaveLength(1);
     expect(log[0]).toMatchObject({ product: 'Amoxicillin 500mg', qty: 2, patientName: 'Achieng Otieno', prescriberName: 'Dr Mwangi', prescriberRegNo: 'A1234', batches: 'AMX1' });
     // a cashier cannot read the log, and the record cannot be edited by the application role
@@ -115,7 +115,7 @@ describe.runIf(on)('prescription dispensing and the controlled-drug register (re
     const manager = await addStaff(t, 'manager');
     const cd = await makeProduct(t.owner.auth, { category: 'controlled' });
     await receive(ph.auth, cd, [{ batchNo: 'AD1', expiryDate: dayOffset(300), qty: 10 }], { witness: { phone: ph2.phone, pin: ph2.pin } });
-    const batchId = (await get(t.owner.auth, `/v1/stock/batches?productId=${cd}`)).body[0].id;
+    const batchId = (await get(t.owner.auth, `/v1/stock/batches?productId=${cd}`)).body.items[0].id;
     expect((await post(ph.auth, '/v1/stock/adjust', { batchId, kind: 'adjustment', qtyDelta: -1, reason: 'broken tablet' })).status).toBe(403);
     const noWitness = await post(manager.auth, '/v1/stock/adjust', { batchId, kind: 'adjustment', qtyDelta: -1, reason: 'broken tablet' });
     expect(noWitness.status).toBe(400);

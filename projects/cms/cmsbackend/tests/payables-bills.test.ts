@@ -294,7 +294,7 @@ describe('voiding', () => {
 });
 
 describe('expense claims and attachments', () => {
-  it('pays a staff claim, refuses one to an outside vendor, and keeps attachment metadata', async () => {
+  it('pays a staff claim, refuses one to an outside vendor, and keeps an attached receipt', async () => {
     const staff = (await request(app).post('/payables/vendors').set(treasurer).send({ name: 'Pastor Grace', kind: 'STAFF', mpesaNumber: '0722000111' })).body.id;
     const claim = await request(app).post('/payables/expense-claims').set(treasurer).send({ vendorId: staff, billDate: d(2, 2), dueDate: d(2, 9), memo: 'Fuel for outreach', lines: [{ accountId: b.accounts['5330'], fundId: b.funds.GEN, amount: '2500.00' }] });
     expect(claim.status).toBe(201);
@@ -302,7 +302,7 @@ describe('expense claims and attachments', () => {
     const outside = await vendor('Fuel Station');
     const bad = await request(app).post('/payables/expense-claims').set(treasurer).send({ vendorId: outside, billDate: d(2, 2), dueDate: d(2, 9), lines: [{ accountId: b.accounts['5330'], fundId: b.funds.GEN, amount: '1.00' }] });
     expect(bad.status).toBe(400);
-    const attached = await request(app).post(`/payables/bills/${claim.body.id}/attachments`).set(treasurer).send({ fileName: 'receipts.pdf', contentType: 'application/pdf', sizeBytes: 12345, storageKey: 'claims/2026/receipts.pdf' });
+    const attached = await request(app).post(`/payables/bills/${claim.body.id}/attachments?fileName=receipts.pdf`).set(treasurer).set('Content-Type', 'application/pdf').send(Buffer.from('%PDF-1.4 receipts'));
     expect(attached.body.attachments).toHaveLength(1);
     const list = await request(app).get('/payables/bills?kind=EXPENSE_CLAIM').set(auditor);
     expect(list.body.data).toHaveLength(1);

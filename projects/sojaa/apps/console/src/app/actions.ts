@@ -390,7 +390,8 @@ export async function saveSettings(_p: FormState, form: FormData): Promise<FormS
       overtimeMultiplierBp: bp(form, "overtimeMultiplier") !== undefined ? Math.round(Number(text(form, "overtimeMultiplier")) * 10_000) : undefined,
       restDayMultiplierBp: Math.round(Number(text(form, "restDayMultiplier")) * 10_000), holidayMultiplierBp: Math.round(Number(text(form, "holidayMultiplier")) * 10_000),
       checkinEarlyMinutes: int(form, "checkinEarly"), lateGraceMinutes: int(form, "lateGrace"), missedAfterMinutes: int(form, "missedAfter"), defaultGeofenceM: int(form, "geofence"),
-      maxHoursPerWeek: orNull("maxHours"), minRestHours: orNull("minRest"), billBasis: text(form, "billBasis") || undefined, psraLicenceNo: optional(form, "psraLicenceNo") ?? null
+      maxHoursPerWeek: orNull("maxHours"), minRestHours: orNull("minRest"), billBasis: text(form, "billBasis") || undefined,
+      annualLeaveDays: int(form, "annualLeaveDays"), sickLeaveDays: orNull("sickLeaveDays"), absenceDeduction: text(form, "absenceDeduction") || undefined, psraLicenceNo: optional(form, "psraLicenceNo") ?? null
     });
     return "Settings saved.";
   });
@@ -431,5 +432,32 @@ export async function simulatePayment(_previous: FormState, _form: FormData): Pr
   return run(async () => {
     await api.send("POST", "/v1/billing/mock-payment", {});
     return "Payment recorded (simulated).";
+  });
+}
+
+// ---- leave and expiries ----
+export async function requestLeave(_p: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    await api.send("POST", "/v1/leave", { guardId: text(form, "guardId"), kind: text(form, "kind"), startDay: text(form, "startDay"), endDay: text(form, "endDay") || text(form, "startDay"), reason: optional(form, "reason") ?? null });
+    return "Leave requested.";
+  });
+}
+export async function decideLeave(_p: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const out = await api.send<{ closedMonthsAffected?: string[] }>("POST", `/v1/leave/${text(form, "id")}/decision`, { decision: text(form, "decision"), note: optional(form, "note") });
+    const closed = out.closedMonthsAffected ?? [];
+    return text(form, "decision") === "approve" ? `Approved.${closed.length ? ` ${closed.join(", ")} is already closed: pay any difference as a payroll adjustment.` : ""}` : "Refused.";
+  });
+}
+export async function cancelLeave(_p: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    await api.send("POST", `/v1/leave/${text(form, "id")}/cancel`, {});
+    return "Cancelled.";
+  });
+}
+export async function queueExpiryAlerts(_p: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const out = await api.send<{ queued: number; withoutPhone: number; dispatch: { sent: number; retrying: number; failed: number } | null }>("POST", "/v1/notifications/expiry-alerts", { days: int(form, "days") ?? 30 });
+    return `${out.queued} alert(s) queued, ${out.dispatch?.sent ?? 0} sent, ${out.dispatch?.retrying ?? 0} to retry. ${out.withoutPhone} guard(s) have no phone number.`;
   });
 }

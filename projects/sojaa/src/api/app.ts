@@ -5,6 +5,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { pool } from '../persistence/pool';
+import { invalidateOrg } from '../common/ttl-cache';
 import { errorHandler, notFound, requestContext } from './middleware';
 import authRoutes from './auth';
 import opsRoutes from './ops';
@@ -15,6 +16,8 @@ import exportsRoutes from './exports';
 import settingsRoutes from './settings';
 import signupRoutes from './signup';
 import billingRoutes from './billing';
+import leaveRoutes from './leave';
+import expiryRoutes from './expiries';
 
 export function createApiApp(): Express {
   const app = express();
@@ -23,6 +26,15 @@ export function createApiApp(): Express {
   app.disable('x-powered-by');
 
   app.use(requestContext);
+  // Any successful write by a signed-in person clears that firm's cached dashboard in this process.
+  app.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
+      res.on('finish', () => {
+        if (res.statusCode < 400 && req.principal) invalidateOrg(req.principal.orgId);
+      });
+    }
+    next();
+  });
   app.use(helmet());
   app.use(express.json({ limit: '512kb' }));
   app.use(
@@ -79,6 +91,8 @@ export function createApiApp(): Express {
   app.use('/v1', mpesaRoutes);
   app.use('/v1', exportsRoutes);
   app.use('/v1', settingsRoutes);
+  app.use('/v1', leaveRoutes);
+  app.use('/v1', expiryRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

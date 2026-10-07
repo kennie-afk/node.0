@@ -111,7 +111,7 @@ export async function resetPin(rawPhone: string): Promise<{ phone: string; pin: 
   if (!account) throw new NotFoundError(`no active account for ${phone}`);
   const pin = generatePin();
   const pinHash = await bcrypt.hash(pin, PIN_ROUNDS);
-  await withOrg(account.org_id, (client) => client.query('UPDATE users SET pin_hash = $2 WHERE id = $1', [account.id, pinHash]));
+  await withOrg(account.org_id, (client) => client.query('UPDATE users SET pin_hash = $2, token_version = token_version + 1, pin_changed_at = now() WHERE id = $1', [account.id, pinHash]));
   return { phone, pin };
 }
 

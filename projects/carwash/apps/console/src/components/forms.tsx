@@ -2,13 +2,19 @@
 
 import { useActionState } from "react";
 import {
+  changeMyPin,
+  provisionDevice,
   removeBay,
+  resetPersonPin,
   resolveFlag,
   saveBay,
   saveService,
   saveSite,
   saveUser,
-  type FormState
+  voidJob,
+  type DeviceState,
+  type FormState,
+  type PinState
 } from "@/app/actions";
 import { Field, Notice, buttonClass, dangerButtonClass, inputClass, secondaryButtonClass, selectClass } from "@/components/ui";
 import { DAY_NAMES, clock, type Person, type Service, type SiteDetail } from "@/lib/types";
@@ -143,6 +149,20 @@ export function ServiceForm({ service }: { service?: Service }) {
           <input name="commission" type="number" min="0" max="100" step="1" defaultValue={Math.round((service?.commissionRate ?? 0.1) * 100)} className={inputClass} />
         </Field>
       </div>
+      <Field
+        label="Consumables per wash"
+        hint="What one wash of this service normally uses, one per line as name=amount, for example detergent=0.05. The names must match the stock items your site records. Without this, supply theft cannot be detected."
+      >
+        <textarea
+          name="consumables"
+          rows={3}
+          className={inputClass}
+          placeholder="detergent=0.05"
+          defaultValue={Object.entries(service?.consumables ?? {})
+            .map(([name, amount]) => `${name}=${amount}`)
+            .join("\n")}
+        />
+      </Field>
       <label className="flex items-center gap-2 text-[0.8125rem]">
         <input type="checkbox" name="active" defaultChecked={service?.active ?? true} />
         On the price list (switch off to stop selling it without losing its history)
@@ -254,6 +274,149 @@ export function ResolveForm({ id, state, canResolve }: { id: string; state: stri
             Reopen
           </button>
         ) : null}
+      </div>
+    </form>
+  );
+}
+
+
+const PIN_INITIAL: PinState = { error: null, done: false };
+
+export function ChangePinForm() {
+  const [state, action, pending] = useActionState(changeMyPin, PIN_INITIAL);
+  return (
+    <form action={action} className="flex max-w-sm flex-col gap-4">
+      {state.error ? <Notice tone="danger">{state.error}</Notice> : null}
+      {state.done ? <Notice tone="good">Your PIN is changed. Any other phone signed in as you has been signed out.</Notice> : null}
+      <Field label="Current PIN">
+        <input name="currentPin" type="password" inputMode="numeric" autoComplete="current-password" required className={inputClass} />
+      </Field>
+      <Field label="New PIN" hint="At least 6 characters.">
+        <input name="newPin" type="password" inputMode="numeric" minLength={6} autoComplete="new-password" required className={inputClass} />
+      </Field>
+      <Field label="New PIN again">
+        <input name="confirm" type="password" inputMode="numeric" minLength={6} autoComplete="new-password" required className={inputClass} />
+      </Field>
+      <div>
+        <button type="submit" className={buttonClass} disabled={pending}>
+          {pending ? "Saving…" : "Change PIN"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export function ResetPinForm({ id, name }: { id: string; name: string }) {
+  const [state, action, pending] = useActionState(resetPersonPin, PIN_INITIAL);
+  return (
+    <form action={action} className="flex max-w-xl flex-col gap-3">
+      {state.error ? <Notice tone="danger">{state.error}</Notice> : null}
+      {state.pin ? (
+        <Notice tone="warn">
+          New PIN for {name}: <span className="font-mono text-[1rem] font-semibold tracking-widest">{state.pin}</span>. Tell them now. It is not stored anywhere readable and will not be shown again; they should change it after signing in.
+        </Notice>
+      ) : null}
+      <input type="hidden" name="id" value={id} />
+      <p className="text-[0.75rem] text-[var(--color-muted)]">Forgot their PIN? This makes a new one and signs them out everywhere.</p>
+      <div>
+        <button type="submit" className={dangerButtonClass} disabled={pending}>
+          {pending ? "Resetting…" : "Reset PIN"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+const DEVICE_TYPES = [
+  { value: "flow_meter", label: "Flow meter" },
+  { value: "pump_monitor", label: "Pump monitor" },
+  { value: "machine", label: "Machine counter" },
+  { value: "camera", label: "Plate camera" },
+  { value: "beam", label: "Beam sensor" },
+  { value: "doser", label: "Doser" }
+];
+
+export function DeviceForm({ sites, bays }: { sites: { id: string; name: string }[]; bays: { id: string; label: string; site: string }[] }) {
+  const [state, action, pending] = useActionState(provisionDevice, { error: null, created: null } as DeviceState);
+  return (
+    <form action={action} className="flex max-w-xl flex-col gap-4">
+      {state.error ? <Notice tone="danger">{state.error}</Notice> : null}
+      {state.created ? (
+        <Notice tone="warn">
+          <p className="font-medium">Copy this secret now. It is shown once and cannot be recovered.</p>
+          <dl className="mt-2 grid gap-1 font-mono text-[0.75rem]">
+            <div className="break-all">
+              <dt className="inline text-[var(--color-muted)]">X-Device-Id: </dt>
+              <dd className="inline">{state.created.id}</dd>
+            </div>
+            <div className="break-all">
+              <dt className="inline text-[var(--color-muted)]">X-Device-Secret: </dt>
+              <dd className="inline select-all">{state.created.secret}</dd>
+            </div>
+          </dl>
+        </Notice>
+      ) : null}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Site">
+          <select name="siteId" required className={selectClass} defaultValue="">
+            <option value="" disabled>
+              Choose…
+            </option>
+            {sites.map((site) => (
+              <option key={site.id} value={site.id}>
+                {site.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Kind of device">
+          <select name="type" required className={selectClass} defaultValue="flow_meter">
+            {DEVICE_TYPES.map((type) => (
+              <option key={type.value} value={type.value}>
+                {type.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Bay" hint="Leave empty for a gate camera or a whole-site device. The bay must belong to the chosen site.">
+          <select name="bayId" className={selectClass} defaultValue="">
+            <option value="">No bay</option>
+            {bays.map((bay) => (
+              <option key={bay.id} value={bay.id}>
+                {bay.site} · {bay.label}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Firmware (optional)">
+          <input name="firmware" maxLength={40} className={inputClass} placeholder="fm-2.4.1" />
+        </Field>
+      </div>
+      <div>
+        <button type="submit" className={buttonClass} disabled={pending}>
+          {pending ? "Registering…" : "Register device"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+export function VoidForm({ id }: { id: string }) {
+  const [state, action, pending] = useActionState(voidJob, INITIAL);
+  return (
+    <form action={action} className="flex max-w-xl flex-col gap-3">
+      {state.error ? <Notice tone="danger">{state.error}</Notice> : null}
+      <input type="hidden" name="id" value={id} />
+      <Field
+        label="Reverse this sale"
+        hint="Use when the customer was refunded or the sale was recorded by mistake. The payment is marked reversed, the job stops counting as work done, and your name and these words stay on the record. Forecourt does not send the money back; do that from your till."
+      >
+        <textarea name="reason" rows={2} required minLength={5} className={inputClass} placeholder="Customer complained about the wash; refunded in cash." />
+      </Field>
+      <div>
+        <button type="submit" className={dangerButtonClass} disabled={pending}>
+          {pending ? "Reversing…" : "Void and refund"}
+        </button>
       </div>
     </form>
   );

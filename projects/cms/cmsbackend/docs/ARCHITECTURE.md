@@ -85,5 +85,5 @@ leader election, but session locks do not survive PgBouncer transaction pooling.
 | Container breakout | non-root, read-only rootfs, all capabilities dropped, seccomp, default-deny NetworkPolicies |
 
 Residual risks, stated plainly: a superuser on the database host can rewrite both the data and the
-hashes together (mitigation: ship the chain head to an external store on a schedule, not yet done);
+hashes together (mitigation, built: the nightly `chain.head-export` job writes each church's ledger and audit head to the object store and optionally POSTs it to `CHAIN_HEAD_WEBHOOK`; `GET /finance/audit/head` and `scripts/verify-chain-head` compare the database to an export, which detects a rewrite even when every later hash was recomputed. It only helps if the export lives where the database owner cannot edit it);
 Redis loss degrades rate limiting to per-pod; replica lag makes reports up to a few seconds stale.

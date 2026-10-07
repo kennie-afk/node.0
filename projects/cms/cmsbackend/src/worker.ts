@@ -1,6 +1,6 @@
 import 'module-alias/register';
 import db from '@models';
-import { env } from './config/env';
+import { assertProvidersSafeForProduction, env } from './config/env';
 import { logger } from './common/logger';
 import { observePool, startMetricsServer, stopMetricsServer } from './common/metrics';
 // Importing the route registry loads every module's services, and with them every job handler
@@ -11,6 +11,7 @@ import { registeredJobTypes } from './modules/jobs/queue';
 
 async function main(): Promise<void> {
   await db.sequelize.authenticate();
+  for (const warning of assertProvidersSafeForProduction()) logger.warn(warning);
   startMetricsServer(() => observePool(db.sequelize));
   const worker = new Worker({ concurrency: env.WORKER_CONCURRENCY });
   worker.start();

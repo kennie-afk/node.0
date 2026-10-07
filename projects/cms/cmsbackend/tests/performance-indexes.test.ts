@@ -26,17 +26,17 @@ describe('member list totals (count without the join)', () => {
     const last = await request(app).get('/members?page=3&pageSize=3').set(admin);
     expect(last.body.data).toHaveLength(1);
     expect(last.body).toMatchObject({ total: 7, hasNext: false, hasPrevious: true });
-    const search = await request(app).get('/members?q=odd').set(admin);
+    const search = await request(app).get('/members?q=odd&page=1').set(admin);
     expect(search.body.total).toBe(3);
     expect(search.body.data.every((m: { lastName: string }) => m.lastName === 'Odd')).toBe(true);
-    expect((await request(app).get('/members?q=no-such-person').set(admin)).body.total).toBe(0);
+    expect((await request(app).get('/members?q=no-such-person&page=1').set(admin)).body.total).toBe(0);
   });
 
   it('never leaks another church\'s members into the count', async () => {
     const a = await signUp(app, 'perfa');
     const b = await signUp(app, 'perfb');
     await member(app, a.admin, 'Alone', 'InA');
-    expect((await request(app).get('/members').set(b.admin)).body.total).toBe(0);
+    expect((await request(app).get('/members?page=1').set(b.admin)).body.total).toBe(0);
   });
 });
 

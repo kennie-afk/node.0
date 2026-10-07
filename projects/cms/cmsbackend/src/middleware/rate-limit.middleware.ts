@@ -76,6 +76,14 @@ export const loginLimiter = limiter('rl:login:', {
   }
 });
 
+/** The public giving page has no login to count against, so it is counted per address, and tightly. */
+export const publicGivingLimiter = limiter('rl:public-give:', {
+  windowMs: 10 * 60 * 1000,
+  limit: 30,
+  keyGenerator: (req) => `ip:${ipKeyGenerator(req.ip ?? 'unknown')}`,
+  message: { message: 'Too many requests. Wait a few minutes and try again.' }
+});
+
 export async function closeRateLimitStore(): Promise<void> {
   if (client?.isOpen) {
     await client.quit().catch(() => undefined);

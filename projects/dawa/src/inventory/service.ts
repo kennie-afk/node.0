@@ -7,9 +7,11 @@ import { z } from 'zod';
 import { env } from '../config/env';
 import { AppError, BadRequestError, ConflictError, NotFoundError } from '../domain/errors';
 import { normalisePhone } from '../admin/phone';
-import { audit, BranchRow, Ctx, need, verifyWitness, WitnessInput } from '../common/context';
+import { audit, BranchRow, businessDayNow, Ctx, need, verifyWitness, WitnessInput } from '../common/context';
 import { daysToExpiry } from './fefo';
 import { normaliseGtin } from '../gs1/parse';
+import { likeContains } from '../common/like';
+import { Page, toPage } from '../common/paging';
 
 // ---- catalogue ------------------------------------------------------------------------------------
 
@@ -100,7 +102,7 @@ export async function updateProduct(client: PoolClient, ctx: Ctx, id: string, in
 export async function listProducts(
   client: PoolClient,
   opts: { search?: string; category?: string; includeInactive?: boolean; limit?: number; offset?: number }
-): Promise<{ items: Product[]; total: number }> {
+): Promise<Page<Product> & { total: number }> {
   const params: unknown[] = [];
   const where: string[] = [];
   if (!opts.includeInactive) where.push('active');
@@ -109,14 +111,18 @@ export async function listProducts(
     where.push(`category = $${params.length}`);
   }
   if (opts.search) {
-    params.push(`%${opts.search.replace(/[%_]/g, (c) => `\\${c}`)}%`);
-    where.push(`(name ILIKE $${params.length} OR generic_name ILIKE $${params.length} OR gtin = ${/^\d{8,14}$/.test(opts.search) ? `'${opts.search.padStart(14, '0')}'` : "'-'"})`);
+    params.push(likeContains(opts.search));
+    const like = `$${params.length}`;
+    params.push(/^\d{8,14}$/.test(opts.search) ? opts.search.padStart(14, '0') : '-');
+    where.push(`(name ILIKE ${like} OR generic_name ILIKE ${like} OR gtin = $${params.length})`);
   }
   const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
   const total = Number((await client.query(`SELECT count(*) AS n FROM products ${clause}`, params)).rows[0].n);
   const limit = Math.min(opts.limit ?? 50, 200);
-  const rows = (await client.query(`SELECT * FROM products ${clause} ORDER BY name LIMIT ${limit} OFFSET ${Math.max(0, opts.offset ?? 0)}`, params)).rows;
-  return { items: rows.map(toProduct), total };
+  const offset = Math.max(0, opts.offset ?? 0);
+  const rows = (await client.query(`SELECT * FROM products ${clause} ORDER BY name, id LIMIT ${limit + 1} OFFSET ${offset}`, params)).rows;
+  const page = toPage(rows.map(toProduct), limit, offset);
+  return { ...page, total };
 }
 
 export async function findProductByGtin(client: PoolClient, gtin: string): Promise<Product | null> {
@@ -143,8 +149,42 @@ export async function createSupplier(client: PoolClient, ctx: Ctx, input: z.infe
   return rows[0];
 }
 
-export async function listSuppliers(client: PoolClient) {
-  return (await client.query('SELECT id, name, phone, active FROM suppliers ORDER BY name')).rows;
+export async function listSuppliers(client: PoolClient, opts: { search?: string; includeInactive?: boolean; limit?: number; offset?: number } = {}): Promise<Page<{ id: string; name: string; phone: string | null; active: boolean }>> {
+  const params: unknown[] = [];
+  const where: string[] = [];
+  if (!opts.includeInactive) where.push('active');
+  if (opts.search) {
+    params.push(likeContains(opts.search));
+    where.push(`name ILIKE $${params.length}`);
+  }
+  const limit = Math.min(opts.limit ?? 100, 200);
+  const offset = Math.max(0, opts.offset ?? 0);
+  const rows = (await client.query(`SELECT id, name, phone, active FROM suppliers ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY name, id LIMIT ${limit + 1} OFFSET ${offset}`, params)).rows;
+  return toPage(rows, limit, offset);
+}
+
+export const supplierPatchSchema = z.object({
+  name: z.string().trim().min(1).max(200).optional(),
+  phone: z.string().trim().max(30).nullable().optional(),
+  active: z.boolean().optional()
+});
+
+export async function updateSupplier(client: PoolClient, ctx: Ctx, id: string, input: z.infer<typeof supplierPatchSchema>) {
+  need(ctx, 'suppliers');
+  const existing = (await client.query('SELECT id, name, phone, active FROM suppliers WHERE id = $1 FOR UPDATE', [id])).rows[0];
+  if (!existing) throw new NotFoundError('That supplier was not found.');
+  let phone: string | null = existing.phone;
+  if (input.phone !== undefined) {
+    phone = input.phone ? (() => { try { return normalisePhone(input.phone!); } catch { return input.phone!; } })() : null;
+  }
+  try {
+    const row = (await client.query('UPDATE suppliers SET name = $2, phone = $3, active = $4 WHERE id = $1 RETURNING id, name, phone, active', [id, input.name ?? existing.name, phone, input.active ?? existing.active])).rows[0];
+    await audit(client, ctx, 'supplier.update', 'supplier', id, { ...input });
+    return row;
+  } catch (error) {
+    if ((error as { code?: string }).code === '23505') throw new ConflictError('Another supplier already has that name.');
+    throw error;
+  }
 }
 
 // ---- receiving -------------------------------------------------------------------------------------
@@ -302,14 +342,19 @@ export async function writeRegister(
   return next;
 }
 
-export async function controlledRegister(client: PoolClient, branchId: string, productId: string | undefined, limit = 100) {
+export async function controlledRegister(client: PoolClient, branchId: string, productId: string | undefined, limit = 100, before?: number) {
   const params: unknown[] = [branchId];
   let clause = 'branch_id = $1';
   if (productId) {
     params.push(productId);
     clause += ` AND product_id = $${params.length}`;
   }
-  const rows = (
+  if (before !== undefined) {
+    params.push(before);
+    clause += ` AND id < $${params.length}`;
+  }
+  limit = Math.min(Math.max(1, limit), 500);
+  const fetched = (
     await client.query(
       `SELECT r.id, r.product_id, p.name AS product, r.kind, r.qty_delta, r.balance_after, r.batch_no, r.patient_name, r.prescriber, r.reason,
               r.created_at, a.display_name AS actor, w.display_name AS witness
@@ -317,22 +362,25 @@ export async function controlledRegister(client: PoolClient, branchId: string, p
          JOIN products p ON p.id = r.product_id
          JOIN users a ON a.id = r.actor_id
          JOIN users w ON w.id = r.witness_id
-        WHERE ${clause.replace(/branch_id/g, 'r.branch_id').replace(/product_id/g, 'r.product_id')} ORDER BY r.id DESC LIMIT ${Math.min(limit, 500)}`,
+        WHERE ${clause.replace(/branch_id/g, 'r.branch_id').replace(/product_id/g, 'r.product_id').replace(/ id </g, ' r.id <')} ORDER BY r.id DESC LIMIT ${limit + 1}`,
       params
     )
   ).rows;
-  const balances = (
+  // keyset paging on the register's own entry number: entries are only ever appended, so the cursor is stable
+  const hasMore = fetched.length > limit;
+  const rows = hasMore ? fetched.slice(0, limit) : fetched;
+  const balances = before !== undefined ? [] : (
     await client.query(
       `SELECT b.product_id, p.name AS product, b.balance FROM controlled_balances b JOIN products p ON p.id = b.product_id WHERE b.branch_id = $1 ORDER BY p.name`,
       [branchId]
     )
   ).rows;
-  return { balances, entries: rows };
+  return { balances, entries: rows, hasMore, next: hasMore ? Number(rows[rows.length - 1].id) : null };
 }
 
 // ---- stock queries ---------------------------------------------------------------------------------
 
-export async function listBatches(client: PoolClient, branchId: string, opts: { productId?: string; includeEmpty?: boolean } = {}) {
+export async function listBatches(client: PoolClient, branchId: string, opts: { productId?: string; search?: string; includeEmpty?: boolean; status?: string; limit?: number; offset?: number } = {}) {
   const params: unknown[] = [branchId];
   let clause = 'b.branch_id = $1';
   if (opts.productId) {
@@ -340,16 +388,28 @@ export async function listBatches(client: PoolClient, branchId: string, opts: { 
     clause += ` AND b.product_id = $${params.length}`;
   }
   if (!opts.includeEmpty) clause += ' AND b.qty_on_hand > 0';
+  if (opts.search) {
+    params.push(likeContains(opts.search));
+    clause += ` AND (p.name ILIKE $${params.length} OR b.batch_no ILIKE $${params.length})`;
+  }
+  if (opts.status) {
+    params.push(opts.status);
+    clause += ` AND b.status = $${params.length}`;
+  }
+  const limit = Math.min(opts.limit ?? 200, 500);
+  const offset = Math.max(0, opts.offset ?? 0);
   const rows = (
     await client.query(
       `SELECT b.id, b.product_id, p.name AS product, p.category, b.batch_no, to_char(b.expiry_date, 'YYYY-MM-DD') AS expiry_date,
-              b.qty_on_hand, b.qty_received, b.unit_cost_cents, b.received_at
+              b.qty_on_hand, b.qty_received, b.unit_cost_cents, b.received_at, b.status, b.status_reason,
+              b.supplier_invoice_id, i.invoice_number, sup.name AS supplier
          FROM stock_batches b JOIN products p ON p.id = b.product_id
-        WHERE ${clause} ORDER BY p.name, b.expiry_date LIMIT 1000`,
+         LEFT JOIN supplier_invoices i ON i.id = b.supplier_invoice_id LEFT JOIN suppliers sup ON sup.id = i.supplier_id
+        WHERE ${clause} ORDER BY p.name, b.expiry_date, b.id LIMIT ${limit + 1} OFFSET ${offset}`,
       params
     )
   ).rows;
-  return rows.map((row) => ({
+  return toPage(rows.map((row) => ({
     id: row.id as string,
     productId: row.product_id as string,
     product: row.product as string,
@@ -359,31 +419,39 @@ export async function listBatches(client: PoolClient, branchId: string, opts: { 
     qtyOnHand: row.qty_on_hand as number,
     qtyReceived: row.qty_received as number,
     unitCostCents: Number(row.unit_cost_cents),
-    receivedAt: row.received_at as Date
-  }));
+    receivedAt: row.received_at as Date,
+    status: row.status as 'available' | 'quarantined' | 'recalled',
+    statusReason: row.status_reason as string | null,
+    supplierInvoiceId: row.supplier_invoice_id as string | null,
+    invoiceNumber: row.invoice_number as string | null,
+    supplier: row.supplier as string | null
+  })), limit, offset);
 }
 
-export async function stockSummary(client: PoolClient, branch: BranchRow, today: string, opts: { search?: string } = {}) {
+export async function stockSummary(client: PoolClient, branch: BranchRow, today: string, opts: { search?: string; limit?: number; offset?: number } = {}) {
   const params: unknown[] = [branch.id, today];
   let filter = '';
   if (opts.search) {
-    params.push(`%${opts.search}%`);
+    params.push(likeContains(opts.search));
     filter = `AND (p.name ILIKE $3 OR p.generic_name ILIKE $3)`;
   }
+  const limit = Math.min(opts.limit ?? 200, 500);
+  const offset = Math.max(0, opts.offset ?? 0);
   const rows = (
     await client.query(
       `SELECT p.id, p.name, p.strength, p.form, p.category, p.reorder_level, p.list_price_cents,
-              COALESCE(sum(b.qty_on_hand) FILTER (WHERE b.expiry_date >= $2::date), 0)::int AS in_date,
+              COALESCE(sum(b.qty_on_hand) FILTER (WHERE b.expiry_date >= $2::date AND b.status = 'available'), 0)::int AS in_date,
               COALESCE(sum(b.qty_on_hand) FILTER (WHERE b.expiry_date < $2::date), 0)::int AS expired,
-              to_char(min(b.expiry_date) FILTER (WHERE b.qty_on_hand > 0 AND b.expiry_date >= $2::date), 'YYYY-MM-DD') AS next_expiry
+              COALESCE(sum(b.qty_on_hand) FILTER (WHERE b.expiry_date >= $2::date AND b.status <> 'available'), 0)::int AS held,
+              to_char(min(b.expiry_date) FILTER (WHERE b.qty_on_hand > 0 AND b.expiry_date >= $2::date AND b.status = 'available'), 'YYYY-MM-DD') AS next_expiry
          FROM products p
          LEFT JOIN stock_batches b ON b.product_id = p.id AND b.branch_id = $1
         WHERE p.active ${filter}
-        GROUP BY p.id ORDER BY p.name LIMIT 500`,
+        GROUP BY p.id ORDER BY p.name, p.id LIMIT ${limit + 1} OFFSET ${offset}`,
       params
     )
   ).rows;
-  return rows.map((row) => ({
+  return toPage(rows.map((row) => ({
     productId: row.id as string,
     name: row.name as string,
     strength: row.strength as string | null,
@@ -393,14 +461,15 @@ export async function stockSummary(client: PoolClient, branch: BranchRow, today:
     listPriceCents: Number(row.list_price_cents),
     inDate: row.in_date as number,
     expired: row.expired as number,
+    held: row.held as number,
     nextExpiry: row.next_expiry as string | null
-  }));
+  })), limit, offset);
 }
 
 export async function alerts(client: PoolClient, branch: BranchRow, today: string, warningDays: number = env.EXPIRY_WARNING_DAYS) {
   const expired = (
     await client.query(
-      `SELECT b.id AS batch_id, p.name AS product, b.batch_no, to_char(b.expiry_date, 'YYYY-MM-DD') AS expiry_date, b.qty_on_hand, b.unit_cost_cents
+      `SELECT b.id AS batch_id, p.name AS product, p.category, b.batch_no, to_char(b.expiry_date, 'YYYY-MM-DD') AS expiry_date, b.qty_on_hand, b.unit_cost_cents
          FROM stock_batches b JOIN products p ON p.id = b.product_id
         WHERE b.branch_id = $1 AND b.qty_on_hand > 0 AND b.expiry_date < $2::date ORDER BY b.expiry_date`,
       [branch.id, today]
@@ -408,7 +477,7 @@ export async function alerts(client: PoolClient, branch: BranchRow, today: strin
   ).rows;
   const expiring = (
     await client.query(
-      `SELECT b.id AS batch_id, p.name AS product, b.batch_no, to_char(b.expiry_date, 'YYYY-MM-DD') AS expiry_date, b.qty_on_hand, b.unit_cost_cents
+      `SELECT b.id AS batch_id, p.name AS product, p.category, b.batch_no, to_char(b.expiry_date, 'YYYY-MM-DD') AS expiry_date, b.qty_on_hand, b.unit_cost_cents
          FROM stock_batches b JOIN products p ON p.id = b.product_id
         WHERE b.branch_id = $1 AND b.qty_on_hand > 0 AND b.expiry_date >= $2::date AND b.expiry_date <= ($2::date + $3::int)
         ORDER BY b.expiry_date`,
@@ -418,17 +487,26 @@ export async function alerts(client: PoolClient, branch: BranchRow, today: strin
   const low = (
     await client.query(
       `SELECT p.id AS product_id, p.name AS product, p.reorder_level,
-              COALESCE(sum(b.qty_on_hand) FILTER (WHERE b.expiry_date >= $2::date), 0)::int AS in_date
+              COALESCE(sum(b.qty_on_hand) FILTER (WHERE b.expiry_date >= $2::date AND b.status = 'available'), 0)::int AS in_date
          FROM products p LEFT JOIN stock_batches b ON b.product_id = p.id AND b.branch_id = $1
         WHERE p.active AND p.reorder_level > 0
-        GROUP BY p.id HAVING COALESCE(sum(b.qty_on_hand) FILTER (WHERE b.expiry_date >= $2::date), 0) <= p.reorder_level
+        GROUP BY p.id HAVING COALESCE(sum(b.qty_on_hand) FILTER (WHERE b.expiry_date >= $2::date AND b.status = 'available'), 0) <= p.reorder_level
         ORDER BY p.name`,
       [branch.id, today]
+    )
+  ).rows;
+  const held = (
+    await client.query(
+      `SELECT b.id AS batch_id, p.name AS product, p.category, b.batch_no, to_char(b.expiry_date, 'YYYY-MM-DD') AS expiry_date, b.qty_on_hand, b.unit_cost_cents, b.status, b.status_reason
+         FROM stock_batches b JOIN products p ON p.id = b.product_id
+        WHERE b.branch_id = $1 AND b.qty_on_hand > 0 AND b.status <> 'available' ORDER BY b.status_changed_at DESC NULLS LAST LIMIT 200`,
+      [branch.id]
     )
   ).rows;
   const shape = (row: Record<string, any>) => ({
     batchId: row.batch_id as string,
     product: row.product as string,
+    category: row.category as string,
     batchNo: row.batch_no as string,
     expiryDate: row.expiry_date as string,
     daysToExpiry: daysToExpiry(row.expiry_date, today),
@@ -438,6 +516,7 @@ export async function alerts(client: PoolClient, branch: BranchRow, today: strin
   return {
     expired: expired.map(shape),
     expiring: expiring.map(shape),
+    held: held.map((row) => ({ ...shape(row), status: row.status as string, reason: row.status_reason as string | null })),
     lowStock: low.map((row) => ({ productId: row.product_id as string, product: row.product as string, reorderLevel: row.reorder_level as number, inDate: row.in_date as number })),
     warningDays
   };
@@ -492,4 +571,67 @@ export async function adjustStock(client: PoolClient, ctx: Ctx, branch: BranchRo
   }
   await audit(client, ctx, `stock.${input.kind}`, 'stock_batch', batch.id, { qtyDelta: input.qtyDelta, reason: input.reason, product: batch.name }, branch.id);
   return { batchId: batch.id as string, qtyOnHand: after };
+}
+
+// ---- recall and quarantine ------------------------------------------------------------------------
+
+export const batchStatusSchema = z.object({
+  status: z.enum(['available', 'quarantined', 'recalled']),
+  reason: z.string().trim().min(3).max(300)
+});
+
+/**
+ * A manufacturer recall, a suspect delivery or a damaged shelf: the batch stays on the books but is never sold.
+ * Anyone who may receive stock can hold a batch (holding is the cautious direction); putting it back on sale is a
+ * manager's decision. Every change is on the audit trail with its reason.
+ */
+export async function setBatchStatus(client: PoolClient, ctx: Ctx, branch: BranchRow, batchId: string, input: z.infer<typeof batchStatusSchema>) {
+  need(ctx, input.status === 'available' ? 'adjust_stock' : 'receive_stock');
+  const batch = (
+    await client.query(
+      `SELECT b.id, b.status, b.batch_no, b.qty_on_hand, p.name FROM stock_batches b JOIN products p ON p.id = b.product_id WHERE b.id = $1 AND b.branch_id = $2 FOR UPDATE OF b`,
+      [batchId, branch.id]
+    )
+  ).rows[0];
+  if (!batch) throw new NotFoundError('That batch was not found at this branch.');
+  if (batch.status === input.status) throw new ConflictError(`That batch is already ${input.status}.`);
+  await client.query('UPDATE stock_batches SET status = $2, status_reason = $3, status_changed_at = now(), status_changed_by = $4 WHERE id = $1', [batchId, input.status, input.status === 'available' ? null : input.reason, ctx.userId]);
+  await audit(client, ctx, `stock.batch_${input.status}`, 'stock_batch', batchId, { from: batch.status, to: input.status, reason: input.reason, product: batch.name, batchNo: batch.batch_no, qtyOnHand: batch.qty_on_hand }, branch.id);
+  return { batchId, status: input.status as 'available' | 'quarantined' | 'recalled' };
+}
+
+// ---- bulk expiry write-off ------------------------------------------------------------------------
+
+/**
+ * Writes off every expired batch with stock at this branch, each through the same path as a single write-off (movement,
+ * trace-log event, audit entry). Controlled drugs are NOT touched: each needs its own witness, so they are returned for
+ * the pharmacist to write off one by one.
+ */
+export async function writeOffExpired(client: PoolClient, ctx: Ctx, branch: BranchRow, reason: string) {
+  need(ctx, 'adjust_stock');
+  const today = await businessDayNow(client, branch.timezone);
+  const expired = (
+    await client.query(
+      `SELECT b.id, b.qty_on_hand, b.unit_cost_cents, p.category, p.name, b.batch_no
+         FROM stock_batches b JOIN products p ON p.id = b.product_id
+        WHERE b.branch_id = $1 AND b.qty_on_hand > 0 AND b.expiry_date < $2::date ORDER BY b.expiry_date, b.id`,
+      [branch.id, today]
+    )
+  ).rows;
+  let batches = 0;
+  let units = 0;
+  let valueCents = 0;
+  const skippedControlled: Array<{ batchId: string; product: string; batchNo: string; qty: number }> = [];
+  for (const row of expired) {
+    if (row.category === 'controlled') {
+      skippedControlled.push({ batchId: row.id, product: row.name, batchNo: row.batch_no, qty: row.qty_on_hand });
+      continue;
+    }
+    const done = await adjustStock(client, ctx, branch, { batchId: row.id, kind: 'expiry_writeoff', qtyDelta: -row.qty_on_hand, reason });
+    batches += 1;
+    units += row.qty_on_hand - done.qtyOnHand;
+    valueCents += (row.qty_on_hand - done.qtyOnHand) * Number(row.unit_cost_cents);
+  }
+  await audit(client, ctx, 'stock.bulk_expiry_writeoff', 'branch', branch.id, { batches, units, valueCents, skippedControlled: skippedControlled.length, reason }, branch.id);
+  return { batches, units, valueCents, skippedControlled };
 }

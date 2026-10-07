@@ -1,14 +1,15 @@
 /**
- * Outbound messages (verification codes, billing reminders) go through one interface so a real
- * SMS or WhatsApp provider is a single new class, not a change to every caller.
+ * Outbound messages (verification codes, billing reminders) go through one interface so a provider is a single class,
+ * not a change to every caller.
  *
- * Only the `mock` provider exists. It does not send anything: it records the message and logs it
- * so an operator can relay a code by hand during a pilot. No real provider's API is assumed or
- * invented here; wiring one in is a deliberate later step that needs that provider's real
- * documentation and credentials.
+ * `mock` records and logs the message so an operator can relay a code by hand during a pilot. `africastalking` sends SMS
+ * through Africa's Talking's bulk SMS HTTP API. That class was written from the provider's public documentation and has
+ * only been exercised against a stub server in tests: it has NOT been run against the real service (or its sandbox), and
+ * no account, sender id or delivery report has been checked. Treat it as unverified until one real code has arrived.
  */
 import { withoutTenant } from '../persistence/pool';
 import { logger } from '../common/logger';
+import { env } from '../config/env';
 
 export type MessagePurpose = 'signup-code' | 'billing-reminder';
 
@@ -36,10 +37,62 @@ export class MockProvider implements MessageProvider {
   }
 }
 
+export interface AfricasTalkingConfig {
+  username: string;
+  apiKey: string;
+  baseUrl: string;
+  senderId?: string;
+  timeoutMs: number;
+}
+
+/** Statuses Africa's Talking documents as accepted for delivery: 100 Processed, 101 Sent, 102 Queued. */
+const AT_ACCEPTED = new Set([100, 101, 102]);
+
+export class AfricasTalkingProvider implements MessageProvider {
+  readonly name = 'africastalking';
+
+  constructor(private readonly config: AfricasTalkingConfig) {}
+
+  async send(message: OutboundMessage): Promise<DeliveryOutcome> {
+    // our numbers are stored as 254XXXXXXXXX; the API wants +254XXXXXXXXX
+    const to = message.to.startsWith('+') ? message.to : `+${message.to}`;
+    const form = new URLSearchParams({ username: this.config.username, to, message: message.body });
+    if (this.config.senderId) form.set('from', this.config.senderId);
+    let response: Response;
+    try {
+      response = await fetch(`${this.config.baseUrl.replace(/\/$/, '')}/version1/messaging`, {
+        method: 'POST',
+        headers: { apiKey: this.config.apiKey, Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: form.toString(),
+        signal: AbortSignal.timeout(this.config.timeoutMs)
+      });
+    } catch (error) {
+      return { status: 'failed', error: `request to the SMS provider failed: ${error instanceof Error ? error.message : String(error)}` };
+    }
+    if (!response.ok) return { status: 'failed', error: `the SMS provider answered HTTP ${response.status}` };
+    let body: any;
+    try {
+      body = await response.json();
+    } catch {
+      return { status: 'failed', error: 'the SMS provider answered with something that is not JSON' };
+    }
+    // never log the message: it carries a verification code
+    const recipient = body?.SMSMessageData?.Recipients?.[0];
+    if (!recipient) return { status: 'failed', error: `the SMS provider accepted no recipient (${String(body?.SMSMessageData?.Message ?? 'no detail')})` };
+    if (!AT_ACCEPTED.has(Number(recipient.statusCode))) return { status: 'failed', error: `the SMS provider refused the number: ${String(recipient.status ?? recipient.statusCode)}` };
+    logger.info('sms handed to provider', { purpose: message.purpose, messageId: recipient.messageId });
+    return { status: 'sent' };
+  }
+}
+
 let active: MessageProvider | null = null;
 
 export function provider(): MessageProvider {
-  active ??= new MockProvider();
+  if (!active) {
+    active = env.NOTIFY_MODE === 'africastalking'
+      ? new AfricasTalkingProvider({ username: env.AT_USERNAME!, apiKey: env.AT_API_KEY!, baseUrl: env.AT_BASE_URL, senderId: env.AT_SENDER_ID, timeoutMs: env.AT_TIMEOUT_MS })
+      : new MockProvider();
+  }
   return active;
 }
 

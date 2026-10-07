@@ -18,6 +18,9 @@
     "start:ingestion": "node dist/ingestion/server.js",
     "migrate": "node --import tsx src/persistence/migrate.ts",
     "admin": "node --import tsx src/admin/cli.ts",
+    "unclaimed:list": "node --import tsx src/admin/cli.ts unclaimed:list",
+    "unclaimed:assign": "node --import tsx src/admin/cli.ts unclaimed:assign",
+    "maintenance": "node --import tsx src/admin/cli.ts maintenance:run",
     "demo:seed": "node --import tsx src/demo/seed.ts",
     "demo:simulate": "node --import tsx src/demo/simulate.ts"
   },

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { readSession } from "@/lib/session";
 import { can } from "@/lib/roles";
-import { appraiseLoan, decideLoan, disburseLoan, repayLoan, restructureLoan, writeOffLoan } from "@/app/actions";
+import { appraiseLoan, callGuarantee, decideLoan, disburseLoan, repayLoan, restructureLoan, writeOffLoan } from "@/app/actions";
 import { ActionForm } from "@/components/forms";
 import type { LoanDetail } from "@/lib/types";
 import { Badge, Card, Download, EmptyState, Field, KeyValue, Notice, PageHeader, Stat, Table, cell, dangerButtonClass, inputClass, num, rowClass, secondaryButtonClass, selectClass, textareaClass } from "@/components/ui";
@@ -59,6 +59,16 @@ export default async function LoanPage({ params }: { params: Promise<{ id: strin
           <Card title="Terms">
             <KeyValue items={[["Method", l.method === "flat" ? "Flat" : "Reducing balance"], ["Rate", `${bp(l.annualRateBp)} a year`], ["Processing fee", bp(l.fees.processingFeeBp)], ["Insurance fee", bp(l.fees.insuranceFeeBp)], ["Penalty", `${bp(l.penaltyRateBp)} after ${l.graceDays} days`], ["First instalment", l.firstDueDate ? day(l.firstDueDate) : "set when paid out"]]} />
             {l.guarantors.length > 0 ? <div className="mt-4 text-[0.8125rem]"><div className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-[var(--color-muted)]">Guarantors</div>{l.guarantors.map((g) => <div key={g.memberId}><Link href={`/console/members/${g.memberId}`} className="text-[var(--color-accent)] underline">{g.fullName}</Link> ({g.memberNo}) · {ksh(g.guaranteedCents)}</div>)}</div> : null}
+            {l.guarantors.length > 0 && (late || l.status === "written_off") && can(role, "loan_writeoff") ? (
+              <div className="mt-4 border-t border-[var(--color-line)] pt-4">
+                <div className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-[0.06em] text-[var(--color-muted)]">Call a guarantee</div>
+                <ActionForm action={callGuarantee} submit="Apply guarantor's savings" button={dangerButtonClass}>
+                  <input type="hidden" name="id" value={l.id} />
+                  <Field label="Guarantor"><select name="guarantorMemberId" className={selectClass}>{l.guarantors.map((g) => <option key={g.memberId} value={g.memberId}>{g.fullName} ({g.memberNo}), guaranteed {ksh(g.guaranteedCents)}</option>)}</select></Field>
+                  <Field label="Amount (KSh)" hint="No more than they guaranteed, and no more than their savings can cover."><input name="amount" inputMode="decimal" required className={inputClass} /></Field>
+                </ActionForm>
+              </div>
+            ) : null}
           </Card>
 
           {a ? (

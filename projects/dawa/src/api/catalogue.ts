@@ -2,11 +2,11 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { authenticate, requirePermission, requireWritable } from './middleware';
 import { wrap } from '../common/context';
-import { inOrg, parse, queryInt, queryString } from './helpers';
-import { createProduct, createSupplier, listProducts, listSuppliers, productSchema, supplierSchema, updateProduct } from '../inventory/service';
+import { inOrg, pageLimit, parse, queryInt, queryString } from './helpers';
+import { createProduct, createSupplier, listProducts, listSuppliers, productSchema, supplierPatchSchema, supplierSchema, updateProduct, updateSupplier } from '../inventory/service';
 import {
   accountPaymentSchema, createCustomer, createPriceList, customerSchema, listCustomers, listPriceLists, priceItemSchema, priceListSchema,
-  recordAccountPayment, setPriceListItem, statement, updateCustomerTerms
+  listPriceListItems, recordAccountPayment, removePriceListItem, setPriceListItem, statement, updateCustomerTerms
 } from '../customers/service';
 
 const router = Router();
@@ -15,7 +15,7 @@ router.use(authenticate);
 router.get('/products', wrap(async (req, res) => {
   res.json(await inOrg(req, (client) => listProducts(client, {
     search: queryString(req.query.search), category: queryString(req.query.category), includeInactive: req.query.includeInactive === 'true',
-    limit: queryInt(req.query.limit, 50), offset: queryInt(req.query.offset, 0)
+    limit: pageLimit(req.query.limit, 50, 200), offset: queryInt(req.query.offset, 0)
   })));
 }));
 
@@ -30,7 +30,13 @@ router.patch('/products/:id', requireWritable, wrap(async (req, res) => {
 }));
 
 router.get('/suppliers', requirePermission('receive_stock'), wrap(async (req, res) => {
-  res.json(await inOrg(req, (client) => listSuppliers(client)));
+  res.json(await inOrg(req, (client) => listSuppliers(client, {
+    search: queryString(req.query.search), includeInactive: req.query.includeInactive === 'true', limit: pageLimit(req.query.limit, 100, 200), offset: queryInt(req.query.offset, 0)
+  })));
+}));
+router.patch('/suppliers/:id', requireWritable, wrap(async (req, res) => {
+  const input = parse(supplierPatchSchema, req.body);
+  res.json(await inOrg(req, (client, ctx) => updateSupplier(client, ctx, String(req.params.id), input)));
 }));
 router.post('/suppliers', requireWritable, wrap(async (req, res) => {
   const input = parse(supplierSchema, req.body);
@@ -38,7 +44,7 @@ router.post('/suppliers', requireWritable, wrap(async (req, res) => {
 }));
 
 router.get('/customers', wrap(async (req, res) => {
-  res.json(await inOrg(req, (client) => listCustomers(client, { search: queryString(req.query.search), limit: queryInt(req.query.limit, 100) })));
+  res.json(await inOrg(req, (client) => listCustomers(client, { search: queryString(req.query.search), includeInactive: req.query.includeInactive === 'true', limit: pageLimit(req.query.limit, 100, 300), offset: queryInt(req.query.offset, 0) })));
 }));
 router.post('/customers', requireWritable, wrap(async (req, res) => {
   const input = parse(customerSchema, req.body);
@@ -49,7 +55,7 @@ router.patch('/customers/:id', requireWritable, wrap(async (req, res) => {
   res.json(await inOrg(req, (client, ctx) => updateCustomerTerms(client, ctx, String(req.params.id), input)));
 }));
 router.get('/customers/:id/statement', wrap(async (req, res) => {
-  res.json(await inOrg(req, (client) => statement(client, String(req.params.id))));
+  res.json(await inOrg(req, (client) => statement(client, String(req.params.id), { limit: pageLimit(req.query.limit, 100, 200), before: req.query.before === undefined ? undefined : queryInt(req.query.before, 0) || undefined })));
 }));
 router.post('/customers/:id/payments', requireWritable, wrap(async (req, res) => {
   const input = parse(accountPaymentSchema, req.body);
@@ -62,6 +68,12 @@ router.get('/price-lists', wrap(async (req, res) => {
 router.post('/price-lists', requireWritable, wrap(async (req, res) => {
   const input = parse(priceListSchema, req.body);
   res.status(201).json(await inOrg(req, (client, ctx) => createPriceList(client, ctx, input)));
+}));
+router.get('/price-lists/:id/items', wrap(async (req, res) => {
+  res.json(await inOrg(req, (client) => listPriceListItems(client, String(req.params.id), { search: queryString(req.query.search), limit: pageLimit(req.query.limit, 100, 200), offset: queryInt(req.query.offset, 0) })));
+}));
+router.delete('/price-lists/:id/items/:productId', requireWritable, wrap(async (req, res) => {
+  res.json(await inOrg(req, (client, ctx) => removePriceListItem(client, ctx, String(req.params.id), String(req.params.productId))));
 }));
 router.put('/price-lists/:id/items', requireWritable, wrap(async (req, res) => {
   const input = parse(priceItemSchema, req.body);

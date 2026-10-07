@@ -199,7 +199,7 @@ export async function writePlan(client: PoolClient, orgId: string, plan: DemoPla
     );
     for (const key of job.serviceKeys) {
       const service = plan.services.find((s) => s.key === key)!;
-      await client.query('INSERT INTO job_services (job_id, service_id, unit_price_cents) VALUES ($1,$2,$3)', [id, serviceIds.get(key), service.listPriceCents]);
+      await client.query('INSERT INTO job_services (org_id, job_id, service_id, unit_price_cents) VALUES ($1,$2,$3,$4)', [orgId, id, serviceIds.get(key), service.listPriceCents]);
     }
   }
 

@@ -21,6 +21,8 @@ import rolesRoutes from './roles/routes';
 import overviewRoutes from './overview/routes';
 import selfserviceRoutes from './selfservice/routes';
 import dataopsRoutes from './dataops/routes';
+import filesRoutes from './files/routes';
+import publicGivingRoutes from './publicgiving/routes';
 
 export const routeMounts: RouteMount[] = [
   ...financeRoutes,
@@ -40,5 +42,7 @@ export const routeMounts: RouteMount[] = [
   ...rolesRoutes,
   ...overviewRoutes,
   ...selfserviceRoutes,
-  ...dataopsRoutes
+  ...dataopsRoutes,
+  ...filesRoutes,
+  ...publicGivingRoutes
 ];

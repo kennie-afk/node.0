@@ -290,16 +290,18 @@ describe.runIf(on)('self-serve signup, billing, sample data and the summary (rea
     const schedule = await import('../src/reconciliation/schedule');
     const owner = await selfServe('Daily Wash');
     const now = new Date('2026-10-02T08:00:00Z');
+    // The runner walks every organisation in the database, and other test files create and wipe organisations
+    // at the same moment, so the run-wide counters are not asserted exactly; what is asserted is this
+    // organisation: closed once, and untouched by a second pass.
     const first = await schedule.runDailyCloses(now);
-    expect(first.failed).toBe(0);
     expect(first.closed).toBeGreaterThanOrEqual(1);
-    const closed = await asOwner(owner.orgId, 'SELECT business_day::text AS day FROM day_closes');
+    const closed = await asOwner(owner.orgId, 'SELECT business_day::text AS day, closed_at FROM day_closes');
     expect(closed.rows.map((r) => r.day)).toEqual(['2026-10-01']);
 
     const again = await schedule.runDailyCloses(now);
-    expect(again.closed).toBe(0);
     expect(again.alreadyClosed).toBeGreaterThanOrEqual(1);
-    expect((await asOwner(owner.orgId, 'SELECT count(*)::int AS n FROM day_closes')).rows[0].n).toBe(1);
+    const after = await asOwner(owner.orgId, 'SELECT business_day::text AS day, closed_at FROM day_closes');
+    expect(after.rows).toEqual(closed.rows);
     // the owner's checklist now sees a reconciliation that nobody had to press a button for
     expect((await request(app).get('/v1/onboarding').set(owner.auth)).body.steps.find((s: { key: string }) => s.key === 'reconcile').done).toBe(true);
   });
@@ -531,7 +533,9 @@ describe.runIf(on)('self-serve signup, billing, sample data and the summary (rea
     expect(person.status).toBe(201);
     const sites = (await request(app).get('/v1/sites').set(owner.auth)).body;
     await request(app).put(`/v1/sites/${sites[0].id}`).set(owner.auth).send({ tillNumber: String(Math.floor(Math.random() * 9_000_000) + 1_000_000) });
-    await request(app).get('/v1/report').query({ siteId: sites[0].id, day: '2026-09-30' }).set(owner.auth);
+    // a GET of the report only reads; reconciling a day is the POST
+    expect((await request(app).get('/v1/report').query({ siteId: sites[0].id, day: '2026-09-30' }).set(owner.auth)).status).toBe(404);
+    expect((await request(app).post('/v1/sites/close').set(owner.auth).send({ siteId: sites[0].id, day: '2026-09-30' })).status).toBe(200);
 
     onboarding = (await request(app).get('/v1/onboarding').set(owner.auth)).body;
     expect(onboarding.completed).toBe(4);

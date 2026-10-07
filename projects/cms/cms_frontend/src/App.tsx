@@ -18,6 +18,8 @@ function App() {
 
   return (
     <Routes>
+      <Route path="/give/:slug" element={lazyPage(() => import('./pages/public/PublicGivePage'))} />
+      <Route path="/give/:slug" element={lazyPage(() => import('./pages/public/PublicGivePage'))} />
       <Route 
         path="/login" 
         element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} 
@@ -30,9 +32,12 @@ function App() {
         <Route path="/users" element={lazyPage(() => import('./pages/users/UsersPage'), 'users:manage')} />
         <Route path="/roles" element={lazyPage(() => import('./pages/roles/RolesPage'), 'users:manage')} />
         <Route path="/families" element={lazyPage(() => import('./pages/families/FamiliesPage'), 'members:read')} />
+        <Route path="/members/:id" element={lazyPage(() => import('./pages/members/MemberProfilePage'), 'members:read')} />
         <Route path="/members" element={lazyPage(() => import('./pages/members/MembersPage'), 'members:read')} />
+        <Route path="/events/:id/registrations" element={lazyPage(() => import('./pages/events/RegistrationsPage'), 'members:read')} />
         <Route path="/events" element={lazyPage(() => import('./pages/events/EventsPage'), 'members:read')} />
         <Route path="/announcements" element={lazyPage(() => import('./pages/announcements/AnnouncementsPage'), 'members:read')} />
+        <Route path="/sermons/:id/media" element={lazyPage(() => import('./pages/sermons/SermonMediaPage'), 'members:read')} />
         <Route path="/sermons" element={lazyPage(() => import('./pages/sermons/SermonsPage'), 'members:read')} />
         <Route path="/contributions" element={<Navigate to="/giving/contributions" replace />} />
         <Route path="/ministries" element={lazyPage(() => import('./pages/ministries/MinistriesPage'), 'members:read')} />

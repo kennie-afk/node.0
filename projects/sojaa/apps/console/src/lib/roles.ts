@@ -3,7 +3,7 @@
  * lets through by mistake; the copy exists only so the menu and buttons do not offer what would be refused.
  */
 export type Permission =
-  | "read" | "salary_view" | "guards_write" | "sites_write" | "roster_write" | "swap_approve" | "attendance_record" | "attendance_override" | "overtime_approve" | "patrol_scan"
+  | "read" | "salary_view" | "guards_write" | "sites_write" | "roster_write" | "swap_approve" | "attendance_record" | "attendance_override" | "overtime_approve" | "leave_write" | "leave_approve" | "patrol_scan"
   | "incident_write" | "incident_close" | "clients_write" | "invoices_write" | "payments_post" | "payroll_run" | "payroll_close" | "rates_write" | "reports" | "settings"
   | "team_write" | "branches_write" | "billing";
 
@@ -18,6 +18,8 @@ const MATRIX: Record<Permission, string[]> = {
   attendance_record: ["owner", "ops_manager", "supervisor"],
   attendance_override: ["owner", "ops_manager", "supervisor"],
   overtime_approve: ["owner", "ops_manager"],
+  leave_write: ["owner", "ops_manager", "supervisor"],
+  leave_approve: ["owner", "ops_manager"],
   patrol_scan: ["owner", "ops_manager", "supervisor"],
   incident_write: ["owner", "ops_manager", "supervisor"],
   incident_close: ["owner", "ops_manager"],

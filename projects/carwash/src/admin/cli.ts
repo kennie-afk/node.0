@@ -15,6 +15,9 @@
  *   billing:unmatched                        payments on the billing shortcode whose account number matched nobody
  *   billing:assign <reference> <org-id>      apply an unmatched payment to an organisation
  *   billing:price <org-id> <KES|none>        agreed per-site price for a 6+ site plan
+ *   maintenance:run                          telemetry roll-up and retention, idempotency clean-up, now (also runs hourly)
+ *   unclaimed:list [--all]                   M-Pesa payments on a till nobody had registered
+ *   unclaimed:assign <ref> <org-id> [site-id]  move one to that organisation's till (idempotent)
  *
  * The owner's PIN is generated here, printed once and stored only as a bcrypt hash.
  */
@@ -24,6 +27,8 @@ import { recentMessages } from '../notify/provider';
 import { runDailyCloses } from '../reconciliation/schedule';
 import { assignUnmatched, getBillingView, listUnmatched, recordManualPayment, runBillingCycle, setUnitPriceOverride } from '../billing/service';
 import { formatKsh, Cents } from '../domain/money';
+import { assignUnclaimed, listUnclaimed } from './unclaimed';
+import { runMaintenance } from '../persistence/maintenance';
 
 function flag(args: string[], name: string): string | undefined {
   const index = args.indexOf(`--${name}`);
@@ -42,6 +47,28 @@ function printCredentials(result: ProvisionResult, business: string): void {
 
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
+
+  if (command === 'maintenance:run') {
+    console.log(JSON.stringify(await runMaintenance(), null, 2));
+    return;
+  }
+
+  if (command === 'unclaimed:list') {
+    const rows = await listUnclaimed(args.includes('--all'));
+    if (rows.length === 0) console.log('no unclaimed payments');
+    for (const row of rows) {
+      console.log(`${row.externalRef}  ${formatKsh(row.amountCents as Cents)}  till ${row.shortCode}  ref "${row.billRef ?? ''}"  from ${row.payerMsisdn ?? '-'}  ${row.receivedAt.toISOString()}`);
+    }
+    return;
+  }
+
+  if (command === 'unclaimed:assign') {
+    const [reference, orgId, siteId] = args;
+    if (!reference || !orgId) throw new Error('usage: unclaimed:assign <reference> <org-id> [site-id]');
+    const result = await assignUnclaimed(reference, orgId, siteId);
+    console.log(`${result.alreadyAssigned ? 'already recorded' : 'recorded'}: payment ${result.paymentId} at site ${result.siteId}${result.matchedJobId ? `, matched to job ${result.matchedJobId}` : ', not matched to a job'}`);
+    return;
+  }
 
   if (command === 'signups') {
     const rows = await listSignups(args[0]);
@@ -169,7 +196,7 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.log('commands: signups | provision | create-org | messages | close-days | billing:run | billing:show | billing:pay | billing:unmatched | billing:assign | billing:price');
+  console.log('commands: signups | provision | create-org | messages | close-days | billing:run | billing:show | billing:pay | billing:unmatched | billing:assign | billing:price | unclaimed:list | unclaimed:assign | maintenance:run');
   process.exitCode = command ? 1 : 0;
 }
 

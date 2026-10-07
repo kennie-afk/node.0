@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, requirePermission, requireWritable } from './middleware';
 import { wrap } from '../common/context';
-import { inOrg, parse, queryInt } from './helpers';
+import { inOrg, parse, queryInt, queryString } from './helpers';
 import { addTemplate, generateReturn, generateSchema, getReturn, listReturns, listTemplates, templateSchema } from '../returns/service';
 
 const router = Router();
@@ -18,7 +18,7 @@ router.post('/returns', authenticate, requirePermission('returns'), requireWrita
   res.status(201).json(await inOrg(req, (client, ctx) => generateReturn(client, ctx, body)));
 }));
 router.get('/returns', authenticate, requirePermission('returns'), wrap(async (req, res) => {
-  res.json(await inOrg(req, (client) => listReturns(client, Math.min(100, queryInt(req.query.limit, 25)) || 25)));
+  res.json(await inOrg(req, (client) => listReturns(client, { limit: Math.min(100, queryInt(req.query.limit, 25)) || 25, after: queryString(req.query.after) })));
 }));
 router.get('/returns/:id', authenticate, requirePermission('returns'), wrap(async (req, res) => {
   res.json(await inOrg(req, (client) => getReturn(client, String(req.params.id))));

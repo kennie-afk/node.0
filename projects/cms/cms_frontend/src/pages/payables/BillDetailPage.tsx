@@ -4,6 +4,7 @@ import { Button, Card, DataTable, ErrorState, formatDate, formatDateTime, Inline
 import { approveBill, deleteBill, getBill, rejectBill, submitBill, voidBill, voidPayment, type Bill, type BillPayment } from '../../api/payablesApi';
 import { normalizeError } from '../../api/http';
 import { useAuth } from '../../context/auth-context';
+import { AttachmentsPanel } from './AttachmentsPanel';
 import { KeyValue, Money, ReasonAction } from '../../features/finance/components/common';
 
 const STEPS = ['DRAFT', 'SUBMITTED', 'APPROVED', 'PAID'];
@@ -93,6 +94,8 @@ export default function BillDetailPage() {
           ]} />
         </Card>
       )}
+
+      <AttachmentsPanel bill={bill} canWrite={write} onChanged={refetch} />
 
       <Card title="Payments" flush>
         <DataTable<BillPayment>

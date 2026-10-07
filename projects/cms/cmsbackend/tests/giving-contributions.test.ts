@@ -81,7 +81,7 @@ describe('a contribution is a ledger posting', () => {
     expect((await request(app).post(`/finance/periods/${jan.id}/close`).set(auth)).status).toBe(200);
     const res = await request(app).post('/contributions').set(auth).send({ date: `${year}-01-15`, amount: 10 });
     expect(res.status).toBe(409);
-    expect((await request(app).get('/contributions').set(auth)).body.total).toBe(0);
+    expect((await request(app).get('/contributions').set(auth)).body.data).toHaveLength(0);
   });
 
   it('is replay-safe with an Idempotency-Key', async () => {
@@ -134,7 +134,7 @@ describe('who may see and record giving', () => {
     expect((await request(app).get(`/contributions/${posted.body.id}`).set(other.admin)).status).toBe(404);
     expect((await request(app).post(`/giving/contributions/${posted.body.id}/void`).set(other.admin).send({ reason: 'sneaky' })).status).toBe(404);
     expect((await request(app).get('/giving/receipts/RCT-000001').set(other.admin)).status).toBe(404);
-    expect((await request(app).get('/contributions').set(other.admin)).body.total).toBe(0);
+    expect((await request(app).get('/contributions').set(other.admin)).body.data).toHaveLength(0);
   });
 });
 

@@ -32,31 +32,36 @@ describe('attendance list: filters, search and paging', () => {
     expect((await post('/attendance', { guestName: 'Visitor Otieno', attendanceDate: '2026-10-04', sermonId: sermon, attendanceType: 'Online' })).status).toBe(201);
     expect((await post('/attendance', { guestName: 'Plain guest', attendanceDate: '2026-10-05', attendanceType: 'Other' })).status).toBe(201);
 
-    expect((await list('')).body.total).toBe(3);
-    expect((await list(`eventId=${event}`)).body.total).toBe(1);
+    expect((await list('')).body.data).toHaveLength(3);
+    expect((await list(`eventId=${event}`)).body.data).toHaveLength(1);
     expect((await list(`sermonId=${sermon}`)).body.data[0].guestName).toBe('Visitor Otieno');
-    expect((await list('kind=event')).body.total).toBe(1);
-    expect((await list('kind=sermon')).body.total).toBe(1);
-    expect((await list('q=kamau')).body.total).toBe(1);
-    expect((await list('q=otieno')).body.total).toBe(1);
-    expect((await list('q=zzzz')).body.total).toBe(0);
-    expect((await list('q=%25')).body.total).toBe(3);
-    expect((await list(`kind=event&q=otieno`)).body.total).toBe(0);
+    expect((await list('kind=event')).body.data).toHaveLength(1);
+    expect((await list('kind=sermon')).body.data).toHaveLength(1);
+    expect((await list('q=kamau')).body.data).toHaveLength(1);
+    expect((await list('q=otieno')).body.data).toHaveLength(1);
+    expect((await list('q=zzzz')).body.data).toHaveLength(0);
+    expect((await list('q=%25')).body.data).toHaveLength(3);
+    expect((await list(`kind=event&q=otieno`)).body.data).toHaveLength(0);
   });
 
   it('pages on the server', async () => {
     for (let i = 0; i < 30; i++) await post('/attendance', { guestName: `Guest ${i}`, attendanceDate: '2026-10-04', attendanceType: 'In-person' });
     const first = await list('');
-    expect(first.body.total).toBe(30);
+    // The default is a cursor page (no count); `page=` still gives the numbered shape with a total.
+    expect(first.body.total).toBeUndefined();
     expect(first.body.data).toHaveLength(25);
+    const second = await list(`cursor=${first.body.nextCursor}`);
+    expect(second.body.data).toHaveLength(5);
+    expect(second.body.nextCursor).toBeNull();
     expect((await list('page=2')).body.data).toHaveLength(5);
+    expect((await list('page=1')).body.total).toBe(30);
   });
 
   it('never shows another church\'s records', async () => {
     await post('/attendance', { guestName: 'Mine', attendanceDate: '2026-10-04', attendanceType: 'In-person' });
     const other = (await signUp(app, 'attend-elsewhere')).admin;
     await request(app).post('/attendance').set(other).send({ guestName: 'Theirs', attendanceDate: '2026-10-04', attendanceType: 'In-person' });
-    expect((await list('q=theirs')).body.total).toBe(0);
+    expect((await list('q=theirs')).body.data).toHaveLength(0);
   });
 
   it('accepts a plain date and lets optional links be cleared with null', async () => {

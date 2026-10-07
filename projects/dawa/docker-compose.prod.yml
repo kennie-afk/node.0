@@ -1,0 +1,88 @@
+# Production override. Use it ON TOP of docker-compose.yml, which stays the demo/local path:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# What it changes, and why:
+#   - billing is LIVE: mock payments are refused (the API will not start with BILLING_MODE=mock, and
+#     BILLING_ALLOW_MOCK_IN_PRODUCTION is forced off). BILLING_SHORTCODE must be set.
+#   - nothing but the proxy is published: Postgres, the API and the console are reachable only on the compose network.
+#     Caddy terminates TLS (automatic certificates for DAWA_DOMAIN) and sends /v1/mpesa/* to the API for Safaricom.
+#   - Redis holds the rate-limit counters, so N API replicas share one limit instead of each allowing the full amount.
+#   - restart policies and log rotation on every service.
+#
+# It needs DAWA_DOMAIN (a DNS name pointing at this host, ports 80 and 443 open), BILLING_SHORTCODE and REDIS_PASSWORD
+# in .env. Africa's Talking SMS (NOTIFY_MODE=africastalking, AT_USERNAME, AT_API_KEY) is optional and UNVERIFIED against the
+# real service; without it, signup codes are only logged and an operator relays them.
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "5" }
+
+services:
+  postgres:
+    restart: always
+    ports: !reset []
+    logging: *logging
+
+  migrate:
+    logging: *logging
+
+  api:
+    restart: always
+    ports: !reset []
+    logging: *logging
+    environment:
+      BILLING_MODE: live
+      BILLING_ALLOW_MOCK_IN_PRODUCTION: "false"
+      BILLING_SHORTCODE: ${BILLING_SHORTCODE:?BILLING_SHORTCODE is required for live billing}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD must be set}@redis:6379
+      NOTIFY_MODE: ${NOTIFY_MODE:-mock}
+      AT_USERNAME: ${AT_USERNAME:-}
+      AT_API_KEY: ${AT_API_KEY:-}
+      AT_SENDER_ID: ${AT_SENDER_ID:-}
+      CORS_ORIGINS: https://${DAWA_DOMAIN:?DAWA_DOMAIN is required}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  console:
+    restart: always
+    ports: !reset []
+    logging: *logging
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    logging: *logging
+    # counters only: nothing here is worth keeping across a restart, so no persistence
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--requirepass", "${REDIS_PASSWORD}"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    logging: *logging
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DAWA_DOMAIN: ${DAWA_DOMAIN:?DAWA_DOMAIN is required}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+      - console
+
+volumes:
+  caddy-data:
+  caddy-config:

@@ -57,8 +57,21 @@ const schema = z.object({
   SIGNUP_CODE_TTL_MINUTES: z.coerce.number().int().positive().default(15),
   SIGNUP_CODE_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
   SIGNUP_RESEND_COOLDOWN_SECONDS: z.coerce.number().int().nonnegative().default(60),
-  // 'mock' only logs and records the message; there is deliberately no real SMS provider wired in
-  NOTIFY_PROVIDER: z.enum(['mock']).default('mock'),
+  // 'mock' only logs and records the message. 'africastalking' sends through Africa's Talking's SMS API: written from its public
+  // documentation and tested against a stub server only, NEVER against the real service (see src/notify/provider.ts).
+  NOTIFY_PROVIDER: z.enum(['mock', 'africastalking']).default('mock'),
+  AT_USERNAME: z.preprocess(blankIsUnset, z.string().trim().min(1).optional()),
+  AT_API_KEY: z.preprocess(blankIsUnset, z.string().trim().min(8).optional()),
+  AT_SENDER_ID: z.preprocess(blankIsUnset, z.string().trim().min(1).max(11).optional()),
+  // the sandbox is https://api.sandbox.africastalking.com
+  AT_BASE_URL: z.string().url().default('https://api.africastalking.com'),
+  // ---- scheduled jobs (penalties and interest accrual run once a day, Nairobi time) ----
+  DAILY_JOBS_ENABLED: z.enum(['true', 'false']).default('true').transform((value) => value === 'true'),
+  DAILY_JOBS_HOUR: z.coerce.number().int().min(0).max(23).default(1),
+  DAILY_JOBS_CHECK_MINUTES: z.coerce.number().int().positive().default(15),
+  // send instalment and arrears reminders as part of the daily jobs (off by default: it needs a real SMS provider)
+  SMS_REMINDERS_AUTO: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+  SMS_REMINDER_UPCOMING_DAYS: z.coerce.number().int().min(0).max(14).default(3),
   // ---- M-Pesa ----
   // The console's "simulate a payment" tool. Off unless asked for, and the API refuses to start with it on in production
   // unless MPESA_SIMULATOR_ALLOW_IN_PRODUCTION is also set on purpose (a demo deployment).
@@ -71,6 +84,9 @@ const schema = z.object({
 export type Env = z.infer<typeof schema>;
 
 const schemaChecked = schema.superRefine((value, context) => {
+  if (value.NOTIFY_PROVIDER === 'africastalking' && (!value.AT_USERNAME || !value.AT_API_KEY)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['AT_API_KEY'], message: 'AT_USERNAME and AT_API_KEY are required when NOTIFY_PROVIDER=africastalking' });
+  }
   if (value.BILLING_MODE === 'live' && !value.BILLING_SHORTCODE) {
     context.addIssue({
       code: z.ZodIssueCode.custom,

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import { throttle } from './throttle';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
 import { withoutTenant } from '../persistence/pool';
@@ -25,16 +25,16 @@ function loginPhone(raw: unknown): string {
   }
 }
 
-const loginLimiter = rateLimit({
-  windowMs: env.LOGIN_RATE_LIMIT_WINDOW_MINUTES * 60 * 1000,
-  limit: env.LOGIN_RATE_LIMIT_PER_WINDOW,
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true,
-  // keyed on the normalised number, so 0712... and 254712... cannot be used to get two sets of attempts
-  keyGenerator: (req) => `${ipKeyGenerator(req.ip ?? 'unknown')}|${loginPhone(req.body?.phone)}`,
-  message: { code: 'too-many-attempts', message: 'Too many sign in attempts. Try again shortly.' }
-});
+const loginLimiter = throttle({
+  scope: 'login',
+  attackerLimit: env.LOGIN_RATE_LIMIT_PER_WINDOW,
+  windowSeconds: env.LOGIN_RATE_LIMIT_WINDOW_MINUTES * 60,
+  attackerBaseLockSeconds: 60,
+  attackerMaxLockSeconds: 3600,
+  accountLimit: env.LOGIN_RATE_LIMIT_PER_WINDOW * 20,
+  accountLockSeconds: 300,
+  message: 'Too many sign in attempts. Try again shortly.'
+}, (req) => loginPhone(req.body?.phone));
 
 const loginSchema = z.object({ phone: z.string().min(6).max(20), pin: z.string().min(4).max(64) });
 

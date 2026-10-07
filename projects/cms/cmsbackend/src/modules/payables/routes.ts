@@ -1,6 +1,8 @@
-import { Router } from 'express';
+import express, { Router } from 'express';
 import { z } from 'zod';
 import { authenticateToken, requirePermission } from '../../middleware/auth.middleware';
+import { env } from '../../config/env';
+import { BadRequestError } from '../../utils/errors';
 import { currentTenant } from '../../common/tenant-context';
 import { idempotent } from '../../common/idempotency';
 import { input, requestTx, route } from '../../common/http';
@@ -61,7 +63,8 @@ const payBody = z.object({
   body: z.object({ amount: moneyInput, paidDate: isoDate.optional(), bankAccountId: pos.optional(), accountId: pos.optional(), reference: z.string().max(80).nullish() })
 });
 const payVoidParams = z.object({ params: z.object({ id: idParam.shape.id, paymentId: idParam.shape.id }), body: z.object({ reason: z.string().min(3).max(300) }) });
-const attachBody = z.object({ params: idParam, body: z.object({ fileName: z.string().min(1).max(200), contentType: z.string().min(3).max(100), sizeBytes: z.number().int().min(0).max(50_000_000), storageKey: z.string().min(1).max(300) }) });
+const attachUpload = z.object({ params: idParam, query: z.object({ fileName: z.string().min(1).max(200) }) });
+const attachLink = z.object({ params: z.object({ id: idParam.shape.id, attachmentId: idParam.shape.id }) });
 const attachDelete = z.object({ params: z.object({ id: idParam.shape.id, attachmentId: idParam.shape.id }) });
 const agingQuery = z.object({ query: z.object({ asOf: isoDate.optional() }) });
 
@@ -124,10 +127,24 @@ router.post('/bills/:id/payments/:paymentId/void', requirePermission('finance:po
   const { params, body } = input(payVoidParams, req);
   return bills.voidPayment(await requestTx(), me().churchId, me().userId, params.id, params.paymentId, body.reason);
 }));
-router.post('/bills/:id/attachments', requirePermission('finance:post'), route(async (req) => {
-  const { params, body } = input(attachBody, req);
-  return bills.addAttachment(await requestTx(), me().churchId, me().userId, params.id, body);
+// The file travels as the raw request body (Content-Type is the file's type, ?fileName= its name), so no
+// base64 inflation and no multipart parser. The size cap is enforced by the parser before the bytes are buffered.
+const rawFile = express.raw({ type: () => true, limit: env.ATTACHMENT_MAX_BYTES });
+router.post('/bills/:id/attachments', requirePermission('finance:post'), rawFile, route(async (req) => {
+  const { params, query } = input(attachUpload, req);
+  if (!Buffer.isBuffer(req.body) || req.body.length === 0) throw new BadRequestError('send the file as the request body');
+  const expected = req.header('x-content-sha256');
+  return bills.addAttachment(await requestTx(), me().churchId, me().userId, params.id, {
+    fileName: query.fileName,
+    contentType: (req.header('content-type') ?? '').split(';')[0].trim(),
+    body: req.body,
+    expectedSha256: expected ?? undefined
+  });
 }, 201));
+router.get('/bills/:id/attachments/:attachmentId/link', requirePermission('finance:read'), route(async (req) => {
+  const { params } = input(attachLink, req);
+  return bills.attachmentLink(await requestTx(), me().churchId, params.id, params.attachmentId);
+}));
 router.delete('/bills/:id/attachments/:attachmentId', requirePermission('finance:post'), route(async (req) => {
   const { params } = input(attachDelete, req);
   return bills.removeAttachment(await requestTx(), me().churchId, params.id, params.attachmentId);

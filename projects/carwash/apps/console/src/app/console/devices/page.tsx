@@ -1,5 +1,7 @@
 import { api, describeError } from "@/lib/api";
-import { type Device } from "@/lib/types";
+import { readSession } from "@/lib/session";
+import { DeviceForm } from "@/components/forms";
+import { type Device, type Site, type SiteDetail } from "@/lib/types";
 import { Badge, Card, EmptyState, Notice, PageHeader, Table, rowClass } from "@/components/ui";
 
 const LABEL: Record<string, string> = {
@@ -22,10 +24,19 @@ function age(value: string | null): { text: string; stale: boolean } {
 }
 
 export default async function DevicesPage() {
+  const session = await readSession();
   let devices: Device[] = [];
+  let sites: Site[] = [];
+  let bays: { id: string; label: string; site: string }[] = [];
   let error: string | null = null;
   try {
     devices = await api.get<Device[]>("/v1/devices");
+    if (session?.role === "owner") {
+      sites = await api.get<Site[]>("/v1/sites");
+      // the bay choices come from each site; an organisation with very many sites registers bay-level devices by API
+      const details = await Promise.all(sites.slice(0, 25).map((site) => api.get<SiteDetail>(`/v1/sites/${site.id}`)));
+      bays = details.flatMap((detail) => detail.bays.map((bay) => ({ id: bay.id, label: bay.label, site: detail.name })));
+    }
   } catch (caught) {
     error = describeError(caught);
   }
@@ -71,6 +82,16 @@ export default async function DevicesPage() {
           </Table>
         </Card>
       )}
+      {session?.role === "owner" && sites.length > 0 ? (
+        <div className="mt-6">
+          <Card
+            title="Register a device"
+            description="Gives the device its own id and secret. It posts readings with them; nothing else about it is trusted."
+          >
+            <DeviceForm sites={sites.map((site) => ({ id: site.id, name: site.name }))} bays={bays} />
+          </Card>
+        </div>
+      ) : null}
     </>
   );
 }

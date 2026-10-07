@@ -2,10 +2,11 @@ import type { ReactNode } from "react";
 
 const base = { viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
 
-export type IconName = "home" | "attendance" | "roster" | "guards" | "sites" | "patrol" | "incidents" | "payroll" | "invoices" | "debtors" | "team" | "branches" | "settings" | "billing" | "start";
+export type IconName = "home" | "attendance" | "roster" | "guards" | "sites" | "patrol" | "incidents" | "payroll" | "invoices" | "debtors" | "team" | "branches" | "settings" | "billing" | "start" | "audit";
 
 export function Icon({ name, className }: { name: IconName; className?: string }) {
   const paths: Record<IconName, ReactNode> = {
+    audit: (<><rect x="5" y="3.5" width="14" height="17" rx="2.2" /><path d="M8.5 8h7M8.5 12h7M8.5 16h4" /></>),
     home: (<><path d="M4 10.5 12 4l8 6.5" /><path d="M6 10v9h12v-9" /></>),
     attendance: (<><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>),
     roster: (<><rect x="4" y="5" width="16" height="15" rx="2.5" /><path d="M4 10h16M9 3.5v3M15 3.5v3" /></>),

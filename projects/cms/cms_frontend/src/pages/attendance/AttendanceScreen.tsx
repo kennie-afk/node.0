@@ -1,8 +1,8 @@
 import { useCallback, useState, type FormEvent } from 'react';
-import { Badge, Button, Card, Combobox, DataTable, Field, FilterBar, InlineConfirm, Input, PageHeader, Pagination, SearchInput, Select, Textarea, formatDate, formatDateTime, todayISO, useQuery, useToast, type ComboOption } from '../../ui';
+import { Badge, Button, Card, Combobox, DataTable, Field, FilterBar, InlineConfirm, Input, PageHeader, LoadMore, SearchInput, Select, Textarea, formatDate, formatDateTime, todayISO, useKeysetList, useToast, type ComboOption } from '../../ui';
 import { http, normalizeError, type ApiError } from '../../api/http';
 import { useAuth } from '../../context/auth-context';
-import { createAttendance, deleteAttendance, fetchAttendancePage, updateAttendance, type Attendance, type AttendanceType } from '../../api/attendanceApi';
+import { createAttendance, deleteAttendance, updateAttendance, type Attendance, type AttendanceType } from '../../api/attendanceApi';
 import { FormError, KeyValue } from '../../features/finance/components/common';
 import type { PageOf } from '../../features/resource/types';
 
@@ -144,7 +144,6 @@ export default function AttendanceScreen({ kind }: { kind: AttendanceKind }) {
   const { can } = useAuth();
   const toast = useToast();
   const writable = can('members:write');
-  const [page, setPage] = useState(1);
   const [q, setQ] = useState('');
   const [eventFilter, setEventFilter] = useState<Pick>(null);
   const [sermonFilter, setSermonFilter] = useState<Pick>(null);
@@ -153,14 +152,9 @@ export default function AttendanceScreen({ kind }: { kind: AttendanceKind }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
 
-  const list = useQuery(
-    () => fetchAttendancePage({ page, pageSize: PAGE_SIZE, q: q || undefined, kind: kind === 'general' ? undefined : kind, eventId: eventFilter?.value, sermonId: sermonFilter?.value }),
-    [page, q, kind, eventFilter?.value, sermonFilter?.value]
-  );
-  const onSearch = useCallback((text: string) => {
-    setQ(text);
-    setPage(1);
-  }, []);
+  // Cursor paging: no count over the largest table in a church; filters restart from the newest record.
+  const list = useKeysetList<Attendance>('/attendance', { q: q || undefined, kind: kind === 'general' ? undefined : kind, eventId: eventFilter?.value, sermonId: sermonFilter?.value }, { limit: PAGE_SIZE });
+  const onSearch = useCallback((text: string) => setQ(text), []);
   const close = () => {
     setEditing(null);
     setError(null);
@@ -184,7 +178,7 @@ export default function AttendanceScreen({ kind }: { kind: AttendanceKind }) {
       else await createAttendance(body);
       toast.success('Attendance saved');
       close();
-      list.refetch();
+      list.refresh();
     } catch (failure) {
       setError(normalizeError(failure));
     } finally {
@@ -196,14 +190,12 @@ export default function AttendanceScreen({ kind }: { kind: AttendanceKind }) {
     try {
       await deleteAttendance(row.id);
       toast.success('Attendance deleted');
-      if (list.data && list.data.data.length === 1 && page > 1) setPage(page - 1);
-      else list.refetch();
+      list.refresh();
     } catch (failure) {
       toast.error(normalizeError(failure).message);
     }
   };
 
-  const data = list.data;
   const filtered = q !== '' || eventFilter !== null || sermonFilter !== null;
   const link = (label: string, target: { kind: 'event' | 'sermon'; id: number }) => (
     <Button size="sm" variant="ghost" onClick={() => setDetail(target)}>{label}</Button>
@@ -261,13 +253,13 @@ export default function AttendanceScreen({ kind }: { kind: AttendanceKind }) {
               }]
             : [])
         ]}
-        rows={data?.data ?? []}
+        rows={list.items}
         rowKey={(r) => r.id}
-        loading={list.loading && !data}
-        error={list.error && !data ? list.error : null}
-        onRetry={list.refetch}
+        loading={list.loading}
+        error={list.error}
+        onRetry={list.refresh}
         empty={<span>{filtered ? 'No attendance records match.' : `No attendance recorded yet.${writable ? ` Use “${copy.record}” to add one.` : ''}`}</span>}
-        footer={data && data.total > 0 ? <Pagination page={data.page} totalPages={data.totalPages} total={data.total} pageSize={data.pageSize} onPage={setPage} noun="records" /> : undefined}
+        footer={list.items.length > 0 ? <LoadMore shown={list.items.length} hasMore={list.hasMore} loading={list.loadingMore} onMore={list.loadMore} noun="records" /> : undefined}
       />
     </div>
   );

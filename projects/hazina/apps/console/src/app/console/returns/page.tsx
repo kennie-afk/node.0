@@ -10,7 +10,8 @@ import { day, dayTime, today } from "@/lib/format";
 
 export default async function Returns() {
   const role = (await readSession())?.role ?? "";
-  const [templates, returns] = await Promise.all([api.get<ReturnTemplate[]>("/v1/returns/templates"), api.get<ReturnRow[]>("/v1/returns?limit=50")]);
+  const [templates, returnPage] = await Promise.all([api.get<ReturnTemplate[]>("/v1/returns/templates"), api.get<{ items: ReturnRow[] }>("/v1/returns?limit=50")]);
+  const returns = returnPage.items;
   const year = today().slice(0, 4);
   return (
     <>

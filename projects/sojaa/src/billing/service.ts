@@ -20,7 +20,7 @@ import { sendMessage } from '../notify/provider';
 import { formatKsh, Cents } from '../domain/money';
 import { BillingConfig, quote, Quote } from './pricing';
 import { billingConfig } from './config';
-import { normaliseBillingRef } from './ref';
+import { failsBillingCheckDigit, makeBillingRef, normaliseBillingRef } from './ref';
 import {
   addDays,
   coverageAfterPayment,
@@ -52,7 +52,7 @@ function toRow(row: Record<string, any>): SubscriptionRow {
 }
 
 function newBillingRef(): string {
-  return `AS${String(randomInt(100_000, 1_000_000))}`;
+  return makeBillingRef(String(randomInt(10_000_000, 100_000_000)));
 }
 
 /** Used while provisioning, inside the new organisation's own transaction. */
@@ -232,7 +232,8 @@ export async function applyPayment(client: PoolClient, orgId: string, input: Pay
  */
 export async function ingestBillingPayment(payment: NormalisedPayment): Promise<{ matched: boolean; duplicate: boolean }> {
   const ref = normaliseBillingRef(payment.reference);
-  const orgId = await withoutTenant(async (client) => {
+  // a number with a wrong check digit is a typing error: never look it up, hold the money for review
+  const orgId = failsBillingCheckDigit(ref) ? undefined : await withoutTenant(async (client) => {
     const { rows } = await client.query('SELECT org_id FROM resolve_billing_ref($1)', [ref]);
     return rows[0]?.org_id as string | undefined;
   });
@@ -348,42 +349,72 @@ export async function currentStatus(orgId: string, now: Date = new Date(), confi
 }
 
 export interface CycleResult {
+  /** organisations that had something to do this run (not the whole customer base) */
   organisations: number;
   invoicesIssued: number;
   byStatus: Record<string, number>;
+  /** true when another replica held the lock and this run did nothing */
+  skipped?: boolean;
 }
 
-/** The periodic job: issue what is due, mirror statuses. Safe to run any number of times, from any replica. */
-export async function runBillingCycle(now: Date = new Date(), config: BillingConfig = billingConfig()): Promise<CycleResult> {
-  const orgIds = await withoutTenant(async (client) => (await client.query('SELECT org_id FROM billing_org_ids()')).rows.map((row) => row.org_id as string));
-  const result: CycleResult = { organisations: orgIds.length, invoicesIssued: 0, byStatus: {} };
+const CYCLE_LOCK_KEY = 7_340_002;
+const CYCLE_BATCH = 200;
 
-  for (const orgId of orgIds) {
+/**
+ * The periodic job: issue what is due, mirror statuses. Only organisations with something to do are
+ * visited (billing_due_orgs, a page at a time) and only one replica runs the cycle at once, under a
+ * session advisory lock; the others skip. Safe to run any number of times, from any replica.
+ */
+export async function runBillingCycle(now: Date = new Date(), config: BillingConfig = billingConfig(), batchSize: number = CYCLE_BATCH): Promise<CycleResult> {
+  return withoutTenant(async (lockClient) => {
+    const got = (await lockClient.query('SELECT pg_try_advisory_lock($1) AS ok', [CYCLE_LOCK_KEY])).rows[0].ok as boolean;
+    if (!got) return { organisations: 0, invoicesIssued: 0, byStatus: {}, skipped: true };
     try {
-      const { issued, status, phone, ref } = await withOrg(orgId, async (client) => {
-        const issued = await issueDueInvoice(client, orgId, now, config);
-        const sub = await loadSubscription(client, orgId, false);
-        const owner = await client.query(`SELECT phone FROM users WHERE role = 'owner' AND status = 'active' AND NOT is_demo ORDER BY created_at LIMIT 1`);
-        return { issued, status: effectiveStatus(sub, now, config), phone: owner.rows[0]?.phone as string | undefined, ref: sub.billingRef };
-      });
-      result.byStatus[status] = (result.byStatus[status] ?? 0) + 1;
-      if (issued) {
-        result.invoicesIssued += 1;
-        if (phone) {
-          const shortcode = payShortcode();
-          const how = shortcode ? `Pay to ${shortcode}, account ${ref}.` : `Your account number is ${ref}.`;
-          await sendMessage({
-            to: phone,
-            purpose: 'billing-reminder',
-            body: `Sojaa invoice ${issued.number}: ${formatKsh(issued.amountCents as Cents)}. ${how}`
-          });
+      const result: CycleResult = { organisations: 0, invoicesIssued: 0, byStatus: {} };
+      let after: string | null = null;
+      for (;;) {
+        const page: string[] = (
+          await lockClient.query('SELECT org_id FROM billing_due_orgs($1, $2, $3, $4, $5)', [now, config.issueLeadDays, config.suspendAfterDays, after, batchSize])
+        ).rows.map((row) => row.org_id as string);
+        if (page.length === 0) break;
+        for (const orgId of page) {
+          result.organisations += 1;
+          await cycleOne(orgId, now, config, result);
         }
+        after = page[page.length - 1] as string;
+        if (page.length < batchSize) break;
       }
-    } catch (error) {
-      logger.error('billing cycle failed for an organisation', { orgId, error: error instanceof Error ? error.message : String(error) });
+      return result;
+    } finally {
+      await lockClient.query('SELECT pg_advisory_unlock($1)', [CYCLE_LOCK_KEY]).catch(() => undefined);
     }
+  });
+}
+
+async function cycleOne(orgId: string, now: Date, config: BillingConfig, result: CycleResult): Promise<void> {
+  try {
+    const { issued, status, phone, ref } = await withOrg(orgId, async (client) => {
+      const issued = await issueDueInvoice(client, orgId, now, config);
+      const sub = await loadSubscription(client, orgId, false);
+      const owner = await client.query(`SELECT phone FROM users WHERE role = 'owner' AND status = 'active' AND NOT is_demo ORDER BY created_at LIMIT 1`);
+      return { issued, status: effectiveStatus(sub, now, config), phone: owner.rows[0]?.phone as string | undefined, ref: sub.billingRef };
+    });
+    result.byStatus[status] = (result.byStatus[status] ?? 0) + 1;
+    if (issued) {
+      result.invoicesIssued += 1;
+      if (phone) {
+        const shortcode = payShortcode();
+        const how = shortcode ? `Pay to ${shortcode}, account ${ref}.` : `Your account number is ${ref}.`;
+        await sendMessage({
+          to: phone,
+          purpose: 'billing-reminder',
+          body: `Sojaa invoice ${issued.number}: ${formatKsh(issued.amountCents as Cents)}. ${how}`
+        });
+      }
+    }
+  } catch (error) {
+    logger.error('billing cycle failed for an organisation', { orgId, error: error instanceof Error ? error.message : String(error) });
   }
-  return result;
 }
 
 // ---- operator tools -----------------------------------------------------------------------

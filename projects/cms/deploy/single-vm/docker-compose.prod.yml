@@ -41,6 +41,7 @@ x-api-env: &api-env
   # Safaricom and the SMS provider stay in mock mode until someone configures and tests them.
   MPESA_MODE: ${MPESA_MODE:-mock}
   SMS_MODE: ${SMS_MODE:-mock}
+  ALLOW_MOCK_PROVIDERS_IN_PRODUCTION: ${ALLOW_MOCK_PROVIDERS_IN_PRODUCTION:-false}
 
 services:
   caddy:

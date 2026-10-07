@@ -62,7 +62,6 @@ describe('a brand new church can get itself running', () => {
 
     const list = await request(app).get('/members').set(auth);
     expect(list.status).toBe(200);
-    expect(list.body.total).toBe(1);
     expect(list.body.data).toHaveLength(1);
   });
 

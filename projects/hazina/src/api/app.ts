@@ -5,6 +5,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
 import { pool } from '../persistence/pool';
+import { shippedMigrations } from '../persistence/shipped';
 import { errorHandler, notFound, requestContext } from './middleware';
 import authRoutes from './auth';
 import membersRoutes from './members';
@@ -14,6 +15,7 @@ import ledgerRoutes from './ledger';
 import mpesaRoutes from './mpesa';
 import intakeRoutes from './intake';
 import returnsRoutes from './returns';
+import closingRoutes from './closing';
 import exportsRoutes from './exports';
 import settingsRoutes from './settings';
 import signupRoutes from './signup';
@@ -28,7 +30,7 @@ export function createApiApp(): Express {
   app.use(requestContext);
   app.use(helmet());
   // statement uploads and member imports arrive as base64 inside JSON; everything else is small
-  app.use(['/v1/intake/statement', '/v1/members/import'], express.json({ limit: '9mb' }));
+  app.use(['/v1/intake/statement', '/v1/members/import', '/v1/mpesa/reconciliation/statement'], express.json({ limit: '9mb' }));
   app.use(express.json({ limit: '512kb' }));
   app.use(
     cors({
@@ -42,12 +44,24 @@ export function createApiApp(): Express {
     res.status(200).json({ status: 'ok', uptimeSeconds: Math.round(process.uptime()) });
   });
 
+  // Ready means: the database answers AND every migration this build ships has been applied (an old schema under a new build
+  // would fail on the first request that touches a new column, so the instance is kept out of rotation instead).
   app.get('/readyz', async (_req, res) => {
     try {
       await pool.query('SELECT 1');
-      res.status(200).json({ status: 'ready' });
     } catch {
-      res.status(503).json({ status: 'not-ready', reason: 'database unreachable' });
+      return res.status(503).json({ status: 'not-ready', reason: 'database unreachable' });
+    }
+    try {
+      const shipped = await shippedMigrations();
+      const { rows } = await pool.query('SELECT name FROM schema_migrations ORDER BY name');
+      const applied = new Set(rows.map((r) => r.name as string));
+      const pending = shipped.filter((name) => !applied.has(name));
+      const latest = rows.length > 0 ? (rows[rows.length - 1].name as string) : null;
+      if (pending.length > 0) return res.status(503).json({ status: 'not-ready', reason: 'migrations pending', pending, latestApplied: latest });
+      return res.status(200).json({ status: 'ready', schemaVersion: latest });
+    } catch {
+      return res.status(503).json({ status: 'not-ready', reason: 'schema version unreadable' });
     }
   });
 
@@ -82,6 +96,7 @@ export function createApiApp(): Express {
   app.use('/v1', savingsRoutes);
   app.use('/v1', loansRoutes);
   app.use('/v1', ledgerRoutes);
+  app.use('/v1', closingRoutes);
   app.use('/v1', mpesaRoutes);
   app.use('/v1', intakeRoutes);
   app.use('/v1', returnsRoutes);

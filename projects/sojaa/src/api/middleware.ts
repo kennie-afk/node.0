@@ -35,7 +35,7 @@ export const requestContext = (req: Request, res: Response, next: NextFunction) 
     logger.info('request', {
       requestId: req.id,
       method: req.method,
-      path: req.originalUrl,
+      path: redactPath(req.originalUrl),
       status: res.statusCode,
       durationMs: Math.round(Number(process.hrtime.bigint() - startedAt) / 1e5) / 10,
       orgId: req.principal?.orgId
@@ -189,10 +189,18 @@ export const errorHandler = (
 
   logger.error('unhandled error', {
     requestId: req.id,
-    path: req.originalUrl,
+    path: redactPath(req.originalUrl),
     error: error instanceof Error ? error.message : String(error),
     stack: isProduction ? undefined : error instanceof Error ? error.stack : undefined
   });
 
   res.status(500).json({ code: 'internal', message: 'Internal Server Error', requestId: req.id });
 };
+
+/**
+ * Callback URLs carry the shared secret as a path segment, so it must never reach a log line. Anyone
+ * who can read the logs could otherwise forge payment confirmations.
+ */
+export function redactPath(url: string): string {
+  return url.replace(/(\/(?:mpesa(?:\/c2b)?|hooks\/pay)\/)[^/?]+(?=\/(?:confirmation|validation))/, '$1[redacted]');
+}

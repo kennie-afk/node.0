@@ -1,0 +1,56 @@
+# Production override. Use:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# Needs Docker Compose 2.24+ (for !reset / !override). Differences from the demo file:
+#  - live billing only: BILLING_MODE=live and a BILLING_SHORTCODE are required, mock billing is refused at start
+#  - Postgres is not published on any host port (only the other containers reach it)
+#  - the API and console are reachable only through Caddy, which terminates TLS (see Caddyfile)
+#  - restart policies and log rotation
+# UNVERIFIED: written and syntax-checked, never run against a real server.
+services:
+  postgres:
+    ports: !reset []
+    restart: always
+    logging: &rotate
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  api:
+    restart: always
+    ports: !reset []
+    environment:
+      NODE_ENV: production
+      BILLING_MODE: live
+      BILLING_ALLOW_MOCK_IN_PRODUCTION: "false"
+      BILLING_SHORTCODE: ${BILLING_SHORTCODE:?BILLING_SHORTCODE is required for live billing}
+      SIGNUP_RESEND_COOLDOWN_SECONDS: ${SIGNUP_RESEND_COOLDOWN_SECONDS:-60}
+      DATABASE_SSL: ${DATABASE_SSL:-false}
+      NOTIFY_PROVIDER: ${NOTIFY_PROVIDER:-mock}
+      AT_USERNAME: ${AT_USERNAME:-}
+      AT_API_KEY: ${AT_API_KEY:-}
+      AT_SENDER_ID: ${AT_SENDER_ID:-}
+    logging: *rotate
+
+  console:
+    restart: always
+    ports: !reset []
+    logging: *rotate
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    environment:
+      SOJAA_DOMAIN: ${SOJAA_DOMAIN:?SOJAA_DOMAIN is required (the public host name that points at this server)}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - api
+      - console
+    logging: *rotate
+
+volumes:
+  caddy-data:
+  caddy-config:

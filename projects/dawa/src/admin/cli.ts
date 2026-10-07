@@ -7,6 +7,8 @@
  *   billing:pay <org id> <mpesa code> <KES>                     record an M-Pesa payment that did not arrive by itself
  *   billing:unmatched                                           payments made to Dawa's own shortcode with an account number nobody holds
  *   billing:assign <mpesa code> <org id>                        give one of those to an organisation
+ *   unclaimed:list                                              M-Pesa money that reached a till nobody had registered
+ *   unclaimed:assign <mpesa code> <org id> [branch id]          move one of those into an organisation's till, as a normal payment (safe to repeat)
  *   billing:price <org id> <KES per branch | none>              an agreed per-branch price for organisations on the custom tier
  */
 import { closePool, closeMigrationPool } from '../persistence/pool';
@@ -14,6 +16,7 @@ import { provisionOrganisation, resetPin } from './provisioning';
 import { recentMessages } from '../notify/provider';
 import { assignUnmatched, listUnmatched, recordManualPayment, setUnitPriceOverride } from '../billing/service';
 import { formatKsh, fromShillings } from '../domain/money';
+import { assignUnclaimed, listUnclaimed } from '../mpesa/unclaimed';
 
 async function main(): Promise<void> {
   const [command, ...args] = process.argv.slice(2);
@@ -62,8 +65,21 @@ async function main(): Promise<void> {
       console.log('ok');
       break;
     }
+    case 'unclaimed:list': {
+      const rows = await listUnclaimed({ includeClaimed: args.includes('--all') });
+      if (rows.length === 0) console.log('none');
+      for (const r of rows) console.log(`${r.externalRef}  ${formatKsh(r.amountCents as never)}  till ${r.shortCode}  account "${r.billRef ?? ''}"  from ${r.payerMsisdn ?? '?'}  ${r.receivedAt.toISOString()}  ${r.claimedByOrg ? `assigned to ${r.claimedByOrg}` : 'UNASSIGNED'}`);
+      break;
+    }
+    case 'unclaimed:assign': {
+      const [code, orgId, branchId] = args;
+      if (!code || !orgId) throw new Error('usage: unclaimed:assign <mpesa code> <org id> [branch id]');
+      const outcome = await assignUnclaimed(code, orgId, branchId);
+      console.log(outcome.alreadyAssigned ? 'already in that till (nothing changed)' : outcome.matchedSaleId ? `applied to sale ${outcome.matchedSaleId}` : `now in the branch's unmatched list (branch ${outcome.branchId}) for the manager to assign`);
+      break;
+    }
     default:
-      console.log('commands: provision, reset-pin, messages, billing:pay, billing:unmatched, billing:assign, billing:price');
+      console.log('commands: provision, reset-pin, messages, billing:pay, billing:unmatched, billing:assign, billing:price, unclaimed:list, unclaimed:assign');
   }
 }
 

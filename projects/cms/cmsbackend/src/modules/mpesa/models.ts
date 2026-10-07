@@ -59,6 +59,7 @@ const factory: ModelFactory = (sequelize: Sequelize) => {
       resultDesc: { type: DataTypes.STRING(300), allowNull: true },
       mpesaReceipt: { type: DataTypes.STRING(40), allowNull: true },
       requestedBy: { type: DataTypes.INTEGER, allowNull: true },
+      publicKey: { type: DataTypes.STRING(80), allowNull: true },
       completedAt: { type: DataTypes.DATE, allowNull: true },
       createdAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
     },

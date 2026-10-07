@@ -29,10 +29,25 @@ export function subtractCents(left: Cents, right: Cents): Cents {
 }
 
 export function formatKsh(value: Cents): string {
-  const shillings = Math.abs(value) / 100;
-  const sign = value < 0 ? '-' : '';
-  return `${sign}KSh ${shillings.toLocaleString('en-KE', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2
-  })}`;
+  // integer arithmetic only (moneyText below): no float division of money
+  return `${value < 0 ? '-' : ''}KSh ${moneyText(Math.abs(value))}`;
+}
+
+function splitCents(value: number): { sign: string; whole: string; frac: string } {
+  if (!Number.isSafeInteger(value)) throw new MoneyError('an amount must be a safe whole number of cents');
+  const abs = BigInt(Math.abs(value));
+  return { sign: value < 0 ? '-' : '', whole: String(abs / 100n), frac: String(abs % 100n).padStart(2, '0') };
+}
+
+/** "1234.50": a plain decimal for CSV and statements, built from integer cents (no float division). */
+export function csvMoney(value: number): string {
+  const { sign, whole, frac } = splitCents(value);
+  return `${sign}${whole}.${frac}`;
+}
+
+/** "1,234.50" or "1,234" when there are no cents, for messages shown to people. Integer arithmetic only. */
+export function moneyText(value: number): string {
+  const { sign, whole, frac } = splitCents(value);
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `${sign}${grouped}${frac === '00' ? '' : `.${frac}`}`;
 }

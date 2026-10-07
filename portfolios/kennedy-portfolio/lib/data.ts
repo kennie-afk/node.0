@@ -21,9 +21,9 @@ export const headline = [
     method: "26 in SmartSeason, 9 in SmartRE, one database each",
   },
   {
-    value: "2,813",
+    value: "2,815",
     label: "Tests across twelve systems",
-    method: "Passing tests from each runner; Dawa, Hazina and Sojaa measured 3 to 4 Oct 2026, HMS, SmartSeason, Church CMS and Soko 3 Oct, the rest 2 Oct; skipped database-gated tests not counted",
+    method: "Passing tests from each runner; Dawa, Hazina and Sojaa measured 3 to 4 Oct 2026, Sifa 6 Oct, HMS, SmartSeason, Church CMS and Soko 3 Oct, the rest 2 Oct; skipped database-gated tests not counted",
   },
   {
     value: "12",
@@ -146,6 +146,7 @@ export const experience = [
     points: [
       "Built a personalised feed without buying a vector database, a feature platform or a managed experiment service: two-tower retrieval over an HNSW index written from the paper, with a Platt-calibrated ranker on top.",
       "Measured rather than claimed: 10.7 ms p95 latency over 400 requests, 0.973 held-out AUC, and recall@10 climbing from 0.820 to 1.000 as the index's ef_search widens, including where the index loses to brute force, stated rather than hidden.",
+      "Evaluated the stack on MovieLens, a public dataset, with a leave-last-out protocol and full-catalogue ranking: the two-tower reaches a 5.35% hit rate at 10 against 4.06% for most-popular and 6.09% for an item-based neighbour baseline, and the report says the 95% intervals overlap. Benchmarked the from-scratch HNSW against FAISS on the same vectors (0.996 against 0.999 recall at ef 128) and recorded that it is 25 to 35 times slower per query.",
     ],
   },
   {
@@ -231,18 +232,18 @@ export const projects = [
     id: 1,
     slug: "sifa",
     lang: "Python",
-    tests: "217",
+    tests: "219",
     domain: "Retrieval & ranking",
     title: "Sifa",
     subtitle: "Retrieval, ranking and experimentation",
     scale: "Python · 47 modules",
     description:
-      "A personalised feed built without a vector database, a feature platform or a managed experiment service. The parts that are usually bought are implemented here and measured, including where the index loses to brute force, which the README states rather than hides.",
+      "A personalised feed built without a vector database, a feature platform or a managed experiment service. The parts that are usually bought are implemented here and measured, including a MovieLens evaluation against popularity and neighbourhood baselines and a head-to-head with FAISS, with the places the from-scratch index loses stated rather than hidden.",
     metrics: [
-      { value: "217", label: "tests" },
+      { value: "219", label: "tests" },
       { value: "10.7 ms", label: "p95 latency" },
+      { value: "5.35%", label: "MovieLens hit@10" },
       { value: "0.973", label: "held-out AUC" },
-      { value: "0.820→1.000", label: "recall@10" },
     ],
     tech: ["Python", "FastAPI", "NumPy", "scikit-learn", "HNSW", "Next.js"],
     image: "/images/sifa.jpg",
@@ -278,7 +279,7 @@ export const projects = [
     subtitle: "Agricultural operations platform",
     scale: "Java · 1,771 sources",
     description:
-      "Twenty-six bounded contexts, database-per-service behind a gateway, generated from a single catalogue so regenerating the tree produces no diff. Five fraud detectors consume attendance events over Kafka and open evidence-backed cases whose confidences compound probabilistically. Task start and stop are timed on the server's clock and written through an audit outbox. Errors are RFC 7807 problem documents across every service. List endpoints filter and sort on the server through one shared specification filter, so the console never fetches everything to filter in the browser.",
+      "Twenty-six bounded contexts, database-per-service behind a gateway, generated from a single catalogue so regenerating the tree produces no diff. Five fraud detectors consume attendance events over Kafka and open evidence-backed cases whose confidences compound probabilistically. Task start and stop are timed on the server's clock and written through an audit outbox. Errors are RFC 7807 problem documents across every service. List endpoints filter and sort on the server through one shared specification filter, so the console never fetches everything to filter in the browser. A dairy module in the farm service records yields per cow, buyer deliveries and treatments, and flags milk recorded inside a medicine withdrawal period; prices are entered by the user, never defaulted.",
     metrics: [
       { value: "26", label: "services" },
       { value: "591", label: "tests" },

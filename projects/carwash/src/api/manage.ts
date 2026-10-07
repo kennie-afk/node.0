@@ -15,6 +15,11 @@ import { normalisePlate } from '../domain/plate';
 import { insertPayment, recordJobEvent, transitionJob } from '../persistence/repositories';
 import { DEVICE_TYPES, phoneInUse, registerDevice } from '../admin/provisioning';
 import { normalisePhone } from '../admin/phone';
+import { accounts } from './accounts';
+import { listSite } from './scope';
+import { usersPage } from '../persistence/listings';
+import { sendArray } from './respond';
+import { afterClause, decodeCursor, keySelect, orderBy, parseLimit, SortColumn } from '../persistence/paging';
 
 const router = Router();
 const owner = requireRole('owner');
@@ -108,6 +113,7 @@ router.post('/sites', authenticate, owner, requireWritable, async (req, res, nex
 router.get('/sites/:id', authenticate, async (req, res, next) => {
   try {
     const id = idParam(req);
+    if (req.principal!.siteId && req.principal!.siteId !== id) throw new NotFoundError('That site was not found.');
     const data = await withOrg(req.principal!.orgId, async (client) => {
       const site = await client.query('SELECT * FROM sites WHERE id = $1', [id]);
       if (!site.rows[0]) return null;
@@ -222,10 +228,17 @@ const serviceFields = {
   expectedWaterL: z.number().min(0).max(5000),
   expectedDurationS: z.number().int().min(0).max(86_400),
   commissionRate: z.number().min(0).max(1),
+  // what one wash of this service is expected to draw, e.g. { detergent: 0.05 }: the baseline supply_pilferage needs
+  consumables: z.record(z.string().trim().min(1).max(60), z.number().min(0).max(10_000)).refine((value) => Object.keys(value).length <= 30, 'at most 30 consumables'),
   active: z.boolean()
 };
-const serviceCreate = z.object(serviceFields).partial({ expectedWaterL: true, expectedDurationS: true, commissionRate: true, active: true });
+const serviceCreate = z.object(serviceFields).partial({ expectedWaterL: true, expectedDurationS: true, commissionRate: true, consumables: true, active: true });
 const serviceUpdate = z.object(serviceFields).partial();
+const SERVICE_COLUMNS: SortColumn[] = [
+  { sql: 's.active', dir: 'desc', type: 'boolean' },
+  { sql: 's.list_price_cents', dir: 'asc', type: 'bigint' },
+  { sql: 's.id', dir: 'asc', type: 'uuid' }
+];
 
 function serviceDto(row: Record<string, any>) {
   return {
@@ -235,20 +248,28 @@ function serviceDto(row: Record<string, any>) {
     expectedWaterL: Number(row.expected_water_l),
     expectedDurationS: row.expected_duration_s,
     commissionRate: Number(row.commission_rate),
+    consumables: (row.consumables ?? {}) as Record<string, number>,
     active: row.active
   };
 }
 
 router.get('/services', authenticate, async (req, res, next) => {
   try {
+    const limit = parseLimit(req.query.limit, 200, 500);
+    const cursor = decodeCursor(req.query.after, 3);
+    const params: unknown[] = [];
+    const after = afterClause(SERVICE_COLUMNS, cursor, params);
+    params.push(limit + 1);
     const rows = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(
-        `SELECT s.*, (SELECT count(*) FROM job_services js WHERE js.service_id = s.id) AS uses
-           FROM services s ORDER BY s.active DESC, s.list_price_cents`
+        `SELECT s.*, (SELECT count(*) FROM job_services js WHERE js.service_id = s.id) AS uses, ${keySelect(SERVICE_COLUMNS)}
+           FROM services s ${after ? `WHERE ${after}` : ''} ORDER BY ${orderBy(SERVICE_COLUMNS)} LIMIT $${params.length}`,
+        params
       );
       return rows;
     });
-    res.json(rows.map((row) => ({ ...serviceDto(row), uses: Number(row.uses) })));
+    // an array, not an envelope: every dropdown in the console reads this list; the cursor is in X-Next-Cursor
+    sendArray(res, rows, limit, SERVICE_COLUMNS, (row) => ({ ...serviceDto(row), uses: Number(row.uses) }));
   } catch (error) {
     next(error);
   }
@@ -259,9 +280,9 @@ router.post('/services', authenticate, owner, requireWritable, async (req, res, 
     const body = parse(serviceCreate, req.body);
     const row = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(
-        `INSERT INTO services (org_id, name, list_price_cents, expected_water_l, expected_duration_s, commission_rate, active)
-         VALUES ($1, $2, $3, COALESCE($4, 0), COALESCE($5, 0), COALESCE($6, 0.1), COALESCE($7, true)) RETURNING *`,
-        [req.principal!.orgId, body.name, body.listPriceCents, body.expectedWaterL ?? null, body.expectedDurationS ?? null, body.commissionRate ?? null, body.active ?? null]
+        `INSERT INTO services (org_id, name, list_price_cents, expected_water_l, expected_duration_s, commission_rate, active, consumables)
+         VALUES ($1, $2, $3, COALESCE($4, 0), COALESCE($5, 0), COALESCE($6, 0.1), COALESCE($7, true), COALESCE($8::jsonb, '{}'::jsonb)) RETURNING *`,
+        [req.principal!.orgId, body.name, body.listPriceCents, body.expectedWaterL ?? null, body.expectedDurationS ?? null, body.commissionRate ?? null, body.active ?? null, body.consumables ? JSON.stringify(body.consumables) : null]
       );
       return rows[0];
     });
@@ -282,8 +303,8 @@ router.put('/services/:id', authenticate, owner, requireWritable, async (req, re
       if (!e) return null;
       const { rows } = await client.query(
         `UPDATE services SET name = $2, list_price_cents = $3, expected_water_l = $4, expected_duration_s = $5,
-                commission_rate = $6, active = $7 WHERE id = $1 RETURNING *`,
-        [idParam(req), body.name ?? e.name, body.listPriceCents ?? e.list_price_cents, body.expectedWaterL ?? e.expected_water_l, body.expectedDurationS ?? e.expected_duration_s, body.commissionRate ?? e.commission_rate, body.active ?? e.active]
+                commission_rate = $6, active = $7, consumables = $8::jsonb WHERE id = $1 RETURNING *`,
+        [idParam(req), body.name ?? e.name, body.listPriceCents ?? e.list_price_cents, body.expectedWaterL ?? e.expected_water_l, body.expectedDurationS ?? e.expected_duration_s, body.commissionRate ?? e.commission_rate, body.active ?? e.active, JSON.stringify(body.consumables ?? e.consumables ?? {})]
       );
       return rows[0];
     });
@@ -329,11 +350,7 @@ const USER_SELECT = `SELECT u.id, u.display_name, u.phone, u.role, u.site_id, u.
 
 router.get('/users', authenticate, requireRole('owner', 'manager'), async (req, res, next) => {
   try {
-    const rows = await withOrg(req.principal!.orgId, async (client) => {
-      const { rows } = await client.query(`${USER_SELECT} ORDER BY u.status, u.role, u.display_name`);
-      return rows;
-    });
-    res.json(rows.map(userDto));
+    res.json(await withOrg(req.principal!.orgId, (client) => usersPage(client, { siteId: listSite(req) }, req.query)));
   } catch (error) {
     next(error);
   }
@@ -343,6 +360,7 @@ router.get('/users/:id', authenticate, requireRole('owner', 'manager'), async (r
   try {
     const rows = await withOrg(req.principal!.orgId, async (client) => (await client.query(`${USER_SELECT} WHERE u.id = $1`, [idParam(req)])).rows);
     if (!rows[0]) throw new NotFoundError('That person was not found.');
+    if (req.principal!.siteId && rows[0].site_id !== req.principal!.siteId) throw new NotFoundError('That person was not found.');
     res.json(userDto(rows[0]));
   } catch (error) {
     next(error);
@@ -396,13 +414,20 @@ router.put('/users/:id', authenticate, owner, requireWritable, async (req, res, 
         const site = await client.query('SELECT 1 FROM sites WHERE id = $1', [body.siteId]);
         if (!site.rows[0]) throw new BadRequestError('siteId does not refer to a site in this organisation');
       }
+      const nextRole = body.role ?? existing.role;
+      const nextSite = body.siteId === undefined ? existing.site_id : body.siteId;
+      const nextStatus = body.status ?? existing.status;
+      // a change to what the person may do ends their sessions, so it is honoured now and not at token expiry
+      const sessionAffected = pinHash !== null || nextRole !== existing.role || nextSite !== existing.site_id || nextStatus !== existing.status;
       await client.query(
-        `UPDATE users SET display_name = $2, role = $3, site_id = $4, status = $5, pin_hash = COALESCE($6, pin_hash) WHERE id = $1`,
-        [id, body.displayName ?? existing.display_name, body.role ?? existing.role, body.siteId === undefined ? existing.site_id : body.siteId, body.status ?? existing.status, pinHash]
+        `UPDATE users SET display_name = $2, role = $3, site_id = $4, status = $5, pin_hash = COALESCE($6, pin_hash),
+                token_version = token_version + $7::int, pin_changed_at = CASE WHEN $6::text IS NULL THEN pin_changed_at ELSE now() END WHERE id = $1`,
+        [id, body.displayName ?? existing.display_name, nextRole, nextSite, nextStatus, pinHash, sessionAffected ? 1 : 0]
       );
       return (await client.query(`${USER_SELECT} WHERE u.id = $1`, [id])).rows[0];
     });
     if (!row) throw new NotFoundError('That person was not found.');
+    accounts.invalidate(req.principal!.orgId, id);
     res.json(userDto(row));
   } catch (error) {
     next(error);
@@ -435,7 +460,9 @@ router.get('/devices', authenticate, requireRole('owner', 'manager', 'supervisor
       const { rows } = await client.query(
         `SELECT d.id, d.type, d.firmware, d.status, d.last_seen, d.last_sequence, s.name AS site, b.label AS bay
            FROM devices d JOIN sites s ON s.id = d.site_id LEFT JOIN bays b ON b.id = d.bay_id
-          ORDER BY s.name, b.label, d.type`
+          WHERE ($1::uuid IS NULL OR d.site_id = $1)
+          ORDER BY s.name, b.label, d.type`,
+        [listSite(req)]
       );
       return rows;
     });
@@ -474,7 +501,7 @@ router.get('/discrepancies/:id', authenticate, requireRole('owner', 'manager', '
       );
       return rows[0];
     });
-    if (!row) throw new NotFoundError('That flag was not found.');
+    if (!row || (req.principal!.siteId && row.site_id !== req.principal!.siteId)) throw new NotFoundError('That flag was not found.');
     res.json({
       id: row.id,
       type: row.type,
@@ -502,8 +529,9 @@ router.post('/discrepancies/:id/resolve', authenticate, requireRole('owner', 'ma
     }
     const row = await withOrg(req.principal!.orgId, async (client) => {
       const { rows } = await client.query(
-        `UPDATE discrepancies SET state = $2, resolved_by = $3, resolution_note = $4 WHERE id = $1 RETURNING id, state`,
-        [idParam(req), body.state, body.state === 'open' ? null : req.principal!.userId, body.state === 'open' ? null : body.note ?? null]
+        `UPDATE discrepancies SET state = $2, resolved_by = $3, resolution_note = $4
+          WHERE id = $1 AND ($5::uuid IS NULL OR site_id = $5) RETURNING id, state`,
+        [idParam(req), body.state, body.state === 'open' ? null : req.principal!.userId, body.state === 'open' ? null : body.note ?? null, req.principal!.siteId]
       );
       return rows[0];
     });
@@ -561,7 +589,7 @@ router.post('/jobs', authenticate, workerRoles, async (req, res, next) => {
         [req.principal!.orgId, siteId, body.bayId ?? null, vehicleId, req.principal!.userId, body.quotedTotalCents ?? list, list, body.discountAuthorisedBy ?? null]
       );
       for (const service of services.rows) {
-        await client.query('INSERT INTO job_services (job_id, service_id, unit_price_cents) VALUES ($1,$2,$3)', [job.rows[0].id, service.id, service.list_price_cents]);
+        await client.query('INSERT INTO job_services (org_id, job_id, service_id, unit_price_cents) VALUES ($1,$2,$3,$4)', [req.principal!.orgId, job.rows[0].id, service.id, service.list_price_cents]);
       }
       await recordJobEvent(client, { orgId: req.principal!.orgId, jobId: job.rows[0].id, type: 'job.created', actorId: req.principal!.userId, payload: { listCents: list, quotedCents: body.quotedTotalCents ?? list }, clientTs: null });
       return { id: job.rows[0].id as string, state: job.rows[0].state as string, listCents: list, quotedCents: body.quotedTotalCents ?? list };
@@ -599,31 +627,68 @@ router.post('/jobs/:id/events', authenticate, workerRoles, async (req, res, next
   }
 });
 
-const cashBody = z.object({ amountCents: z.number().int().positive().optional() });
+const MAX_CASH_CENTS = 100_000_000;
+const cashBody = z.object({
+  amountCents: z.number().int().positive().max(MAX_CASH_CENTS).optional(),
+  // required when the amount differs from the quote: why the customer paid something else
+  reason: z.string().trim().min(3).max(300).optional()
+});
 
 // A worker declaring cash. It is the one payment a human reports, which is exactly why the
-// reconciliation compares it with the work and the water rather than trusting it.
+// reconciliation compares it with the work and the water rather than trusting it. The amount may be
+// left out (then it is the quoted price). Declaring a different amount needs a supervisor, manager or
+// owner to do it: the person being checked does not get to decide that the till is short.
 router.post('/jobs/:id/cash', authenticate, workerRoles, async (req, res, next) => {
   try {
-    const { amountCents } = parse(cashBody, req.body ?? {});
-    const out = await withOrg(req.principal!.orgId, async (client) => {
-      const { rows } = await client.query('SELECT state, site_id, quoted_total_cents FROM jobs WHERE id = $1', [idParam(req)]);
+    const { amountCents, reason } = parse(cashBody, req.body ?? {});
+    const caller = req.principal!;
+    const out = await withOrg(caller.orgId, async (client) => {
+      const { rows } = await client.query('SELECT state, site_id, quoted_total_cents FROM jobs WHERE id = $1 FOR UPDATE', [idParam(req)]);
       const job = rows[0];
       if (!job) throw new NotFoundError('That job was not found.');
-      if (req.principal!.siteId && job.site_id !== req.principal!.siteId) throw new ForbiddenError('That job belongs to another site.');
+      if (caller.siteId && job.site_id !== caller.siteId) throw new ForbiddenError('That job belongs to another site.');
       if (job.state !== 'awaiting_payment') throw new ConflictError(`A job in ${job.state} cannot take a payment; finish the work first.`);
+
+      const quoted = Number(job.quoted_total_cents);
+      const declared = amountCents ?? quoted;
+      const differs = declared !== quoted;
+      const mayAuthorise = caller.role !== 'worker';
+      if (differs && !mayAuthorise) {
+        throw new ForbiddenError(`The quote is ${quoted / 100} KES. An attendant cannot take a different amount; ask a supervisor or manager to record it.`);
+      }
+      if (differs && !reason) {
+        throw new BadRequestError('reason: say why the amount differs from the quote');
+      }
+
       const payment = await insertPayment(client, {
-        orgId: req.principal!.orgId,
+        orgId: caller.orgId,
         siteId: job.site_id,
         jobId: idParam(req),
         channel: 'cash',
-        amountCents: (amountCents ?? Number(job.quoted_total_cents)) as never,
+        amountCents: declared as never,
         externalRef: null,
         payerMsisdn: null,
         receivedAt: new Date()
       });
+      if (differs) {
+        await client.query('UPDATE payments SET variance_authorised_by = $2 WHERE id = $1', [payment.id, caller.userId]);
+      }
       await transitionJob(client, idParam(req), 'paid');
-      await recordJobEvent(client, { orgId: req.principal!.orgId, jobId: idParam(req), type: 'job.payment_matched', actorId: req.principal!.userId, payload: { paymentId: payment.id, channel: 'cash' }, clientTs: null });
+      // both figures go in the audit trail, so a later argument is settled by the record
+      await recordJobEvent(client, {
+        orgId: caller.orgId,
+        jobId: idParam(req),
+        type: 'job.payment_matched',
+        actorId: caller.userId,
+        payload: {
+          paymentId: payment.id,
+          channel: 'cash',
+          quotedCents: quoted,
+          declaredCents: declared,
+          ...(differs ? { varianceCents: declared - quoted, authorisedBy: caller.userId, reason } : {})
+        },
+        clientTs: null
+      });
       return payment;
     });
     res.status(201).json({ paymentId: out.id, state: 'paid' });
@@ -642,12 +707,13 @@ router.get('/jobs/:id', authenticate, async (req, res, next) => {
         [idParam(req)]
       );
       if (!job.rows[0]) return null;
+      if (req.principal!.siteId && job.rows[0].site_id !== req.principal!.siteId) return null;
       const lines = await client.query(
         `SELECT sv.name, js.unit_price_cents, js.qty FROM job_services js JOIN services sv ON sv.id = js.service_id WHERE js.job_id = $1 ORDER BY sv.name`,
         [idParam(req)]
       );
       const events = await client.query(`SELECT type, payload, server_ts FROM job_events WHERE job_id = $1 ORDER BY server_ts, id`, [idParam(req)]);
-      const payments = await client.query(`SELECT id, channel, amount_cents, external_ref, received_at FROM payments WHERE job_id = $1 ORDER BY received_at`, [idParam(req)]);
+      const payments = await client.query(`SELECT id, channel, amount_cents, external_ref, received_at, reversed_at FROM payments WHERE job_id = $1 ORDER BY received_at`, [idParam(req)]);
       return { job: job.rows[0], lines: lines.rows, events: events.rows, payments: payments.rows };
     });
     if (!data) throw new NotFoundError('That job was not found.');
@@ -665,7 +731,7 @@ router.get('/jobs/:id', authenticate, async (req, res, next) => {
       closedAt: data.job.closed_at,
       services: data.lines.map((l) => ({ name: l.name, unitPriceCents: Number(l.unit_price_cents), qty: l.qty })),
       events: data.events.map((e) => ({ type: e.type, at: e.server_ts, payload: e.payload })),
-      payments: data.payments.map((p) => ({ id: p.id, channel: p.channel, amountCents: Number(p.amount_cents), reference: p.external_ref, receivedAt: p.received_at }))
+      payments: data.payments.map((p) => ({ id: p.id, channel: p.channel, amountCents: Number(p.amount_cents), reference: p.external_ref, receivedAt: p.received_at, reversed: p.reversed_at !== null }))
     });
   } catch (error) {
     next(error);

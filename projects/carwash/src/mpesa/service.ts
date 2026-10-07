@@ -1,6 +1,6 @@
 import { withoutTenant, withOrg } from '../persistence/pool';
 import { insertPayment, openJobsForMatching, recordJobEvent, transitionJob } from '../persistence/repositories';
-import { normaliseConfirmation } from './daraja';
+import { normaliseConfirmation, type NormalisedPayment } from './daraja';
 import { matchPaymentToJob } from './matching';
 import { logger } from '../common/logger';
 import { ingestBillingPayment, payShortcode } from '../billing/service';
@@ -22,6 +22,17 @@ async function resolveTill(shortCode: string): Promise<{ orgId: string; siteId: 
   });
 }
 
+async function keepUnclaimed(payment: NormalisedPayment, raw: unknown): Promise<void> {
+  await withoutTenant(async (client) => {
+    await client.query(
+      `INSERT INTO mpesa_unclaimed (short_code, external_ref, amount_cents, payer_msisdn, bill_ref, received_at, raw)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (external_ref) DO NOTHING`,
+      [payment.shortCode, payment.externalRef, payment.amountCents, payment.payerMsisdn, payment.reference || null, payment.receivedAt, JSON.stringify(raw)]
+    );
+  });
+}
+
 export async function ingestConfirmation(raw: unknown): Promise<IngestOutcome | null> {
   const payment = normaliseConfirmation(raw);
 
@@ -36,10 +47,22 @@ export async function ingestConfirmation(raw: unknown): Promise<IngestOutcome | 
   const till = await resolveTill(payment.shortCode);
 
   if (!till) {
-    logger.warn('payment for an unknown till', { shortCode: payment.shortCode });
+    // Nobody to attach it to yet, but the money is real and Daraja will not send it again. Keep it so an
+    // operator can hand it to the right organisation once its till is registered.
+    await keepUnclaimed(payment, raw);
+    logger.warn('payment for an unknown till kept for an operator', { shortCode: payment.shortCode, externalRef: payment.externalRef });
     return null;
   }
 
+  return recordTillPayment(till, payment);
+}
+
+/**
+ * Stores a confirmed payment under a till's organisation and, when exactly one open job fits, matches it.
+ * Idempotent on the M-Pesa transaction id, which is what lets both a Daraja retry and an operator re-running
+ * `unclaimed:assign` land safely.
+ */
+export async function recordTillPayment(till: { orgId: string; siteId: string }, payment: NormalisedPayment): Promise<IngestOutcome> {
   return withOrg(till.orgId, async (client) => {
     const candidates = await openJobsForMatching(client, till.siteId);
     const match = matchPaymentToJob(

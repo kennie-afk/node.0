@@ -92,7 +92,7 @@ describe.runIf(on)('provisioning, onboarding and the write API (real Postgres, R
     expect((await request(app).get(`/v1/sites/${siteA}`).set(b.auth)).status).toBe(404);
     expect((await request(app).put(`/v1/sites/${siteA}`).set(b.auth).send({ name: 'Hijacked' })).status).toBe(404);
     const flagsB = await request(app).get('/v1/discrepancies').set(b.auth);
-    expect(flagsB.body).toEqual([]);
+    expect(flagsB.body).toEqual({ items: [], next: null });
   });
 
   it('lets an owner manage sites, bays, prices and people, and refuses everyone else', async () => {
@@ -200,7 +200,7 @@ describe.runIf(on)('provisioning, onboarding and the write API (real Postgres, R
     const resolved = await request(app).post(`/v1/discrepancies/${id}/resolve`).set(auth).send({ state: 'explained', note: 'The meter was flushed after maintenance.' });
     expect(resolved.body.state).toBe('explained');
     const open = await request(app).get('/v1/discrepancies?state=open').set(auth);
-    expect(open.body).toEqual([]);
+    expect(open.body.items).toEqual([]);
     const one = await request(app).get(`/v1/discrepancies/${id}`).set(auth);
     expect(one.body).toMatchObject({ state: 'explained', resolutionNote: 'The meter was flushed after maintenance.', resolvedBy: 'Owner One' });
     expect(String(one.body.businessDay).slice(0, 10)).toBe('2026-09-01');
@@ -228,13 +228,14 @@ describe.runIf(on)('provisioning, onboarding and the write API (real Postgres, R
     for (const path of ['sites', 'services', 'users', 'devices', 'jobs', 'payments', 'telemetry', 'discrepancies']) {
       const list = await request(app).get(`/v1/${path}`).set(auth);
       expect(list.status, path).toBe(200);
-      expect(list.body.length, path).toBeGreaterThan(0);
+      const rows = Array.isArray(list.body) ? list.body : list.body.items;
+      expect(rows.length, path).toBeGreaterThan(0);
     }
-    const types = new Set((await request(app).get('/v1/discrepancies').set(auth)).body.map((flag: any) => flag.type));
+    const types = new Set((await request(app).get('/v1/discrepancies?limit=200').set(auth)).body.items.map((flag: any) => flag.type));
     for (const expected of ['ghost_wash', 'underquoting', 'after_hours_operation', 'payment_without_job', 'job_without_payment', 'cash_ratio_spike', 'abandoned_job_pattern']) {
       expect(types, expected).toContain(expected);
     }
-    const states = new Set((await request(app).get('/v1/discrepancies').set(auth)).body.map((flag: any) => flag.state));
+    const states = new Set((await request(app).get('/v1/discrepancies?limit=200').set(auth)).body.items.map((flag: any) => flag.state));
     expect(states).toEqual(new Set(['open', 'explained', 'confirmed', 'dismissed']));
     // a manager sees the same organisation but cannot manage the team
     const manager = await signIn('254700000002', '246810');

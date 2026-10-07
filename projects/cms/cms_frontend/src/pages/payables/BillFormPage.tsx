@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button, Card, DateInput, Field, formatMoney, fromMinor, Input, MoneyInput, PageHeader, Select, toMinor, todayISO, useQuery } from '../../ui';
+import { checkBudget } from '../../api/budgetsApi';
 import { createBill, createExpenseClaim, getBill, listVendors, updateBill } from '../../api/payablesApi';
 import { AccountSelect, FundSelect, MinistrySelect } from '../../features/finance/components/Selectors';
 import { FormError } from '../../features/finance/components/common';
@@ -35,6 +36,30 @@ export default function BillFormPage() {
       setLines(b.lines.map((l) => ({ key: ++seq, accountId: l.accountId, fundId: l.fundId, ministryId: l.ministryId, description: l.description ?? '', amount: l.amount })));
     });
   }, [id]);
+
+  // Ask the server whether each filled-in line fits the remaining budget while the form is being typed,
+  // so the warning arrives before submission rather than after. Advisory only: it never blocks saving.
+  const [budgetWarnings, setBudgetWarnings] = useState<Record<number, string>>({});
+  const checkKey = JSON.stringify(lines.map((l) => [l.key, l.accountId, l.fundId ?? defaultFund, l.amount])) + billDate;
+  useEffect(() => {
+    let live = true;
+    const timer = window.setTimeout(async () => {
+      const next: Record<number, string> = {};
+      for (const l of lines) {
+        const fundId = l.fundId ?? defaultFund;
+        if (!l.accountId || !fundId || !l.amount || toMinor(l.amount) <= 0) continue;
+        try {
+          const result = await checkBudget({ accountId: l.accountId, fundId, amount: l.amount, date: billDate });
+          if (result.hasBudget && result.warning) next[l.key] = result.warning;
+        } catch {
+          // The check is a courtesy: if it cannot be answered the form still works.
+        }
+      }
+      if (live) setBudgetWarnings(next);
+    }, 500);
+    return () => { live = false; window.clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkKey]);
 
   const patch = (key: number, change: Partial<LineDraft>) => setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...change } : l)));
   const total = lines.reduce((s, l) => s + (l.amount ? toMinor(l.amount) : 0), 0);
@@ -80,6 +105,11 @@ export default function BillFormPage() {
               </tbody>
             </table>
           </div>
+          {lines.some((l) => budgetWarnings[l.key]) && (
+            <div className="fin-warn" role="status" style={{ margin: 8 }}>
+              {lines.map((l, i) => budgetWarnings[l.key] && <div key={l.key}>Line {i + 1}: {budgetWarnings[l.key]}</div>)}
+            </div>
+          )}
           <div className="ui-row" style={{ padding: 8, justifyContent: 'space-between' }}>
             <Button type="button" size="sm" onClick={() => setLines((ls) => [...ls, blank(null)])}>Add a line</Button>
             <strong className="ui-num">Total {formatMoney(fromMinor(total))}</strong>

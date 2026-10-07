@@ -13,9 +13,10 @@ export interface EventAttributes {
   organizerUserId?: number | null;
   isRecurring: boolean;
   recurrencePattern?: string | null;
+  capacity?: number | null;
 }
 
-export interface EventCreationAttributes extends Optional<EventAttributes, 'id' | 'description' | 'endTime' | 'location' | 'organizerUserId' | 'recurrencePattern'> {}
+export interface EventCreationAttributes extends Optional<EventAttributes, 'id' | 'description' | 'endTime' | 'location' | 'organizerUserId' | 'recurrencePattern' | 'capacity'> {}
 
 export class Event extends BaseModel<EventAttributes, EventCreationAttributes> implements EventAttributes {
   public churchId!: number;
@@ -29,6 +30,7 @@ export class Event extends BaseModel<EventAttributes, EventCreationAttributes> i
   public organizerUserId!: number | null;
   public isRecurring!: boolean;
   public recurrencePattern!: string | null;
+  public capacity!: number | null;
 
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
@@ -52,6 +54,7 @@ export default (sequelize: Sequelize) => {
     organizerUserId: { type: DataTypes.INTEGER.UNSIGNED, allowNull: true },
     isRecurring: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     recurrencePattern: { type: DataTypes.STRING(255), allowNull: true },
+    capacity: { type: DataTypes.INTEGER, allowNull: true },
   }, {
     tableName: 'events',
     timestamps: true,

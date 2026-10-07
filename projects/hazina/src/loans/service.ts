@@ -15,8 +15,11 @@ import { z } from 'zod';
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../domain/errors';
 import { Ctx, audit, getSettings, mayCheck } from '../common/context';
 import { CODES, Channel, settlementAccount } from '../ledger/chart';
-import { memberBalance, postEntry } from '../ledger/service';
+import { memberBalance, postEntries, postEntry, postingDateFor } from '../ledger/service';
+import { withOrg } from '../persistence/pool';
+import { moneyText } from '../domain/money';
 import { getMemberRow, nextNumber } from '../members/service';
+import { likeContains, numberSeq } from '../common/search';
 import {
   Installment,
   OwedInstallment,
@@ -112,7 +115,7 @@ async function guaranteeCapacity(client: PoolClient, memberId: string): Promise<
   const security = (await memberBalance(client, memberId, CODES.savings)) + (await memberBalance(client, memberId, CODES.deposits));
   const { rows } = await client.query(
     `SELECT COALESCE(sum(g.guaranteed_cents), 0)::bigint AS n FROM loan_guarantors g JOIN loans l ON l.id = g.loan_id
-      WHERE g.guarantor_member_id = $1 AND l.status IN ('applied', 'appraised', 'approved', 'disbursed')`,
+      WHERE g.guarantor_member_id = $1 AND g.released_on IS NULL AND l.status IN ('applied', 'appraised', 'approved', 'disbursed')`,
     [memberId]
   );
   return security - Number(rows[0].n);
@@ -126,7 +129,7 @@ export async function applyForLoan(client: PoolClient, ctx: Ctx, input: z.infer<
 
   const amount = input.principalCents;
   if (amount < Number(product.min_amount_cents) || amount > Number(product.max_amount_cents)) {
-    throw new BadRequestError(`This product lends between KSh ${Number(product.min_amount_cents) / 100} and KSh ${Number(product.max_amount_cents) / 100}.`);
+    throw new BadRequestError(`This product lends between KSh ${moneyText(Number(product.min_amount_cents))} and KSh ${moneyText(Number(product.max_amount_cents))}.`);
   }
   if (input.termMonths < product.min_term_months || input.termMonths > product.max_term_months) {
     throw new BadRequestError(`This product's term is ${product.min_term_months} to ${product.max_term_months} months.`);
@@ -138,7 +141,7 @@ export async function applyForLoan(client: PoolClient, ctx: Ctx, input: z.infer<
     const security = (await memberBalance(client, member.id, CODES.savings)) + (await memberBalance(client, member.id, CODES.deposits));
     const owed = await memberBalance(client, member.id, CODES.loans);
     const limit = security * product.max_multiple_of_savings - owed;
-    if (amount > limit) throw new ConflictError(`The loan limit is ${product.max_multiple_of_savings}x savings and deposits, less what is owed: KSh ${Math.max(0, limit) / 100} available.`);
+    if (amount > limit) throw new ConflictError(`The loan limit is ${product.max_multiple_of_savings}x savings and deposits, less what is owed: KSh ${moneyText(Math.max(0, limit))} available.`);
   }
 
   if (input.guarantors.length < product.guarantors_required) throw new BadRequestError(`This product needs ${product.guarantors_required} guarantor(s).`);
@@ -150,7 +153,7 @@ export async function applyForLoan(client: PoolClient, ctx: Ctx, input: z.infer<
     const guarantor = await getMemberRow(client, g.memberId, true);
     if (guarantor.status !== 'active') throw new ConflictError(`${guarantor.member_no} is not an active member.`);
     const capacity = await guaranteeCapacity(client, g.memberId);
-    if (g.guaranteedCents > capacity) throw new ConflictError(`${guarantor.member_no} can guarantee at most KSh ${Math.max(0, capacity) / 100} (their savings and deposits less what they already guarantee).`);
+    if (g.guaranteedCents > capacity) throw new ConflictError(`${guarantor.member_no} can guarantee at most KSh ${moneyText(Math.max(0, capacity))} (their savings and deposits less what they already guarantee).`);
   }
 
   // refuse now if these terms cannot make a schedule at all
@@ -284,9 +287,9 @@ export const repaySchema = z.object({
   receivedOn: day.optional()
 });
 
-function toOwed(r: Record<string, any>): OwedInstallment & { dueDate: string; id: string } {
+function toOwed(r: Record<string, any>): OwedInstallment & { dueDate: string; id: string; accruedOn: string | null } {
   return {
-    id: r.id, installmentNo: r.installment_no, dueDate: r.due_date,
+    id: r.id, accruedOn: (r.interest_accrued_on as string | null) ?? null, installmentNo: r.installment_no, dueDate: r.due_date,
     principalCents: Number(r.principal_cents), interestCents: Number(r.interest_cents), penaltyCents: Number(r.penalty_cents),
     paidPrincipalCents: Number(r.paid_principal_cents), paidInterestCents: Number(r.paid_interest_cents), paidPenaltyCents: Number(r.paid_penalty_cents)
   };
@@ -309,7 +312,13 @@ export interface RepaymentResult {
  * applied one after the other and never both against the same instalment. A repeated external reference (an M-Pesa code
  * delivered twice) returns the first result instead of paying twice.
  */
-export async function repayLoan(client: PoolClient, ctx: Ctx, loanId: string, input: z.infer<typeof repaySchema>): Promise<RepaymentResult> {
+/** Where a repayment's money comes from when it is not the channel's own settlement account (M-Pesa suspense, a guarantor's savings). */
+export interface FundsSource {
+  accountCode: string;
+  memberId?: string;
+}
+
+export async function repayLoan(client: PoolClient, ctx: Ctx, loanId: string, input: z.infer<typeof repaySchema>, funds?: FundsSource): Promise<RepaymentResult> {
   const loan = await lockLoan(client, loanId);
   if (input.reference) {
     const prior = (await client.query('SELECT * FROM loan_repayments WHERE external_ref = $1', [input.reference])).rows[0];
@@ -320,13 +329,14 @@ export async function repayLoan(client: PoolClient, ctx: Ctx, loanId: string, in
   }
   if (input.channel === 'mpesa' && !input.reference) throw new BadRequestError('An M-Pesa repayment needs the M-Pesa transaction code.');
   const receivedOn = input.receivedOn ?? (await today(client));
-  const settle = settlementAccount(input.channel as Channel);
+  const settle = funds?.accountCode ?? settlementAccount(input.channel as Channel);
+  const fundsMember = funds?.memberId;
 
   // money arriving on a loan already written off is a recovery: income, not repayment of what is still lent
   if (loan.status === 'written_off') {
     const entry = await postEntry(client, ctx.orgId, {
       entryDate: receivedOn, memo: `recovery on written-off loan ${loan.loan_no}`, sourceType: 'loan_recovery', sourceId: loanId, postedBy: ctx.userId,
-      lines: [{ accountCode: settle, debitCents: input.amountCents }, { accountCode: CODES.recoveries, creditCents: input.amountCents, memberId: loan.member_id, loanId }]
+      lines: [{ accountCode: settle, debitCents: input.amountCents, memberId: fundsMember }, { accountCode: CODES.recoveries, creditCents: input.amountCents, memberId: loan.member_id, loanId }]
     });
     const row = (await client.query(
       `INSERT INTO loan_repayments (org_id, loan_id, amount_cents, channel, external_ref, recovery_cents, received_on, received_by, journal_entry_id)
@@ -347,9 +357,14 @@ export async function repayLoan(client: PoolClient, ctx: Ctx, loanId: string, in
       [loanId, line.installmentNo, line.penaltyCents, line.interestCents, line.principalCents]
     );
   }
-  const lines: Array<{ accountCode: string; debitCents?: number; creditCents?: number; memberId?: string; loanId?: string }> = [{ accountCode: settle, debitCents: input.amountCents }];
+  const lines: Array<{ accountCode: string; debitCents?: number; creditCents?: number; memberId?: string; loanId?: string }> = [{ accountCode: settle, debitCents: input.amountCents, memberId: fundsMember }];
   if (allocation.principalCents > 0) lines.push({ accountCode: CODES.loans, creditCents: allocation.principalCents, memberId: loan.member_id, loanId });
-  if (allocation.interestCents > 0) lines.push({ accountCode: CODES.interestIncome, creditCents: allocation.interestCents, loanId });
+  // interest on an instalment already accrued clears the receivable; interest paid before it fell due is income on receipt
+  const accrued = new Set(rows.filter((r) => r.accruedOn !== null).map((r) => r.installmentNo));
+  const interestToReceivable = allocation.lines.filter((l) => accrued.has(l.installmentNo)).reduce((sum, l) => sum + l.interestCents, 0);
+  const interestToIncome = allocation.interestCents - interestToReceivable;
+  if (interestToReceivable > 0) lines.push({ accountCode: CODES.accruedInterest, creditCents: interestToReceivable, memberId: loan.member_id, loanId });
+  if (interestToIncome > 0) lines.push({ accountCode: CODES.interestIncome, creditCents: interestToIncome, loanId });
   if (allocation.penaltyCents > 0) lines.push({ accountCode: CODES.penaltiesReceivable, creditCents: allocation.penaltyCents, memberId: loan.member_id, loanId });
   if (allocation.unappliedCents > 0) lines.push({ accountCode: CODES.unapplied, creditCents: allocation.unappliedCents, memberId: loan.member_id, loanId });
   const entry = await postEntry(client, ctx.orgId, { entryDate: receivedOn, memo: `repayment ${loan.loan_no}${input.reference ? ` (${input.reference})` : ''}`, sourceType: 'loan_repayment', sourceId: loanId, postedBy: ctx.userId, lines });
@@ -365,7 +380,11 @@ export async function repayLoan(client: PoolClient, ctx: Ctx, loanId: string, in
     [loanId]
   )).rows[0];
   const closed = Number(left.n) === 0;
-  if (closed) await client.query(`UPDATE loans SET status = 'closed', closed_on = $2 WHERE id = $1`, [loanId, receivedOn]);
+  if (closed) {
+    await client.query(`UPDATE loans SET status = 'closed', closed_on = $2 WHERE id = $1`, [loanId, receivedOn]);
+    // a loan repaid in full no longer needs its guarantors: their exposure is released
+    await client.query('UPDATE loan_guarantors SET released_on = $2 WHERE loan_id = $1 AND released_on IS NULL', [loanId, receivedOn]);
+  }
   await audit(client, ctx, 'loan.repay', 'loan', loanId, { amountCents: input.amountCents, closed });
   return {
     id: row.id, duplicate: false, penaltyCents: allocation.penaltyCents, interestCents: allocation.interestCents, principalCents: allocation.principalCents,
@@ -373,47 +392,193 @@ export async function repayLoan(client: PoolClient, ctx: Ctx, loanId: string, in
   };
 }
 
-// ---- penalties -----------------------------------------------------------------------------------------------------
+// ---- penalties and interest accrual ---------------------------------------------------------------------------------------
+
+export const BATCH_LOANS = 500;
+
+/** The identity background jobs act as; it is also what payments applied by the system are attributed to. */
+export const SYSTEM_ACTOR = '00000000-0000-0000-0000-000000000000';
+
+export interface PenaltyRunResult {
+  asOf: string;
+  loansSeen: number;
+  charged: number;
+  totalCents: number;
+  /** loans a repayment held at that moment: left for the next run (or a repeat of this one), never waited for */
+  skippedBusy: number;
+  batches: number;
+}
+
+/**
+ * Locks up to a batch of loans without waiting for any a repayment holds. A batch job that queued behind a repayment would
+ * make the repayment queue behind the job's other locks, so busy loans are skipped and reported instead.
+ */
+async function lockBatch(client: PoolClient, ids: string[]): Promise<string[]> {
+  const { rows } = await client.query(`SELECT id FROM loans WHERE id = ANY($1::uuid[]) AND status = 'disbursed' ORDER BY id FOR UPDATE SKIP LOCKED`, [ids]);
+  return rows.map((r) => r.id as string);
+}
 
 /**
  * Charges the month's penalty on every instalment that is overdue beyond its grace days. Safe to run any number of times
- * in a month: (loan, instalment, month) is unique, so a second run adds nothing.
+ * (daily from the scheduler, or by hand): (loan, instalment, month) is unique, so a repeat adds nothing.
+ *
+ * It works in transactions of about BATCH_LOANS loans each, never one transaction over the whole book. Within a batch the
+ * candidates are found with one query, the journal entries are posted in bulk (one per loan), and the penalty rows and
+ * schedule balances are written with one statement each; the loans are locked only for those few statements.
  */
-export async function runPenalties(client: PoolClient, ctx: Ctx, asOf: string) {
+export async function runPenalties(orgId: string, userId: string, asOf: string, opts: { batchSize?: number; client?: PoolClient } = {}): Promise<PenaltyRunResult> {
   const month = asOf.slice(0, 7);
-  const loans = (await client.query(`SELECT * FROM loans WHERE status = 'disbursed' AND penalty_rate_bp > 0 ORDER BY loan_no FOR UPDATE`)).rows;
-  let charged = 0;
-  let totalCents = 0;
-  for (const loan of loans) {
-    const rows = (await client.query('SELECT * FROM loan_schedule WHERE loan_id = $1 ORDER BY installment_no FOR UPDATE', [loan.id])).rows.map(toOwed);
-    for (const row of rows) {
-      if (addDaysToDay(row.dueDate, loan.grace_days) >= asOf) continue;
-      const overdue = row.principalCents - row.paidPrincipalCents + (row.interestCents - row.paidInterestCents);
-      const amount = penaltyFor(overdue, loan.penalty_rate_bp);
-      if (amount <= 0) continue;
-      // The loan row is locked, so no one else can charge this instalment between this check and the insert. The check comes
-      // first because a penalty row is append-only: it is written once, complete, with the journal entry that booked it.
-      const already = await client.query('SELECT 1 FROM loan_penalties WHERE loan_id = $1 AND installment_no = $2 AND period_month = $3', [loan.id, row.installmentNo, month]);
-      if (already.rows[0]) continue;
-      const penaltyId = randomUUID();
-      const entry = await postEntry(client, ctx.orgId, {
-        entryDate: asOf, memo: `penalty ${loan.loan_no} instalment ${row.installmentNo} (${month})`, sourceType: 'loan_penalty', sourceId: penaltyId, postedBy: ctx.userId,
-        lines: [
-          { accountCode: CODES.penaltiesReceivable, debitCents: amount, memberId: loan.member_id, loanId: loan.id },
-          { accountCode: CODES.penaltyIncome, creditCents: amount, loanId: loan.id }
-        ]
-      });
-      await client.query(
-        `INSERT INTO loan_penalties (id, org_id, loan_id, installment_no, period_month, amount_cents, journal_entry_id, charged_on) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        [penaltyId, ctx.orgId, loan.id, row.installmentNo, month, amount, entry.id, asOf]
-      );
-      await client.query('UPDATE loan_schedule SET penalty_cents = penalty_cents + $3 WHERE loan_id = $1 AND installment_no = $2', [loan.id, row.installmentNo, amount]);
-      charged += 1;
-      totalCents += amount;
-    }
+  const size = opts.batchSize ?? BATCH_LOANS;
+  const ctx: Ctx = { orgId, userId, role: 'owner', branchId: null };
+  // a caller already inside a transaction (sample data) passes its client; everyone else gets one transaction per batch
+  const inTxn = <T>(fn: (c: PoolClient) => Promise<T>): Promise<T> => (opts.client ? fn(opts.client) : withOrg(orgId, fn));
+  const result: PenaltyRunResult = { asOf, loansSeen: 0, charged: 0, totalCents: 0, skippedBusy: 0, batches: 0 };
+  let after = '00000000-0000-0000-0000-000000000000';
+  for (;;) {
+    const batch = await inTxn(async (client) => {
+      const candidates = (await client.query(
+        `SELECT l.id FROM loans l
+          WHERE l.status = 'disbursed' AND l.penalty_rate_bp > 0 AND l.id > $1
+            AND EXISTS (SELECT 1 FROM loan_schedule s WHERE s.loan_id = l.id AND s.due_date + l.grace_days < $2::date
+                         AND (s.principal_cents - s.paid_principal_cents) + (s.interest_cents - s.paid_interest_cents) > 0)
+          ORDER BY l.id LIMIT $3`,
+        [after, asOf, size]
+      )).rows.map((r) => r.id as string);
+      if (candidates.length === 0) return { done: true as const, last: after, seen: 0, charged: 0, total: 0, busy: 0 };
+      const locked = await lockBatch(client, candidates);
+      const due = locked.length === 0 ? [] : (await client.query(
+        `SELECT l.id AS loan_id, l.loan_no, l.member_id, s.installment_no,
+                (((s.principal_cents - s.paid_principal_cents) + (s.interest_cents - s.paid_interest_cents)) * l.penalty_rate_bp + 5000) / 10000 AS amount
+           FROM loans l JOIN loan_schedule s ON s.loan_id = l.id
+          WHERE l.id = ANY($1::uuid[]) AND s.due_date + l.grace_days < $2::date
+            AND (s.principal_cents - s.paid_principal_cents) + (s.interest_cents - s.paid_interest_cents) > 0
+            AND (((s.principal_cents - s.paid_principal_cents) + (s.interest_cents - s.paid_interest_cents)) * l.penalty_rate_bp + 5000) / 10000 > 0
+            AND NOT EXISTS (SELECT 1 FROM loan_penalties p WHERE p.loan_id = l.id AND p.installment_no = s.installment_no AND p.period_month = $3)
+          ORDER BY l.id, s.installment_no`,
+        [locked, asOf, month]
+      )).rows;
+      let charged = 0;
+      let total = 0;
+      if (due.length > 0) {
+        const byLoan = new Map<string, typeof due>();
+        for (const row of due) byLoan.set(row.loan_id, [...(byLoan.get(row.loan_id) ?? []), row]);
+        const entryDate = await postingDateFor(client, asOf);
+        const loans = [...byLoan.entries()];
+        const posted = await postEntries(client, orgId, loans.map(([loanId, rows]) => {
+          const sum = rows.reduce((x, r) => x + Number(r.amount), 0);
+          return {
+            entryDate, memo: `penalty ${rows[0].loan_no} (${month})`, sourceType: 'loan_penalty', sourceId: randomUUID(), postedBy: userId,
+            lines: [
+              { accountCode: CODES.penaltiesReceivable, debitCents: sum, memberId: rows[0].member_id as string, loanId },
+              { accountCode: CODES.penaltyIncome, creditCents: sum, loanId }
+            ]
+          };
+        }));
+        const entryOf = new Map(loans.map(([loanId], i) => [loanId, posted[i]!.id]));
+        await client.query(
+          `INSERT INTO loan_penalties (org_id, loan_id, installment_no, period_month, amount_cents, journal_entry_id, charged_on)
+           SELECT $1, t.loan_id, t.installment_no, $2, t.amount, t.entry_id, $3::date
+             FROM unnest($4::uuid[], $5::int[], $6::bigint[], $7::uuid[]) AS t(loan_id, installment_no, amount, entry_id)`,
+          [orgId, month, asOf, due.map((r) => r.loan_id), due.map((r) => r.installment_no), due.map((r) => Number(r.amount)), due.map((r) => entryOf.get(r.loan_id))]
+        );
+        await client.query(
+          `UPDATE loan_schedule s SET penalty_cents = s.penalty_cents + t.amount
+             FROM unnest($1::uuid[], $2::int[], $3::bigint[]) AS t(loan_id, installment_no, amount)
+            WHERE s.loan_id = t.loan_id AND s.installment_no = t.installment_no`,
+          [due.map((r) => r.loan_id), due.map((r) => r.installment_no), due.map((r) => Number(r.amount))]
+        );
+        charged = due.length;
+        total = due.reduce((x, r) => x + Number(r.amount), 0);
+      }
+      return { done: candidates.length < size, last: candidates[candidates.length - 1]!, seen: candidates.length, charged, total, busy: candidates.length - locked.length };
+    });
+    result.batches += 1;
+    result.loansSeen += batch.seen;
+    result.charged += batch.charged;
+    result.totalCents += batch.total;
+    result.skippedBusy += batch.busy;
+    after = batch.last;
+    if (batch.done) break;
   }
-  await audit(client, ctx, 'loan.penalties_run', 'loan', null, { asOf, charged, totalCents });
-  return { asOf, charged, totalCents };
+  await inTxn(async (client) => {
+    await client.query(
+      `INSERT INTO penalty_runs (org_id, run_date, loans_seen, charged, total_cents, skipped_busy, finished_at) VALUES ($1, $2, $3, $4, $5, $6, now())
+       ON CONFLICT (org_id, run_date) DO UPDATE SET loans_seen = EXCLUDED.loans_seen, charged = penalty_runs.charged + EXCLUDED.charged,
+         total_cents = penalty_runs.total_cents + EXCLUDED.total_cents, skipped_busy = EXCLUDED.skipped_busy, finished_at = now()`,
+      [orgId, asOf, result.loansSeen, result.charged, result.totalCents, result.skippedBusy]
+    );
+    await audit(client, ctx, 'loan.penalties_run', 'loan', null, { asOf, charged: result.charged, totalCents: result.totalCents, skippedBusy: result.skippedBusy });
+  });
+  return result;
+}
+
+export interface AccrualRunResult {
+  asOf: string;
+  installments: number;
+  accruedCents: number;
+  skippedBusy: number;
+  batches: number;
+}
+
+/**
+ * Books the interest of every instalment that has fallen due (due date on or before asOf) and was not yet accrued: one entry
+ * per instalment, dated its due day, debiting accrued interest receivable and crediting interest income. Interest already
+ * paid on the instalment before it fell due was recognised on receipt, so only the unpaid part is accrued. Marking the
+ * instalment accrued is what makes the run idempotent. A later repayment of that interest clears the receivable, not income.
+ */
+export async function runInterestAccrual(orgId: string, userId: string, asOf: string, opts: { batchSize?: number; client?: PoolClient } = {}): Promise<AccrualRunResult> {
+  const size = opts.batchSize ?? BATCH_LOANS;
+  const ctx: Ctx = { orgId, userId, role: 'owner', branchId: null };
+  const inTxn = <T>(fn: (c: PoolClient) => Promise<T>): Promise<T> => (opts.client ? fn(opts.client) : withOrg(orgId, fn));
+  const result: AccrualRunResult = { asOf, installments: 0, accruedCents: 0, skippedBusy: 0, batches: 0 };
+  let after = '00000000-0000-0000-0000-000000000000';
+  for (;;) {
+    const batch = await inTxn(async (client) => {
+      const candidates = (await client.query(
+        `SELECT l.id FROM loans l
+          WHERE l.status = 'disbursed' AND l.id > $1
+            AND EXISTS (SELECT 1 FROM loan_schedule s WHERE s.loan_id = l.id AND s.interest_accrued_on IS NULL AND s.due_date <= $2::date)
+          ORDER BY l.id LIMIT $3`,
+        [after, asOf, size]
+      )).rows.map((r) => r.id as string);
+      if (candidates.length === 0) return { done: true as const, last: after, count: 0, total: 0, busy: 0 };
+      const locked = await lockBatch(client, candidates);
+      const rows = locked.length === 0 ? [] : (await client.query(
+        `SELECT s.id, s.loan_id, s.installment_no, to_char(s.due_date, 'YYYY-MM-DD') AS due, s.interest_cents - s.paid_interest_cents AS amount, l.loan_no, l.member_id
+           FROM loan_schedule s JOIN loans l ON l.id = s.loan_id
+          WHERE l.id = ANY($1::uuid[]) AND s.interest_accrued_on IS NULL AND s.due_date <= $2::date ORDER BY l.id, s.installment_no FOR UPDATE OF s`,
+        [locked, asOf]
+      )).rows;
+      const owing = rows.filter((r) => Number(r.amount) > 0);
+      if (owing.length > 0) {
+        const dates = new Map<string, string>();
+        for (const d of new Set(owing.map((r) => r.due as string))) dates.set(d, await postingDateFor(client, d));
+        await postEntries(client, orgId, owing.map((r) => ({
+          entryDate: dates.get(r.due as string)!, memo: `interest accrued ${r.loan_no} instalment ${r.installment_no}`, sourceType: 'interest_accrual', sourceId: r.id as string, postedBy: userId,
+          lines: [
+            { accountCode: CODES.accruedInterest, debitCents: Number(r.amount), memberId: r.member_id as string, loanId: r.loan_id as string },
+            { accountCode: CODES.interestIncome, creditCents: Number(r.amount), loanId: r.loan_id as string }
+          ]
+        })));
+      }
+      if (rows.length > 0) await client.query('UPDATE loan_schedule SET interest_accrued_on = $2::date WHERE id = ANY($1::uuid[])', [rows.map((r) => r.id), asOf]);
+      return { done: candidates.length < size, last: candidates[candidates.length - 1]!, count: rows.length, total: owing.reduce((x, r) => x + Number(r.amount), 0), busy: candidates.length - locked.length };
+    });
+    result.batches += 1;
+    result.installments += batch.count;
+    result.accruedCents += batch.total;
+    result.skippedBusy += batch.busy;
+    after = batch.last;
+    if (batch.done) break;
+  }
+  await inTxn((client) => audit(client, ctx, 'loan.interest_accrual', 'loan', null, { asOf, installments: result.installments, accruedCents: result.accruedCents }));
+  return result;
+}
+
+/** Interest accrued and not yet paid on one loan: what a write-off or a restructure must take off the books. */
+async function accruedInterestLeft(client: PoolClient, loanId: string): Promise<number> {
+  const { rows } = await client.query(`SELECT COALESCE(sum(interest_cents - paid_interest_cents), 0)::bigint AS n FROM loan_schedule WHERE loan_id = $1 AND interest_accrued_on IS NOT NULL`, [loanId]);
+  return Number(rows[0].n);
 }
 
 // ---- write-off and restructure ------------------------------------------------------------------------------------
@@ -435,10 +600,16 @@ export async function writeOffLoan(client: PoolClient, ctx: Ctx, id: string, inp
     if (principalLeft > 0) lines.push({ accountCode: CODES.loans, creditCents: principalLeft, memberId: loan.member_id, loanId: id });
     if (penaltyLeft > 0) lines.push({ accountCode: CODES.penaltiesReceivable, creditCents: penaltyLeft, memberId: loan.member_id, loanId: id });
   }
+  // interest that was accrued but never paid is not collectable either: take it off the receivable against interest income
+  const accruedLeft = await accruedInterestLeft(client, id);
+  if (accruedLeft > 0) {
+    lines.push({ accountCode: CODES.interestIncome, debitCents: accruedLeft, loanId: id });
+    lines.push({ accountCode: CODES.accruedInterest, creditCents: accruedLeft, memberId: loan.member_id, loanId: id });
+  }
   let seq: number | null = null;
   if (lines.length > 0) seq = (await postEntry(client, ctx.orgId, { entryDate: date, memo: `loan ${loan.loan_no} written off`, sourceType: 'loan_writeoff', sourceId: id, postedBy: ctx.userId, lines })).seq;
   await client.query(`UPDATE loans SET status = 'written_off', written_off_on = $2, decision_note = COALESCE(decision_note || E'\\n', '') || $3 WHERE id = $1`, [id, date, `Write-off: ${input.note}`]);
-  await audit(client, ctx, 'loan.writeoff', 'loan', id, { principalCents: principalLeft, penaltyCents: penaltyLeft, daysOverdue: arrears.daysOverdue, note: input.note });
+  await audit(client, ctx, 'loan.writeoff', 'loan', id, { principalCents: principalLeft, penaltyCents: penaltyLeft, accruedInterestReversedCents: accruedLeft, daysOverdue: arrears.daysOverdue, note: input.note });
   return { id, status: 'written_off' as const, writtenOffPrincipalCents: principalLeft, writtenOffPenaltyCents: penaltyLeft, journalSeq: seq };
 }
 
@@ -491,6 +662,16 @@ export async function restructureLoan(client: PoolClient, ctx: Ctx, id: string, 
     lines.push({ accountCode: CODES.penaltyIncome, debitCents: penaltyLeft, loanId: id });
     lines.push({ accountCode: CODES.penaltiesReceivable, creditCents: penaltyLeft, memberId: old.member_id, loanId: id });
   }
+  const accruedLeft = await accruedInterestLeft(client, id);
+  if (accruedLeft > 0) {
+    lines.push({ accountCode: CODES.interestIncome, debitCents: accruedLeft, loanId: id });
+    lines.push({ accountCode: CODES.accruedInterest, creditCents: accruedLeft, memberId: old.member_id, loanId: id });
+  }
+  // the guarantors stand behind the new loan as they did the old one
+  await client.query(
+    `INSERT INTO loan_guarantors (org_id, loan_id, guarantor_member_id, guaranteed_cents) SELECT org_id, $2, guarantor_member_id, guaranteed_cents FROM loan_guarantors WHERE loan_id = $1 AND released_on IS NULL`,
+    [id, fresh.id]
+  );
   const entry = await postEntry(client, ctx.orgId, { entryDate: date, memo: `restructure ${old.loan_no} -> ${loanNo}`, sourceType: 'loan_restructure', sourceId: fresh.id, postedBy: ctx.userId, lines });
   await client.query(`UPDATE loans SET status = 'restructured', restructured_into = $2, closed_on = $3 WHERE id = $1`, [id, fresh.id, date]);
   await audit(client, ctx, 'loan.restructure', 'loan', id, { into: loanNo, principalCents: principalLeft, penaltyWaivedCents: penaltyLeft, note: input.note });
@@ -513,11 +694,11 @@ export async function listLoans(client: PoolClient, opts: { status?: string; mem
   const where: string[] = [];
   if (opts.status) { params.push(opts.status); where.push(`l.status = $${params.length}`); }
   if (opts.memberId) { params.push(opts.memberId); where.push(`l.member_id = $${params.length}`); }
-  if (opts.search) { params.push(`%${opts.search.toLowerCase()}%`); where.push(`(lower(l.loan_no) LIKE $${params.length} OR lower(m.full_name) LIKE $${params.length} OR lower(m.member_no) LIKE $${params.length})`); }
-  if (opts.after) { params.push(opts.after); where.push(`l.loan_no < $${params.length}`); }
+  if (opts.search) { params.push(likeContains(opts.search)); where.push(`(lower(l.loan_no) LIKE $${params.length} OR lower(m.full_name) LIKE $${params.length} OR lower(m.member_no) LIKE $${params.length})`); }
+  if (opts.after) { params.push(numberSeq(opts.after)); where.push(`l.loan_seq < $${params.length}`); }
   params.push(opts.limit + 1);
   const rows = (await client.query(
-    `SELECT l.*, m.member_no, m.full_name FROM loans l JOIN members m ON m.id = l.member_id ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY l.loan_no DESC LIMIT $${params.length}`,
+    `SELECT l.*, m.member_no, m.full_name FROM loans l JOIN members m ON m.id = l.member_id ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY l.loan_seq DESC LIMIT $${params.length}`,
     params
   )).rows;
   const more = rows.length > opts.limit;

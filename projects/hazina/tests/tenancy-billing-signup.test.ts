@@ -113,7 +113,7 @@ describe.runIf(on)('billing (provisional prices) and sample organisations', () =
     await pool.withMigrator((c) => c.query(`UPDATE branches SET paybill_number = $2 WHERE id = $1`, [t.branchId, code]));
     const { ingestConfirmation } = await import('../src/mpesa/service');
     await ingestConfirmation({ TransID: `SUSP${Date.now()}`, TransTime: new Date(Date.now() + 3 * 3_600_000).toISOString().replace(/[-:T]/g, '').slice(0, 14), TransAmount: 100, BusinessShortCode: code, BillRefNumber: 'M99999', MSISDN: '254700000002' });
-    expect((await get(t.owner.auth, '/v1/mpesa/payments')).body).toHaveLength(1);
+    expect((await get(t.owner.auth, '/v1/mpesa/payments')).body.items).toHaveLength(1);
 
     // the periodic job has issued the next invoice by now; paying it reopens the account at once
     await billing.runBillingCycle();
@@ -143,8 +143,8 @@ describe.runIf(on)('billing (provisional prices) and sample organisations', () =
     expect((await get(auth, '/v1/loans?status=applied')).body.items).toHaveLength(1);
     expect((await get(auth, '/v1/loans?status=appraised')).body.items).toHaveLength(1);
     expect((await get(auth, '/v1/loans?status=approved')).body.items).toHaveLength(1);
-    expect((await get(auth, '/v1/savings?status=pending_approval')).body).toHaveLength(1);
-    expect((await get(auth, '/v1/mpesa/payments?status=unmatched')).body).toHaveLength(3);
+    expect((await get(auth, '/v1/savings?status=pending_approval')).body.items).toHaveLength(1);
+    expect((await get(auth, '/v1/mpesa/payments?status=unmatched')).body.items).toHaveLength(3);
     const bs = (await get(auth, '/v1/reports/balance-sheet')).body;
     expect(bs.balanced).toBe(true);
     const billing = await import('../src/billing/service');

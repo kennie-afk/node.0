@@ -16,6 +16,7 @@ import { closeFiscalYear } from './closing.service';
 import { closePeriod, listFiscalYears, reopenPeriod } from './periods.service';
 import { trialBalance } from './balances.service';
 import { recordAudit, verifyAuditChain } from './audit.service';
+import { checkHeadAgainstDatabase, currentHead, loadExportedHead } from './chain-head';
 import { exec, select, selectOne } from './sql';
 import * as s from './schemas';
 import { iso } from './chain';
@@ -227,6 +228,20 @@ router.get('/integrity', requirePermission('audit:read'), route(async () => {
   const { churchId } = me();
   const [ledger, audit] = await Promise.all([verifyLedger(t, churchId), verifyAuditChain(t, churchId)]);
   return { ok: ledger.ok && audit.ok, ledger, audit };
+}));
+
+/**
+ * The chain heads as the database holds them now, the last head pinned off-database, and whether the
+ * database still agrees with that export. A mismatch here means history changed after the export
+ * even if every hash inside the database is self-consistent.
+ */
+router.get('/audit/head', requirePermission('audit:read'), route(async () => {
+  const t = await requestTx();
+  const { churchId } = me();
+  const head = await currentHead(t, churchId);
+  const exported = await loadExportedHead(churchId);
+  const check = exported ? await checkHeadAgainstDatabase(t, churchId, exported) : null;
+  return { head, lastExport: exported, exportCheck: check, exportConfigured: true };
 }));
 
 router.get('/audit', requirePermission('audit:read'), route(async (req) => {

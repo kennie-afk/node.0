@@ -5,7 +5,7 @@ import db from '@models';
 import { closeRateLimitStore } from './middleware/rate-limit.middleware';
 import { observePool, startMetricsServer, stopMetricsServer } from './common/metrics';
 import { isPostgres } from './common/tenant-db';
-import { isProduction } from './config/env';
+import { assertProvidersSafeForProduction, isProduction } from './config/env';
 
 /**
  * Row-level security does not apply to superusers, BYPASSRLS roles or (unless forced) table
@@ -32,6 +32,7 @@ async function main(): Promise<void> {
   await db.sequelize.authenticate();
   logger.info('database connected');
   await assertUnprivilegedDatabaseRole();
+  for (const warning of assertProvidersSafeForProduction()) logger.warn(warning);
   startMetricsServer(() => observePool(db.sequelize));
 
   const app = createApp();

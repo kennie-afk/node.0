@@ -11,3 +11,6 @@ docs
 tools
 deploy
 README.md
+
+# local object-store driver data (attachments, sermon media, exported chain heads)
+.object-store

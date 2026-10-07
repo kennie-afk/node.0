@@ -54,7 +54,7 @@ describe.runIf(on)('M-Pesa at the till, credit accounts, stock-takes, the day cl
     // matches nothing: kept for the manager, never dropped
     const orphan = transId();
     await confirm(SECRET, { TransID: orphan, TransTime: darajaTime(), TransAmount: 999, BusinessShortCode: till, BillRefNumber: 'NOPE', MSISDN: '254700000001' });
-    const unmatched = (await get(t.owner.auth, '/v1/mpesa/unmatched')).body;
+    const unmatched = (await get(t.owner.auth, '/v1/mpesa/unmatched')).body.items;
     expect(unmatched.map((u: any) => u.externalRef)).toContain(orphan);
 
     // an unknown till is ignored without error, and a wrong secret is not a route at all
@@ -81,7 +81,7 @@ describe.runIf(on)('M-Pesa at the till, credit accounts, stock-takes, the day cl
     await confirm(SECRET, { TransID: code('EARLY'), TransTime: darajaTime(), TransAmount: 100, BusinessShortCode: till, BillRefNumber: 'ZZZ', MSISDN: '254711111111' });
     const b = (await sell(t.owner.auth, { lines: [{ productId: p, qty: 1 }], payments: [{ method: 'mpesa', amountCents: 10000, externalRef: code('EARLY') }] })).body;
     expect(b.status).toBe('completed');
-    expect((await get(t.owner.auth, '/v1/mpesa/unmatched')).body.map((u: any) => u.externalRef)).not.toContain(code('EARLY'));
+    expect((await get(t.owner.auth, '/v1/mpesa/unmatched')).body.items.map((u: any) => u.externalRef)).not.toContain(code('EARLY'));
     // the same code cannot pay a second sale
     const c = await sell(t.owner.auth, { lines: [{ productId: p, qty: 1 }], payments: [{ method: 'mpesa', amountCents: 10000, externalRef: code('EARLY') }] });
     expect(c.status).toBe(409);

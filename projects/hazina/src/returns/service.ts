@@ -2,6 +2,7 @@ import { PoolClient } from 'pg';
 import { z } from 'zod';
 import { BadRequestError, ConflictError, NotFoundError } from '../domain/errors';
 import { Ctx, audit } from '../common/context';
+import { cursorTs, decodeCursor, encodeCursor } from '../common/search';
 import { Definition, defaultTemplates, definitionSchema, generate } from './engine';
 
 const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -53,11 +54,24 @@ export async function generateReturn(client: PoolClient, ctx: Ctx, input: z.infe
   return { id: row.id as string, createdAt: row.created_at as Date, payload };
 }
 
-export async function listReturns(client: PoolClient, limit: number) {
+export async function listReturns(client: PoolClient, opts: { limit: number; after?: string }) {
+  const params: unknown[] = [];
+  let cursor = '';
+  if (opts.after) {
+    const c = decodeCursor(opts.after);
+    params.push(c.at, c.id);
+    cursor = 'WHERE (r.created_at, r.id) < ($1::timestamptz, $2::uuid)';
+  }
+  params.push(opts.limit + 1);
   const rows = (await client.query(
-    `SELECT r.id, r.period_start, r.period_end, r.created_at, t.code, t.name, t.version FROM returns r JOIN return_templates t ON t.id = r.template_id ORDER BY r.created_at DESC LIMIT $1`, [limit]
+    `SELECT r.id, r.period_start, r.period_end, r.created_at, ${cursorTs('r.created_at')} AS cur, t.code, t.name, t.version FROM returns r JOIN return_templates t ON t.id = r.template_id ${cursor} ORDER BY r.created_at DESC, r.id DESC LIMIT $${params.length}`, params
   )).rows;
-  return rows.map((r) => ({ id: r.id, code: r.code, name: r.name, version: r.version, periodStart: r.period_start, periodEnd: r.period_end, createdAt: r.created_at }));
+  const page = rows.slice(0, opts.limit);
+  const last = page[page.length - 1];
+  return {
+    items: page.map((r) => ({ id: r.id, code: r.code, name: r.name, version: r.version, periodStart: r.period_start, periodEnd: r.period_end, createdAt: r.created_at })),
+    nextCursor: rows.length > opts.limit && last ? encodeCursor(last.cur as string, last.id as string) : null
+  };
 }
 
 export async function getReturn(client: PoolClient, id: string) {

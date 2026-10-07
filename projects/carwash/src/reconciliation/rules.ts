@@ -55,7 +55,7 @@ function totalLitres(telemetry: TelemetryWindow[]): number {
   return telemetry.reduce((sum, window) => sum + window.litres, 0);
 }
 
-function countedJobs(jobs: JobRecord[]): JobRecord[] {
+export function countedJobs(jobs: JobRecord[]): JobRecord[] {
   return jobs.filter((job) => COUNTED_STATES.has(job.state));
 }
 
@@ -324,6 +324,89 @@ export const demandVersusWork: Rule = (input) => {
   ];
 };
 
+/**
+ * A cash payment whose amount differs from the quoted price of its job. The API refuses that unless a
+ * supervisor, manager or owner records it (and then it carries their id and is not flagged), so what
+ * reaches this rule is a payment written some other way: an old record, a direct database change, or a
+ * path added later that forgot the check. A difference nobody authorised is exactly what to surface.
+ */
+export const cashAmountMismatch: Rule = (input) => {
+  const jobs = new Map(input.jobs.map((job) => [job.id, job]));
+  const off = input.payments.flatMap((payment) => {
+    if (payment.channel !== 'cash' || !payment.jobId || payment.varianceAuthorisedBy) return [];
+    const job = jobs.get(payment.jobId);
+    if (!job || job.quotedTotal === payment.amount) return [];
+    return [{ paymentId: payment.id, jobId: job.id, quotedCents: job.quotedTotal, declaredCents: payment.amount }];
+  });
+  if (off.length === 0) return [];
+
+  const short = off.reduce((sum, item) => sum + Math.max(0, item.quotedCents - item.declaredCents), 0);
+  return [
+    {
+      type: 'cash_amount_mismatch',
+      severity: short > fromShillings(2000) ? 'high' : 'medium',
+      estimatedValue: cents(short),
+      summary: `${off.length} cash payment(s) differ from the quoted price with no authorisation`,
+      evidence: { payments: off, shortCents: short }
+    }
+  ];
+};
+
+const MEASURING_DEVICES = new Set(['flow_meter', 'pump_monitor', 'machine']);
+
+/**
+ * A measuring device that sent nothing within `deviceSilentMinutes` of a job at its bay (or its site, for a
+ * device with no bay) while that job was running. Silence is the cheapest way to blind the non-human witness,
+ * and it is invisible unless something looks for it.
+ */
+export const deviceSilent: Rule = (input) => {
+  const devices = (input.devices ?? []).filter((device) => MEASURING_DEVICES.has(device.type));
+  const jobs = countedJobs(input.jobs);
+  if (devices.length === 0 || jobs.length === 0) return [];
+
+  const windowMs = (input.baseline.deviceSilentMinutes ?? 120) * 60_000;
+  const findings: Discrepancy[] = [];
+
+  for (const device of devices) {
+    const seen = device.readingMinutes.map((minute) => minute.getTime()).sort((a, b) => a - b);
+    const relevant = jobs.filter(
+      (job) =>
+        job.createdAt.getTime() >= device.registeredAt.getTime() &&
+        (device.bayId === null || job.bayId === null || job.bayId === device.bayId)
+    );
+    const uncovered = relevant.filter((job) => !hasReadingWithin(seen, job.createdAt.getTime(), windowMs));
+    if (uncovered.length === 0) continue;
+
+    findings.push({
+      type: 'device_silent',
+      severity: uncovered.length === relevant.length ? 'high' : 'medium',
+      estimatedValue: cents(0),
+      summary: `${device.type.replace('_', ' ')} ${device.deviceId.slice(0, 8)} sent no readings within ${Math.round(windowMs / 60_000)} minutes of ${uncovered.length} of ${relevant.length} job(s)`,
+      evidence: {
+        deviceId: device.deviceId,
+        type: device.type,
+        bayId: device.bayId,
+        windowMinutes: Math.round(windowMs / 60_000),
+        readingMinutes: seen.length,
+        uncoveredJobIds: uncovered.map((job) => job.id)
+      }
+    });
+  }
+  return findings;
+};
+
+/** Binary search: is any reading within `windowMs` of `at`? `seen` is sorted ascending. */
+function hasReadingWithin(seen: number[], at: number, windowMs: number): boolean {
+  let low = 0;
+  let high = seen.length;
+  while (low < high) {
+    const mid = (low + high) >> 1;
+    if (seen[mid]! < at - windowMs) low = mid + 1;
+    else high = mid;
+  }
+  return low < seen.length && seen[low]! <= at + windowMs;
+}
+
 export const ALL_RULES: Rule[] = [
   ghostWashFromWater,
   demandVersusWork,
@@ -333,5 +416,7 @@ export const ALL_RULES: Rule[] = [
   afterHoursOperation,
   supplyPilferage,
   cashRatioSpike,
-  abandonedJobPattern
+  abandonedJobPattern,
+  cashAmountMismatch,
+  deviceSilent
 ];

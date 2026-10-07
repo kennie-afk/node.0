@@ -3,6 +3,7 @@ import { Cents, cents } from '../domain/money';
 import { JobState } from '../domain/job';
 import {
   ConsumableDraw,
+  DeviceActivity,
   JobRecord,
   PaymentRecord,
   TelemetryWindow,
@@ -83,9 +84,10 @@ export async function paymentsForDay(
   day: string
 ): Promise<PaymentRecord[]> {
   const { rows } = await client.query(
-    `SELECT id, site_id, channel, amount_cents, external_ref, job_id, received_at
+    `SELECT id, site_id, channel, amount_cents, external_ref, job_id, received_at, variance_authorised_by
        FROM payments
-      WHERE site_id = $1 AND received_at >= $2::date AND received_at < $2::date + 1`,
+      WHERE site_id = $1 AND received_at >= $2::date AND received_at < $2::date + 1
+        AND reversed_at IS NULL`,
     [siteId, day]
   );
 
@@ -96,7 +98,8 @@ export async function paymentsForDay(
     amount: cents(Number(row.amount_cents)),
     externalRef: row.external_ref,
     jobId: row.job_id,
-    receivedAt: row.received_at
+    receivedAt: row.received_at,
+    varianceAuthorisedBy: row.variance_authorised_by
   }));
 }
 
@@ -111,8 +114,15 @@ export async function telemetryForDay(
             SUM(total) FILTER (WHERE metric = 'water_litres')   AS litres,
             SUM(total) FILTER (WHERE metric = 'pump_seconds')   AS pump_seconds,
             SUM(total) FILTER (WHERE metric = 'machine_cycles') AS cycles
-       FROM telemetry_minute
-      WHERE site_id = $1 AND bucket >= $2::date AND bucket < $2::date + 1
+       FROM (
+              SELECT bay_id, bucket, metric, total FROM telemetry_minute
+               WHERE site_id = $1 AND bucket >= $2::date AND bucket < $2::date + 1
+              UNION ALL
+              -- minutes older than the retention window were rolled up into hours and deleted, so a day
+              -- reconciled again later still sees its water; the two never hold the same readings
+              SELECT bay_id, bucket, metric, total FROM telemetry_hour
+               WHERE site_id = $1 AND bucket >= $2::date AND bucket < $2::date + 1
+            ) readings
       GROUP BY bay_id, date_trunc('hour', bucket)
       ORDER BY from_ts`,
     [siteId, day]
@@ -127,6 +137,38 @@ export async function telemetryForDay(
     pumpRuntimeSeconds: Number(row.pump_seconds ?? 0),
     machineCycles: Number(row.cycles ?? 0)
   }));
+}
+
+/**
+ * Which minutes each measuring device was heard from around the day. Reads the raw readings (the only
+ * table that knows the device), a few hours either side so a job at 00:10 can be covered by a reading at
+ * 23:55 the night before.
+ */
+export async function deviceActivityForDay(client: PoolClient, siteId: string, day: string): Promise<DeviceActivity[]> {
+  const { rows } = await client.query(
+    `SELECT d.id, d.type, d.bay_id, d.created_at,
+            COALESCE(array_agg(DISTINCT date_trunc('minute', t.ts)) FILTER (WHERE t.ts IS NOT NULL), '{}') AS minutes
+       FROM devices d
+       LEFT JOIN telemetry t
+              ON t.device_id = d.id
+             AND t.ts >= $2::date - interval '4 hours' AND t.ts < $2::date + 1 + interval '4 hours'
+      WHERE d.site_id = $1 AND d.status = 'active' AND d.type IN ('flow_meter', 'pump_monitor', 'machine')
+      GROUP BY d.id`,
+    [siteId, day]
+  );
+  return rows.map((row) => ({
+    deviceId: row.id,
+    type: row.type,
+    bayId: row.bay_id,
+    registeredAt: row.created_at,
+    readingMinutes: row.minutes
+  }));
+}
+
+/** service id -> what one wash of it is expected to draw; only services that say anything. */
+export async function serviceConsumables(client: PoolClient): Promise<Map<string, Record<string, number>>> {
+  const { rows } = await client.query(`SELECT id, consumables FROM services WHERE consumables <> '{}'::jsonb`);
+  return new Map(rows.map((row) => [row.id as string, row.consumables as Record<string, number>]));
 }
 
 export async function observationsForDay(

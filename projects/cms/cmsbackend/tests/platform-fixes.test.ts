@@ -26,7 +26,7 @@ describe('fixes found by the console work', () => {
     expect(res.status).toBe(200);
     expect(res.body.data.map((m: any) => m.firstName).sort()).toEqual(['Amina', 'Amos']);
     const none = await request(app).get('/members?q=zzz').set(auth);
-    expect(none.body.total).toBe(0);
+    expect(none.body.data).toHaveLength(0);
   });
 
   it('refuses an event that ends before it starts', async () => {

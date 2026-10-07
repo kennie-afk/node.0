@@ -6,5 +6,5 @@
 - **"Is our data safe?"** Every organisation's data is separated in the database itself (row-level security, tested live with two organisations). There has been no independent security review and no data-protection impact assessment yet; we will not claim otherwise. Your data downloads any time.
 - **"Does it do dividends / interest on shares?"** Not yet.
 - **"Does it send SMS to members?"** Not yet.
-- **"Will our accountant accept it?"** Interest is on a cash basis and there is no IFRS 9 provisioning. Show the accountant `docs/ACCOUNTING.md` and let them decide.
+- **"Will our accountant accept it?"** Interest is accrued per instalment and there is a configurable loan loss provision, but its percentages are illustrative placeholders, not regulatory guidance, and there is no IFRS 9 expected-credit-loss model. Show the accountant `docs/ACCOUNTING.md` and let them decide.
 - **"What if you disappear?"** Everything exports to spreadsheets. We say this up front because it is the honest answer for a product without a track record.

@@ -4,6 +4,9 @@ metadata:
   name: cms-config
 data:
   NODE_ENV: production
+  # Production will not start on mock M-Pesa or SMS, and the default is mock, so this stays closed until
+  # MPESA_MODE (daraja) and SMS_MODE (africastalking) are set here and their credentials are in the Secret.
+  # A demo cluster can instead add ALLOW_MOCK_PROVIDERS_IN_PRODUCTION: "true" to run on mocks knowingly.
   PORT: "4400"
   METRICS_PORT: "9100"
   LOG_LEVEL: info

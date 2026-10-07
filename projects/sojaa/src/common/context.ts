@@ -92,6 +92,9 @@ export interface OrgSettings {
   maxHoursPerWeek: number | null;
   minRestHours: number | null;
   billBasis: 'scheduled' | 'actual';
+  annualLeaveDays: number;
+  sickLeaveDays: number | null;
+  absenceDeduction: 'off' | 'unpaid_leave' | 'unpaid_leave_and_missed';
 }
 
 export function toSettings(row: Record<string, any>): OrgSettings {
@@ -99,7 +102,8 @@ export function toSettings(row: Record<string, any>): OrgSettings {
     minWageCents: Number(row.min_wage_cents), allowancesCountTowardMin: row.allowances_count_toward_min, standardMonthlyHours: row.standard_monthly_hours,
     overtimeMultiplierBp: row.overtime_multiplier_bp, restDayMultiplierBp: row.rest_day_multiplier_bp, holidayMultiplierBp: row.holiday_multiplier_bp,
     checkinEarlyMinutes: row.checkin_early_minutes, lateGraceMinutes: row.late_grace_minutes, missedAfterMinutes: row.missed_after_minutes,
-    defaultGeofenceM: row.default_geofence_m, maxHoursPerWeek: row.max_hours_per_week, minRestHours: row.min_rest_hours, billBasis: row.bill_basis
+    defaultGeofenceM: row.default_geofence_m, maxHoursPerWeek: row.max_hours_per_week, minRestHours: row.min_rest_hours, billBasis: row.bill_basis,
+    annualLeaveDays: row.annual_leave_days, sickLeaveDays: row.sick_leave_days, absenceDeduction: row.absence_deduction
   };
 }
 

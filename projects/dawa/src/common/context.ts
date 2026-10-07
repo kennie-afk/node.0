@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
 import { AppError, BadRequestError, ConflictError, ForbiddenError, NotFoundError, UnauthorizedError } from '../domain/errors';
 import { can, Permission, Role } from '../domain/roles';
+import { assertNotLocked, clearFailures, recordFailure } from '../ratelimit/lockout';
 
 /** Who is acting, taken from the verified token and the database, never from the request body. */
 export interface Ctx {
@@ -106,9 +107,15 @@ export async function verifyWitness(client: PoolClient, ctx: Ctx, witness: Witne
   } catch {
     throw new BadRequestError('The witness phone number is not valid.');
   }
+  // the witness's PIN is a second door to the same account, so it shares the sign-in lockout (recorded outside this transaction, which the failure rolls back)
+  await assertNotLocked(phone);
   const row = (await client.query(`SELECT id, role, pin_hash, status FROM users WHERE phone = $1`, [phone])).rows[0];
   const matches = await bcrypt.compare(witness.pin, row?.pin_hash ?? '$2b$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva');
-  if (!row || !matches || row.status !== 'active') throw new UnauthorizedError('The witness credentials are not valid.');
+  if (!row || !matches || row.status !== 'active') {
+    await recordFailure(phone);
+    throw new UnauthorizedError('The witness credentials are not valid.');
+  }
+  await clearFailures(phone);
   if (row.id === ctx.userId) throw new AppError(422, 'witness-must-differ', 'The witness must be a different person from you.');
   if (!can(row.role, 'controlled')) throw new ForbiddenError('That person may not witness controlled-drug entries.');
   return row.id as string;

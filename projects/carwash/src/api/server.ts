@@ -4,6 +4,8 @@ import { logger } from '../common/logger';
 import { assertRlsIsEffective, closePool, pool } from '../persistence/pool';
 import { runBillingCycle } from '../billing/service';
 import { runDailyCloses } from '../reconciliation/schedule';
+import { keepPartitionsAhead } from '../persistence/partitions';
+import { keepMaintained } from '../persistence/maintenance';
 
 async function main(): Promise<void> {
   assertBillingSafeForProduction();
@@ -33,6 +35,10 @@ async function main(): Promise<void> {
       .catch((error) => logger.error('daily close failed', { error: error instanceof Error ? error.message : String(error) }));
   }, 60 * 60_000);
   closeTimer.unref();
+
+  // Monthly partitions are created ahead of time here, not only when migrations run.
+  const partitionTimer = keepPartitionsAhead();
+  const maintenanceTimer = keepMaintained();
   if (env.BILLING_MODE === 'mock' && env.NODE_ENV === 'production') {
     logger.warn('BILLING_MODE=mock in production: owners can simulate payments and nothing real is collected');
   }
@@ -44,6 +50,8 @@ async function main(): Promise<void> {
     logger.info('shutting down', { signal });
     clearInterval(billingTimer);
     clearInterval(closeTimer);
+    clearInterval(partitionTimer);
+    clearInterval(maintenanceTimer);
     const forced = setTimeout(() => process.exit(1), env.SHUTDOWN_GRACE_MS);
     forced.unref();
     server.close(async () => {

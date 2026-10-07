@@ -9,7 +9,7 @@ import { audit, Ctx, getSettings, need } from '../common/context';
 import { localDayOf, monthBounds, monthOf, TZ } from '../common/time';
 import { BadRequestError, ConflictError, NotFoundError } from '../domain/errors';
 import { can } from '../domain/roles';
-import { computePayslip, GuardPay, Payslip, WorkedShift } from './compute';
+import { Absence, computePayslip, GuardPay, Payslip, WorkedShift } from './compute';
 import { loadTableStates, listHolidays, listTables } from './rates';
 import { workedMinutes } from '../ops/attendance';
 import { TableState } from './deductions';
@@ -73,7 +73,7 @@ async function workedByGuard(client: PoolClient, month: string): Promise<{ byGua
     if (!r.in_at || !r.out_at) continue;
     const minutes = workedMinutes({ startAt: r.start_at, endAt: r.end_at, scheduledMinutes: r.scheduled_minutes, overtimeApprovedMinutes: r.overtime_approved_minutes }, { inAt: r.in_at, outAt: r.out_at, inOverridden: false, outOverridden: false });
     const list = byGuard.get(r.guard_id) ?? [];
-    list.push({ day: localDayOf(r.start_at), workedMinutes: minutes, scheduledMinutes: r.scheduled_minutes, overtimeApprovedMinutes: r.overtime_approved_minutes });
+    list.push({ day: localDayOf(r.start_at), windowStart: new Date(Math.max(new Date(r.in_at).getTime(), new Date(r.start_at).getTime())), workedMinutes: minutes, scheduledMinutes: r.scheduled_minutes, overtimeApprovedMinutes: r.overtime_approved_minutes });
     byGuard.set(r.guard_id, list);
   }
   return { byGuard, unresolved };
@@ -84,16 +84,43 @@ async function adjustmentsByGuard(client: PoolClient, month: string): Promise<Ma
   return new Map(rows.map((r) => [r.guard_id, Number(r.total)]));
 }
 
+/**
+ * Days away in the month, per guard, from the two sources the employer may choose to deduct for. Unpaid leave: approved requests clipped to
+ * the month and to the days the guard was employed. Missed shifts: calendar days (Nairobi) with a scheduled shift that began more than
+ * `missed_after_minutes` ago with no check-in, not already covered by approved leave of any kind (a day of approved leave is never "missed").
+ */
+async function absenceByGuard(client: PoolClient, month: string): Promise<Map<string, Absence>> {
+  const { first, last, nextFirst } = monthBounds(month);
+  const out = new Map<string, Absence>();
+  const entry = (id: string) => out.get(id) ?? out.set(id, { unpaidLeaveDays: 0, missedShiftDays: 0 }).get(id)!;
+  const leave = (await client.query(
+    `SELECT l.guard_id, sum(GREATEST(0, LEAST(l.end_day, COALESCE(g.exited_on, $2::date), $2::date) - GREATEST(l.start_day, g.hired_on, $1::date) + 1))::int AS days
+       FROM leave_requests l JOIN guards g ON g.id = l.guard_id
+      WHERE l.status = 'approved' AND l.kind = 'unpaid' AND l.start_day <= $2::date AND l.end_day >= $1::date GROUP BY l.guard_id`, [first, last])).rows;
+  for (const r of leave) entry(r.guard_id).unpaidLeaveDays = r.days;
+  const missed = (await client.query(
+    `SELECT s.guard_id, count(DISTINCT (s.start_at AT TIME ZONE '${TZ}')::date)::int AS days
+       FROM shifts s JOIN guards g ON g.id = s.guard_id, org_settings os
+      WHERE s.status = 'scheduled' AND s.start_at >= ($1::date::timestamp AT TIME ZONE '${TZ}') AND s.start_at < ($2::date::timestamp AT TIME ZONE '${TZ}')
+        AND s.start_at + (os.missed_after_minutes * interval '1 minute') <= now()
+        AND NOT EXISTS (SELECT 1 FROM attendance_events e WHERE e.shift_id = s.id AND e.kind IN ('in', 'override_in'))
+        AND (s.start_at AT TIME ZONE '${TZ}')::date >= g.hired_on AND (g.exited_on IS NULL OR (s.start_at AT TIME ZONE '${TZ}')::date <= g.exited_on)
+        AND NOT EXISTS (SELECT 1 FROM leave_requests l WHERE l.guard_id = s.guard_id AND l.status = 'approved' AND (s.start_at AT TIME ZONE '${TZ}')::date BETWEEN l.start_day AND l.end_day)
+      GROUP BY s.guard_id`, [first, nextFirst])).rows;
+  for (const r of missed) entry(r.guard_id).missedShiftDays = r.days;
+  return out;
+}
+
 /** The arithmetic of a month, no writes. */
 export async function computeMonth(client: PoolClient, ctx: Ctx, month: string, tables?: TableState[]): Promise<{ rows: Computed[]; unresolvedShifts: number; tables: TableState[] }> {
   assertMonth(month);
   const settings = await getSettings(client);
   const states = tables ?? (await loadTableStates(client));
   const holidays = new Set((await listHolidays(client)).map((h) => h.day));
-  const [guards, worked, adjustments] = await Promise.all([guardsFor(client, ctx, month), workedByGuard(client, month), adjustmentsByGuard(client, month)]);
+  const [guards, worked, adjustments, absences] = await Promise.all([guardsFor(client, ctx, month), workedByGuard(client, month), adjustmentsByGuard(client, month), absenceByGuard(client, month)]);
   const rows = guards.map((g) => ({
     guardId: g.id, guardNo: g.guardNo, guardName: g.name, nationalId: g.nationalId, branch: g.branch,
-    payslip: computePayslip({ guard: g, month, settings, holidays, shifts: worked.byGuard.get(g.id) ?? [], adjustmentsCents: adjustments.get(g.id) ?? 0, tables: states, today: localDayOf(new Date()) })
+    payslip: computePayslip({ guard: g, month, settings, holidays, shifts: worked.byGuard.get(g.id) ?? [], adjustmentsCents: adjustments.get(g.id) ?? 0, absence: absences.get(g.id), tables: states, today: localDayOf(new Date()) })
   }));
   return { rows, unresolvedShifts: worked.unresolved, tables: states };
 }
@@ -148,21 +175,21 @@ async function writePayslips(client: PoolClient, ctx: Ctx, periodId: string, row
   if (rows.length === 0) return;
   const payload = rows.map((r) => ({
     guard_id: r.guardId, guard_no: r.guardNo, guard_name: r.guardName, national_id: r.nationalId, days_in_month: r.payslip.daysInMonth, days_employed: r.payslip.daysEmployed, basic_cents: r.payslip.basicCents,
-    allowance_cents: r.payslip.allowanceCents, premium_cents: r.payslip.premiumCents, overtime_cents: r.payslip.overtimeCents, adjustments_cents: r.payslip.adjustmentsCents, gross_cents: r.payslip.grossCents,
+    allowance_cents: r.payslip.allowanceCents, premium_cents: r.payslip.premiumCents, overtime_cents: r.payslip.overtimeCents, adjustments_cents: r.payslip.adjustmentsCents, absence_deduction_cents: r.payslip.absenceDeductionCents, gross_cents: r.payslip.grossCents,
     deductions: r.payslip.deductions, employee_deductions_cents: r.payslip.employeeDeductionsCents, net_cents: r.payslip.netCents, employer_cost_cents: r.payslip.employerCostCents,
     min_required_cents: r.payslip.minRequiredCents, below_minimum: r.payslip.belowMinimum, flags: r.payslip.flags, breakdown: r.payslip.breakdown
   }));
   await client.query(
-    `INSERT INTO payslips (org_id, period_id, guard_id, guard_no, guard_name, national_id, days_in_month, days_employed, basic_cents, allowance_cents, premium_cents, overtime_cents, adjustments_cents, gross_cents,
+    `INSERT INTO payslips (org_id, period_id, guard_id, guard_no, guard_name, national_id, days_in_month, days_employed, basic_cents, allowance_cents, premium_cents, overtime_cents, adjustments_cents, absence_deduction_cents, gross_cents,
         deductions, employee_deductions_cents, net_cents, employer_cost_cents, min_required_cents, below_minimum, flags, breakdown)
-     SELECT $1, $2, x.guard_id, x.guard_no, x.guard_name, x.national_id, x.days_in_month, x.days_employed, x.basic_cents, x.allowance_cents, x.premium_cents, x.overtime_cents, x.adjustments_cents, x.gross_cents,
+     SELECT $1, $2, x.guard_id, x.guard_no, x.guard_name, x.national_id, x.days_in_month, x.days_employed, x.basic_cents, x.allowance_cents, x.premium_cents, x.overtime_cents, x.adjustments_cents, x.absence_deduction_cents, x.gross_cents,
         x.deductions, x.employee_deductions_cents, x.net_cents, x.employer_cost_cents, x.min_required_cents, x.below_minimum, x.flags, x.breakdown
        FROM jsonb_to_recordset($3::jsonb) AS x(guard_id uuid, guard_no text, guard_name text, national_id text, days_in_month int, days_employed int, basic_cents bigint, allowance_cents bigint, premium_cents bigint,
-        overtime_cents bigint, adjustments_cents bigint, gross_cents bigint, deductions jsonb, employee_deductions_cents bigint, net_cents bigint, employer_cost_cents bigint, min_required_cents bigint,
+        overtime_cents bigint, adjustments_cents bigint, absence_deduction_cents bigint, gross_cents bigint, deductions jsonb, employee_deductions_cents bigint, net_cents bigint, employer_cost_cents bigint, min_required_cents bigint,
         below_minimum boolean, flags jsonb, breakdown jsonb)
      ON CONFLICT (period_id, guard_id) DO UPDATE SET guard_no = EXCLUDED.guard_no, guard_name = EXCLUDED.guard_name, national_id = EXCLUDED.national_id, days_in_month = EXCLUDED.days_in_month,
         days_employed = EXCLUDED.days_employed, basic_cents = EXCLUDED.basic_cents, allowance_cents = EXCLUDED.allowance_cents, premium_cents = EXCLUDED.premium_cents, overtime_cents = EXCLUDED.overtime_cents,
-        adjustments_cents = EXCLUDED.adjustments_cents, gross_cents = EXCLUDED.gross_cents, deductions = EXCLUDED.deductions, employee_deductions_cents = EXCLUDED.employee_deductions_cents,
+        adjustments_cents = EXCLUDED.adjustments_cents, absence_deduction_cents = EXCLUDED.absence_deduction_cents, gross_cents = EXCLUDED.gross_cents, deductions = EXCLUDED.deductions, employee_deductions_cents = EXCLUDED.employee_deductions_cents,
         net_cents = EXCLUDED.net_cents, employer_cost_cents = EXCLUDED.employer_cost_cents, min_required_cents = EXCLUDED.min_required_cents, below_minimum = EXCLUDED.below_minimum,
         flags = EXCLUDED.flags, breakdown = EXCLUDED.breakdown`,
     [ctx.orgId, periodId, JSON.stringify(payload)]
@@ -224,7 +251,7 @@ export async function getPeriod(client: PoolClient, month: string) {
 
 const payslipView = (r: Record<string, any>) => ({
   id: r.id, periodId: r.period_id, guardId: r.guard_id, guardNo: r.guard_no, guardName: r.guard_name, nationalId: r.national_id, daysInMonth: r.days_in_month, daysEmployed: r.days_employed,
-  basicCents: Number(r.basic_cents), allowanceCents: Number(r.allowance_cents), premiumCents: Number(r.premium_cents), overtimeCents: Number(r.overtime_cents), adjustmentsCents: Number(r.adjustments_cents),
+  basicCents: Number(r.basic_cents), allowanceCents: Number(r.allowance_cents), premiumCents: Number(r.premium_cents), overtimeCents: Number(r.overtime_cents), adjustmentsCents: Number(r.adjustments_cents), absenceDeductionCents: Number(r.absence_deduction_cents ?? 0),
   grossCents: Number(r.gross_cents), deductions: r.deductions, employeeDeductionsCents: Number(r.employee_deductions_cents), netCents: Number(r.net_cents), employerCostCents: Number(r.employer_cost_cents),
   minRequiredCents: Number(r.min_required_cents), belowMinimum: r.below_minimum, flags: r.flags, breakdown: r.breakdown
 });

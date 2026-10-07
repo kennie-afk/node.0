@@ -11,6 +11,7 @@ export interface Event {
   location?: string | null;
   isRecurring?: boolean;
   recurrencePattern?: string | null;
+  capacity?: number | null;
   organizer?: { id: number; username: string; email?: string } | null;
   createdAt?: string;
   updatedAt?: string;
@@ -21,3 +22,30 @@ export const fetchEvents = async () => {
   const response = await axiosInstance.get('/events');
   return unwrapList<Event>(response.data);
 };
+
+export interface Occurrence {
+  eventId: number;
+  name: string;
+  startsAt: string;
+  date: string;
+  capacity: number | null;
+  recurring: boolean;
+}
+export interface Rsvp {
+  id: number;
+  occurrenceDate: string;
+  memberId: number | null;
+  name: string | null;
+  partySize: number;
+  status: 'GOING' | 'WAITLIST' | 'CANCELLED';
+  waitlistPosition: number | null;
+}
+export interface Roster {
+  eventId: number;
+  occurrenceDate: string;
+  capacity: number | null;
+  seatsTaken: number;
+  seatsLeft: number | null;
+  waitlisted: number;
+  data: Rsvp[];
+}

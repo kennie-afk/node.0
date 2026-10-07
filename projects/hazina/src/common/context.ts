@@ -84,6 +84,8 @@ export interface OrgSettings {
   withdrawalApprovalCents: number;
   capacityShareBp: number;
   financialYearStartMonth: number;
+  /** loan loss provision percentage per ageing bucket, in basis points of the exposure. ILLUSTRATIVE, not regulatory guidance. */
+  provisionRatesBp: Record<string, number>;
 }
 
 export async function getSettings(client: PoolClient): Promise<OrgSettings> {
@@ -92,7 +94,8 @@ export async function getSettings(client: PoolClient): Promise<OrgSettings> {
     makerChecker: row?.maker_checker ?? 'strict',
     withdrawalApprovalCents: Number(row?.withdrawal_approval_cents ?? 5_000_000),
     capacityShareBp: Number(row?.capacity_share_bp ?? 3000),
-    financialYearStartMonth: Number(row?.financial_year_start_month ?? 1)
+    financialYearStartMonth: Number(row?.financial_year_start_month ?? 1),
+    provisionRatesBp: (row?.provision_rates_bp as Record<string, number> | undefined) ?? { current: 100, '1-30': 500, '31-60': 2500, '61-90': 5000, '91-180': 7500, '180+': 10000 }
   };
 }
 

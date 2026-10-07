@@ -92,7 +92,7 @@ const factory: ModelFactory = (sequelize: Sequelize) => {
   BillAttachment.initModel(
     {
       id, churchId, billId: { type: DataTypes.INTEGER, allowNull: false }, fileName: str(200, false), contentType: str(100, false),
-      sizeBytes: minor(), storageKey: str(300, false), uploadedBy: { type: DataTypes.INTEGER, allowNull: true }, createdAt: ts()
+      sizeBytes: minor(), storageKey: str(300, false), sha256: str(64, true), uploadedBy: { type: DataTypes.INTEGER, allowNull: true }, createdAt: ts()
     },
     { ...base, tableName: 'bill_attachments', modelName: 'BillAttachment' },
     sequelize

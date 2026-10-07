@@ -17,7 +17,7 @@ router.post('/savings/withdraw', authenticate, requirePermission('savings_post')
 }));
 
 router.get('/savings', authenticate, requirePermission('read'), wrap(async (req, res) => {
-  res.json(await inOrg(req, (client) => listSavings(client, { memberId: queryString(req.query.memberId), status: queryString(req.query.status), limit: Math.min(200, queryInt(req.query.limit, 50)) || 50 })));
+  res.json(await inOrg(req, (client) => listSavings(client, { memberId: queryString(req.query.memberId), status: queryString(req.query.status), search: queryString(req.query.search), after: queryString(req.query.after), limit: Math.min(200, queryInt(req.query.limit, 50)) || 50 })));
 }));
 
 router.post('/savings/:id/decision', authenticate, requirePermission('withdraw_approve'), requireWritable, wrap(async (req, res) => {

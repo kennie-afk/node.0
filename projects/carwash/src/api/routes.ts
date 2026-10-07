@@ -3,7 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import bcrypt from 'bcrypt';
 import { z } from 'zod';
-import { withoutTenant } from '../persistence/pool';
+import { withOrg, withoutTenant } from '../persistence/pool';
 import { authenticate, requireRole, requireWritable } from './middleware';
 import { closeDay } from '../reconciliation/service';
 import { ingestConfirmation } from '../mpesa/service';
@@ -13,6 +13,7 @@ import { logger } from '../common/logger';
 import { BadRequestError, UnauthorizedError } from '../domain/errors';
 import { signToken } from './token';
 import { normalisePhone } from '../admin/phone';
+import { assertSiteAccess } from './scope';
 
 /** People type their number the way they always do (0712..., +254..., 254...); accounts are stored as 254XXXXXXXXX. */
 function loginPhone(raw: unknown): string {
@@ -80,7 +81,10 @@ router.post('/auth/login', loginLimiter, async (req, res, next) => {
       throw new UnauthorizedError('Those credentials are not valid.');
     }
 
-    const { token, expiresInSeconds } = signToken({ userId: row.id, orgId: row.org_id, siteId: row.site_id, role: row.role });
+    const version = await withOrg(row.org_id, async (client) =>
+      Number((await client.query('SELECT token_version FROM users WHERE id = $1', [row.id])).rows[0]?.token_version ?? 0)
+    );
+    const { token, expiresInSeconds } = signToken({ userId: row.id, orgId: row.org_id, siteId: row.site_id, role: row.role, tokenVersion: version });
 
     res.status(200).json({
       token,
@@ -109,6 +113,7 @@ router.post(
         throw new BadRequestError('siteId must be a uuid and day must be YYYY-MM-DD');
       }
 
+      assertSiteAccess(req, parsed.data.siteId);
       const outcome = await closeDay(req.principal!.orgId, parsed.data.siteId, parsed.data.day);
 
       res.status(200).json({
@@ -156,11 +161,17 @@ async function acceptConfirmation(req: import('express').Request, res: import('e
     });
     return res.status(200).json(DARAJA_ACCEPTED);
   } catch (error) {
-    logger.error('daraja callback failed', {
-      requestId: req.id,
-      error: error instanceof Error ? error.message : String(error)
-    });
-    return res.status(200).json(DARAJA_REJECTED);
+    const message = error instanceof Error ? error.message : String(error);
+    // A malformed confirmation will never become valid: acknowledge it so Daraja stops resending it.
+    if (error instanceof BadRequestError) {
+      logger.warn('daraja callback rejected as malformed', { requestId: req.id, error: message });
+      return res.status(200).json(DARAJA_ACCEPTED);
+    }
+    // Anything else (a database blip, a lock timeout) is ours to retry. Answering 200 here told Daraja the
+    // payment was handled when it was not, and the money was lost. The TransID is unique, so a retry that
+    // lands twice is applied once.
+    logger.error('daraja callback failed, asking Daraja to retry', { requestId: req.id, error: message });
+    return res.status(500).json(DARAJA_REJECTED);
   }
 }
 

@@ -86,6 +86,10 @@ services:
         value: mock
       - key: SMS_MODE
         value: mock
+      # Production refuses a mock provider unless told this is a demo. Delete this and set
+      # MPESA_MODE=daraja and SMS_MODE=africastalking before taking real money.
+      - key: ALLOW_MOCK_PROVIDERS_IN_PRODUCTION
+        value: "true"
       - key: LOG_LEVEL
         value: info
 

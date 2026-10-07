@@ -27,6 +27,9 @@ const schema = z.object({
     .transform((value) => value === 'true'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_TTL_MINUTES: z.coerce.number().int().positive().default(720),
+  // how long the API trusts what it last read about an account (status, role, site, token version). A
+  // change made through the same process takes effect at once; another replica catches up within this.
+  SESSION_CACHE_SECONDS: z.coerce.number().int().nonnegative().default(10),
   CORS_ORIGINS: z
     .string()
     .default('')
@@ -61,6 +64,15 @@ const schema = z.object({
   SIGNUP_RESEND_COOLDOWN_SECONDS: z.coerce.number().int().nonnegative().default(60),
   // 'mock' only logs and records the message; there is deliberately no real SMS provider wired in
   NOTIFY_PROVIDER: z.enum(['mock']).default('mock'),
+  // ---- scheduled maintenance (roll-up, retention, clean-up); see src/persistence/maintenance.ts ----
+  MAINTENANCE_INTERVAL_MINUTES: z.coerce.number().int().positive().default(60),
+  // per-minute telemetry older than this is rolled up into hours and deleted
+  RETENTION_TELEMETRY_MINUTE_DAYS: z.coerce.number().int().positive().default(35),
+  // per-hour telemetry is kept this long
+  RETENTION_TELEMETRY_HOUR_DAYS: z.coerce.number().int().positive().default(800),
+  // raw readings are dropped a monthly partition at a time once the whole month is older than this
+  RETENTION_TELEMETRY_RAW_DAYS: z.coerce.number().int().positive().default(95),
+  RETENTION_IDEMPOTENCY_DAYS: z.coerce.number().int().positive().default(3),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   SHUTDOWN_GRACE_MS: z.coerce.number().int().nonnegative().default(10000)
 });

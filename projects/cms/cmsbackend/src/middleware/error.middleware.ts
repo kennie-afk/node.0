@@ -73,6 +73,11 @@ export const errorHandler = (
     });
   }
 
+  // body-parser: a raw upload larger than its route's limit.
+  if ((error as { type?: string } | null)?.type === 'entity.too.large') {
+    return res.status(413).json({ message: 'The upload is larger than the allowed size', requestId: req.id });
+  }
+
   const database = translateDatabaseError(error);
   if (database) {
     logger.warn('request rejected', { requestId: req.id, status: database.status, reason: database.message });

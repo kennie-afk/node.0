@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { api, describeError } from "@/lib/api";
-import { clearSession, writeSession } from "@/lib/session";
+import { clearSession, readSession, writeSession } from "@/lib/session";
 import { parseClock } from "@/lib/types";
 
 export interface LoginState {
@@ -34,6 +34,8 @@ export async function signIn(_previous: LoginState, form: FormData): Promise<Log
 }
 
 export async function signOut(): Promise<void> {
+  // End the session on the server too, so a copied token stops working at once rather than at expiry.
+  await api.send("POST", "/v1/auth/logout").catch(() => undefined);
   await clearSession();
   redirect("/login");
 }
@@ -215,6 +217,17 @@ export async function removeBay(_previous: FormState, form: FormData): Promise<F
   return OK;
 }
 
+/** "detergent=0.05" per line (or comma separated) -> { detergent: 0.05 }; null when a line does not parse. */
+function parseConsumables(raw: string): Record<string, number> | null {
+  const out: Record<string, number> = {};
+  for (const part of raw.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean)) {
+    const match = /^([A-Za-z0-9_ .-]{1,60})\s*=\s*(\d+(?:\.\d+)?)$/.exec(part);
+    if (!match) return null;
+    out[match[1]!.trim()] = Number(match[2]);
+  }
+  return out;
+}
+
 export async function saveService(_previous: FormState, form: FormData): Promise<FormState> {
   const price = shillingsToCents(form, "price");
   const water = number(form, "water");
@@ -224,8 +237,11 @@ export async function saveService(_previous: FormState, form: FormData): Promise
   if ([water, minutes, commission].some((value) => value !== null && Number.isNaN(value))) {
     return { error: "Water, minutes and commission must be numbers." };
   }
+  const consumables = parseConsumables(text(form, "consumables"));
+  if (consumables === null) return { error: "Consumables are written one per line as name=amount per wash, for example detergent=0.05." };
   const body = {
     name: text(form, "name"),
+    consumables,
     listPriceCents: price,
     expectedWaterL: water ?? 0,
     expectedDurationS: Math.round((minutes ?? 0) * 60),
@@ -358,10 +374,100 @@ export async function moveJob(form: FormData): Promise<void> {
 
 export async function declareCash(form: FormData): Promise<void> {
   const id = text(form, "jobId");
+  // an attendant just confirms the quote; a supervisor or manager may record a different amount, and must say why
+  const amount = shillingsToCents(form, "amount");
+  const reason = text(form, "reason");
   try {
-    await api.send("POST", `/v1/jobs/${id}/cash`, {});
+    await api.send("POST", `/v1/jobs/${id}/cash`, { ...(amount !== null ? { amountCents: amount } : {}), ...(reason ? { reason } : {}) });
   } catch (caught) {
     redirect(`/console/work?error=${encodeURIComponent(describeError(caught))}`);
   }
   revalidatePath("/console/work");
+}
+
+
+// ---- accounts: my PIN, someone else's PIN ------------------------------------------------------
+
+export interface PinState {
+  error: string | null;
+  done: boolean;
+  /** set once, on a reset: the new PIN, shown to the manager and then gone */
+  pin?: string;
+}
+
+export async function changeMyPin(_previous: PinState, form: FormData): Promise<PinState> {
+  const currentPin = text(form, "currentPin");
+  const newPin = text(form, "newPin");
+  if (newPin.length < 6) return { error: "Choose a PIN of at least 6 characters.", done: false };
+  if (newPin !== text(form, "confirm")) return { error: "The two new PINs are not the same.", done: false };
+  const session = await readSession();
+  if (!session) return { error: "That session has ended. Sign in again.", done: false };
+  try {
+    const result = await api.send<{ token: string; expiresInSeconds: number }>("POST", "/v1/me/pin", { currentPin, newPin });
+    // every other session of this account is now void; keep this one by taking the fresh token
+    await writeSession({ ...session, token: result.token }, result.expiresInSeconds);
+  } catch (caught) {
+    return { error: describeError(caught), done: false };
+  }
+  return { error: null, done: true };
+}
+
+export async function resetPersonPin(_previous: PinState, form: FormData): Promise<PinState> {
+  try {
+    const result = await api.send<{ pin: string }>("POST", `/v1/users/${text(form, "id")}/reset-pin`);
+    return { error: null, done: true, pin: result.pin };
+  } catch (caught) {
+    return { error: describeError(caught), done: false };
+  }
+}
+
+// ---- devices, closing a day, refunds -----------------------------------------------------------
+
+export interface DeviceState {
+  error: string | null;
+  created: { id: string; secret: string } | null;
+}
+
+export async function provisionDevice(_previous: DeviceState, form: FormData): Promise<DeviceState> {
+  const siteId = text(form, "siteId");
+  const type = text(form, "type");
+  const bayId = text(form, "bayId");
+  if (!siteId || !type) return { error: "Choose the site and the kind of device.", created: null };
+  try {
+    const made = await api.send<{ id: string; secret: string }>("POST", "/v1/devices", {
+      siteId,
+      type,
+      ...(bayId ? { bayId } : {}),
+      ...(text(form, "firmware") ? { firmware: text(form, "firmware") } : {})
+    });
+    revalidatePath("/console/devices");
+    // returned to the form and shown once; it is stored nowhere on the console
+    return { error: null, created: { id: made.id, secret: made.secret } };
+  } catch (caught) {
+    return { error: describeError(caught), created: null };
+  }
+}
+
+export async function closeDay(form: FormData): Promise<void> {
+  const site = text(form, "siteId");
+  const day = text(form, "day");
+  try {
+    await api.send("POST", "/v1/sites/close", { siteId: site, day });
+  } catch (caught) {
+    redirect(`/console/report?site=${site}&day=${day}&error=${encodeURIComponent(describeError(caught))}`);
+  }
+  revalidatePath("/console", "layout");
+  redirect(`/console/report?site=${site}&day=${day}`);
+}
+
+export async function voidJob(_previous: FormState, form: FormData): Promise<FormState> {
+  const id = text(form, "id");
+  const reason = text(form, "reason");
+  if (reason.length < 5) return { error: "Say why the sale is being reversed (at least a few words)." };
+  const failed = await attempt(async () => {
+    await api.send("POST", `/v1/jobs/${id}/void`, { reason });
+  });
+  if (failed) return failed;
+  revalidatePath(`/console/jobs/${id}`);
+  redirect(`/console/jobs/${id}`);
 }

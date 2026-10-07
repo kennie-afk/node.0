@@ -6,18 +6,21 @@ import { Router } from 'express';
 import { authenticate, requirePermission } from './middleware';
 import { wrap } from '../common/context';
 import { inOrg, queryString } from './helpers';
-import { toCsv } from '../common/csv';
-import { listPayments } from '../mpesa/service';
+import { csvCell, toCsv } from '../common/csv';
+import { csvMoney } from '../domain/money';
+import { eachPaymentPage } from '../mpesa/service';
 import { loanDetail } from '../loans/service';
 import { savingsStatement, PRODUCT_ACCOUNT, SavingsProduct } from '../savings/service';
-import { arrearsList } from '../reports/portfolio';
+import { eachArrearsPage } from '../reports/portfolio';
 import { trialBalance } from '../ledger/service';
 import { getReturn } from '../returns/service';
 import { BadRequestError, NotFoundError } from '../domain/errors';
-import { Response } from 'express';
+import { PoolClient } from 'pg';
+import { Request, Response } from 'express';
 
 const router = Router();
-const money = (cents: number) => (cents / 100).toFixed(2);
+const money = csvMoney;
+const PAGE = 2000;
 
 function send(res: Response, filename: string, body: string): void {
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -25,23 +28,66 @@ function send(res: Response, filename: string, body: string): void {
   res.send(body);
 }
 
+type Writer = (rows: unknown[][]) => Promise<void>;
+
+/**
+ * Streams a CSV a page at a time: nothing is capped and memory is bounded by one page, however many rows there are. The
+ * producer is called inside the tenant transaction and writes each page as it reads it. If it fails before the first byte the
+ * normal error response is sent; after that the connection is dropped so the download is visibly incomplete, never quietly short.
+ */
+async function streamCsv(req: Request, res: Response, filename: string, header: string[], produce: (client: PoolClient, write: Writer) => Promise<void>): Promise<void> {
+  let started = false;
+  const write = async (chunk: string) => {
+    if (!res.write(chunk)) await new Promise<void>((resolve) => res.once('drain', () => resolve()));
+  };
+  try {
+    await inOrg(req, async (client) => {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      started = true;
+      await write(`${header.join(',')}\n`);
+      await produce(client, async (rows) => write(rows.map((r) => r.map(csvCell).join(',')).join('\n') + '\n'));
+    });
+    res.end();
+  } catch (error) {
+    if (!started || !res.headersSent) throw error;
+    res.destroy(error instanceof Error ? error : undefined);
+  }
+}
+
 router.get('/exports/members.csv', authenticate, requirePermission('reports'), wrap(async (req, res) => {
-  const rows = await inOrg(req, async (client) => (await client.query('SELECT member_no, full_name, id_number, phone, status, joined_on FROM members ORDER BY member_no')).rows);
-  send(res, 'members.csv', toCsv(['member_no', 'name', 'id_number', 'phone', 'status', 'joined_on'], rows.map((r) => [r.member_no, r.full_name, r.id_number, r.phone, r.status, r.joined_on])));
+  await streamCsv(req, res, 'members.csv', ['member_no', 'name', 'id_number', 'phone', 'status', 'joined_on'], async (client, write) => {
+    let after = 0;
+    for (;;) {
+      const rows = (await client.query('SELECT member_seq, member_no, full_name, id_number, phone, status, joined_on FROM members WHERE member_seq > $1 ORDER BY member_seq LIMIT $2', [after, PAGE])).rows;
+      if (rows.length === 0) return;
+      await write(rows.map((r) => [r.member_no, r.full_name, r.id_number, r.phone, r.status, r.joined_on]));
+      after = Number(rows[rows.length - 1]!.member_seq);
+      if (rows.length < PAGE) return;
+    }
+  });
 }));
 
 router.get('/exports/loans.csv', authenticate, requirePermission('reports'), wrap(async (req, res) => {
-  const rows = await inOrg(req, async (client) => (await client.query(
-    `SELECT l.loan_no, m.member_no, m.full_name, l.status, l.method, l.annual_rate_bp, l.principal_cents, l.term_months, l.disbursed_on FROM loans l JOIN members m ON m.id = l.member_id ORDER BY l.loan_no`
-  )).rows);
-  send(res, 'loans.csv', toCsv(['loan_no', 'member_no', 'name', 'status', 'method', 'annual_rate_percent', 'principal', 'term_months', 'disbursed_on'],
-    rows.map((r) => [r.loan_no, r.member_no, r.full_name, r.status, r.method, Number(r.annual_rate_bp) / 100, money(Number(r.principal_cents)), r.term_months, r.disbursed_on])));
+  await streamCsv(req, res, 'loans.csv', ['loan_no', 'member_no', 'name', 'status', 'method', 'annual_rate_percent', 'principal', 'term_months', 'disbursed_on'], async (client, write) => {
+    let after = 0;
+    for (;;) {
+      const rows = (await client.query(
+        `SELECT l.loan_seq, l.loan_no, m.member_no, m.full_name, l.status, l.method, l.annual_rate_bp, l.principal_cents, l.term_months, l.disbursed_on
+           FROM loans l JOIN members m ON m.id = l.member_id WHERE l.loan_seq > $1 ORDER BY l.loan_seq LIMIT $2`, [after, PAGE]
+      )).rows;
+      if (rows.length === 0) return;
+      await write(rows.map((r) => [r.loan_no, r.member_no, r.full_name, r.status, r.method, Number(r.annual_rate_bp) / 100, money(Number(r.principal_cents)), r.term_months, r.disbursed_on]));
+      after = Number(rows[rows.length - 1]!.loan_seq);
+      if (rows.length < PAGE) return;
+    }
+  });
 }));
 
 router.get('/exports/arrears.csv', authenticate, requirePermission('reports'), wrap(async (req, res) => {
-  const result = await inOrg(req, (client) => arrearsList(client, { minDays: 1, limit: 5000, offset: 0 }));
-  send(res, 'arrears.csv', toCsv(['loan_no', 'member_no', 'name', 'phone', 'days_overdue', 'bucket', 'outstanding_principal', 'overdue_principal', 'overdue_interest', 'overdue_penalty'],
-    result.items.map((r) => [r.loanNo, r.memberNo, r.memberName, r.phone, r.daysOverdue, r.bucket, money(r.outstandingPrincipalCents), money(r.overduePrincipalCents), money(r.overdueInterestCents), money(r.overduePenaltyCents)])));
+  await streamCsv(req, res, 'arrears.csv', ['loan_no', 'member_no', 'name', 'phone', 'days_overdue', 'bucket', 'outstanding_principal', 'overdue_principal', 'overdue_interest', 'overdue_penalty'], async (client, write) => {
+    await eachArrearsPage(client, PAGE, (rows) => write(rows.map((r) => [r.loanNo, r.memberNo, r.memberName, r.phone, r.daysOverdue, r.bucket, money(r.outstandingPrincipalCents), money(r.overduePrincipalCents), money(r.overdueInterestCents), money(r.overduePenaltyCents)])));
+  });
 }));
 
 router.get('/exports/trial-balance.csv', authenticate, requirePermission('reports'), wrap(async (req, res) => {
@@ -54,17 +100,28 @@ router.get('/exports/trial-balance.csv', authenticate, requirePermission('report
 }));
 
 router.get('/exports/journal.csv', authenticate, requirePermission('reports'), wrap(async (req, res) => {
-  const rows = await inOrg(req, async (client) => (await client.query(
-    `SELECT e.seq, e.entry_date, e.memo, e.source_type, a.code, a.name, l.debit_cents, l.credit_cents
-       FROM journal_entries e JOIN journal_lines l ON l.entry_id = e.id JOIN accounts a ON a.id = l.account_id ORDER BY e.seq, l.line_no`
-  )).rows);
-  send(res, 'journal.csv', toCsv(['entry', 'date', 'memo', 'source', 'account_code', 'account', 'debit', 'credit'], rows.map((r) => [r.seq, r.entry_date, r.memo, r.source_type, r.code, r.name, money(Number(r.debit_cents)), money(Number(r.credit_cents))])));
+  await streamCsv(req, res, 'journal.csv', ['entry', 'date', 'memo', 'source', 'account_code', 'account', 'debit', 'credit'], async (client, write) => {
+    let after = 0;
+    for (;;) {
+      const entries = (await client.query('SELECT id, seq FROM journal_entries WHERE seq > $1 ORDER BY seq LIMIT $2', [after, 500])).rows;
+      if (entries.length === 0) return;
+      const rows = (await client.query(
+        `SELECT e.seq, e.entry_date, e.memo, e.source_type, a.code, a.name, l.debit_cents, l.credit_cents
+           FROM journal_entries e JOIN journal_lines l ON l.entry_id = e.id JOIN accounts a ON a.id = l.account_id
+          WHERE e.id = ANY($1::uuid[]) ORDER BY e.seq, l.line_no`, [entries.map((e) => e.id)]
+      )).rows;
+      await write(rows.map((r) => [r.seq, r.entry_date, r.memo, r.source_type, r.code, r.name, money(Number(r.debit_cents)), money(Number(r.credit_cents))]));
+      after = Number(entries[entries.length - 1]!.seq);
+      if (entries.length < 500) return;
+    }
+  });
 }));
 
 router.get('/exports/mpesa-payments.csv', authenticate, requirePermission('recon'), wrap(async (req, res) => {
-  const rows = await inOrg(req, (client) => listPayments(client, { status: queryString(req.query.status), limit: 5000 }));
-  send(res, 'mpesa-payments.csv', toCsv(['mpesa_code', 'received_at', 'account_ref', 'amount', 'payer', 'status', 'applied_to', 'note'],
-    rows.map((r) => [r.externalRef, r.receivedAt, r.billRef, money(r.amountCents), r.payer, r.status, r.appliedToType, r.note])));
+  const status = queryString(req.query.status);
+  await streamCsv(req, res, 'mpesa-payments.csv', ['mpesa_code', 'received_at', 'account_ref', 'amount', 'payer', 'status', 'applied_to', 'note'], async (client, write) => {
+    await eachPaymentPage(client, { status }, (rows) => write(rows.map((r) => [r.externalRef, r.receivedAt, r.billRef, money(r.amountCents), r.payer, r.status, r.appliedToType, r.note])));
+  });
 }));
 
 router.get('/exports/member-statement/:id.csv', authenticate, requirePermission('read'), wrap(async (req, res) => {

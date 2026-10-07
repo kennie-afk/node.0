@@ -1,14 +1,17 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { authenticate, requirePermission, requireWritable } from './middleware';
-import { wrap } from '../common/context';
+import { ctxOf, wrap } from '../common/context';
 import { inOrg, isoDay, parse, queryInt, queryString } from './helpers';
 import {
   appraiseLoan, appraiseSchema, applyForLoan, applySchema, createProduct, decideLoan, decideSchema, disburseLoan, disburseSchema,
   listLoans, listProducts, loanDetail, previewSchedule, productSchema, repayLoan, repaySchema, restructureLoan, restructureSchema,
-  runPenalties, setProductActive, writeOffLoan, writeOffSchema
+  runInterestAccrual, runPenalties, setProductActive, writeOffLoan, writeOffSchema
 } from '../loans/service';
 import { addMonthsToDay } from '../loans/schedule';
+import { callGuarantee, guaranteeCallSchema } from '../loans/guarantees';
+import { sendReminders } from '../notify/reminders';
+import { env } from '../config/env';
 import { arrearsList, portfolioSummary } from '../reports/portfolio';
 import { BadRequestError } from '../domain/errors';
 
@@ -77,18 +80,38 @@ router.post('/loans/:id/restructure', authenticate, requirePermission('loan_appr
 
 router.post('/penalties/run', authenticate, requirePermission('penalties_run'), requireWritable, wrap(async (req, res) => {
   const body = parse(z.object({ asOf: isoDay.optional() }), req.body ?? {});
-  res.json(await inOrg(req, async (client, ctx) => {
+  const ctx = ctxOf(req);
+  const asOf = await inOrg(req, async (client) => {
     const today = (await client.query(`SELECT to_char((now() AT TIME ZONE 'Africa/Nairobi')::date, 'YYYY-MM-DD') AS d`)).rows[0].d as string;
     if (body.asOf && body.asOf > today) throw new BadRequestError('Penalties cannot be charged for a day that has not come.');
-    return runPenalties(client, ctx, body.asOf ?? today);
-  }));
+    return body.asOf ?? today;
+  });
+  // batched transactions of its own: the request does not hold one lock over the whole book
+  res.json(await runPenalties(ctx.orgId, ctx.userId, asOf));
+}));
+
+router.post('/interest-accrual/run', authenticate, requirePermission('penalties_run'), requireWritable, wrap(async (req, res) => {
+  const ctx = ctxOf(req);
+  const today = await inOrg(req, async (client) => (await client.query(`SELECT to_char((now() AT TIME ZONE 'Africa/Nairobi')::date, 'YYYY-MM-DD') AS d`)).rows[0].d as string);
+  res.json(await runInterestAccrual(ctx.orgId, ctx.userId, today));
+}));
+
+router.post('/loans/:id/guarantee-calls', authenticate, requirePermission('loan_writeoff'), requireWritable, wrap(async (req, res) => {
+  const body = parse(guaranteeCallSchema, req.body);
+  res.status(201).json(await inOrg(req, (client, ctx) => callGuarantee(client, ctx, String(req.params.id), body)));
+}));
+
+const remindBody = z.object({ upcomingDays: z.number().int().min(0).max(14).optional() });
+router.post('/reminders/run', authenticate, requirePermission('penalties_run'), requireWritable, wrap(async (req, res) => {
+  const body = parse(remindBody, req.body ?? {});
+  const ctx = ctxOf(req);
+  const today = await inOrg(req, async (client) => (await client.query(`SELECT to_char((now() AT TIME ZONE 'Africa/Nairobi')::date, 'YYYY-MM-DD') AS d`)).rows[0].d as string);
+  res.json(await sendReminders(ctx.orgId, today, { upcomingDays: body.upcomingDays ?? env.SMS_REMINDER_UPCOMING_DAYS }));
 }));
 
 router.get('/portfolio', authenticate, requirePermission('reports'), wrap(async (req, res) => {
   res.json(await inOrg(req, async (client) => {
-    const { positions, ...summary } = await portfolioSummary(client);
-    void positions;
-    return summary;
+    return portfolioSummary(client);
   }));
 }));
 router.get('/arrears', authenticate, requirePermission('reports'), wrap(async (req, res) => {

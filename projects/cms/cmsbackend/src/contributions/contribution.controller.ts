@@ -1,4 +1,5 @@
 import { input, route } from '../common/http';
+import { wantsOffsetPaging } from '../common/pagination';
 import * as service from './contribution.service';
 import * as schemas from './contribution.schemas';
 
@@ -9,7 +10,9 @@ export const createContribution = route(async (req) => {
 
 export const getAllContributions = route(async (req) => {
   const { query } = input(schemas.listContributionsSchema, req);
-  const { page, pageSize, limit: _l, cursor: _c, ...filter } = query;
+  const { page, pageSize, limit, cursor, ...filter } = query;
+  // Cursor page unless the caller asked for `page=`; the giving module already has the keyset query.
+  if (!wantsOffsetPaging(req.query)) return service.getAllContributionsKeyset(filter, limit, cursor);
   return service.getAllContributions(filter, page, pageSize);
 });
 

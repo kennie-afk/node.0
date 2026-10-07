@@ -10,6 +10,7 @@ on:
       - 'projects/carwash/**'
 
 jobs:
+  # Unit tests, types and the production build: no database.
   build:
     runs-on: ubuntu-latest
     defaults:
@@ -24,5 +25,60 @@ jobs:
           cache-dependency-path: projects/carwash/package-lock.json
       - run: npm ci
       - run: npm run typecheck
+      # Several unit tests import modules that read configuration at load time, so they need it set even though
+      # no database is reached. These are throwaway values.
       - run: npm test
+        env:
+          DATABASE_URL: postgres://forecourt_app:unit-app-password@localhost:5432/unused
+          DATABASE_MIGRATION_URL: postgres://forecourt:unit-owner-pw@localhost:5432/unused
+          FORECOURT_APP_PASSWORD: unit-app-password
+          JWT_SECRET: unit-jwt-secret-unit-jwt-secret-unit-jwt
+          MPESA_CALLBACK_SECRET: unit-mpesa-secret-1234
+          NODE_ENV: test
       - run: npm run build
+
+  # The integration tests connect as the restricted application role, so row-level security is in force.
+  # Without them a broken tenant boundary would pass CI, because they are skipped when no database is set.
+  integration:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/carwash
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: forecourt
+          POSTGRES_PASSWORD: ci-owner-pw
+          POSTGRES_DB: forecourt_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U forecourt" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://forecourt_app:ci-app-password-123@localhost:5432/forecourt_test
+      DATABASE_MIGRATION_URL: postgres://forecourt:ci-owner-pw@localhost:5432/forecourt_test
+      FORECOURT_APP_PASSWORD: ci-app-password-123
+      JWT_SECRET: ci-jwt-secret-ci-jwt-secret-ci-jwt-secret
+      MPESA_CALLBACK_SECRET: ci-mpesa-secret-1234567
+      NODE_ENV: test
+      FORECOURT_INTEGRATION: '1'
+      SIGNUP_RESEND_COOLDOWN_SECONDS: '0'
+      API_RATE_LIMIT_PER_MINUTE: '100000'
+      MPESA_SIMULATOR: 'true'
+      FORECOURT_ALLOW_DEMO_SEED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: projects/carwash/package-lock.json
+      - run: npm ci
+      - run: npm run migrate
+      - run: npx vitest run
+      # A backup nobody has restored is a hope. This dumps the migrated, test-populated database and restores
+      # it into a scratch database, failing if a migration or forced row level security did not come back.
+      - run: sh scripts/backup.sh && sh scripts/restore-drill.sh
+        env:
+          BACKUP_DIR: ${{ runner.temp }}/forecourt-backups

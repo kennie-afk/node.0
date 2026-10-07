@@ -9,8 +9,9 @@
  */
 import { withoutTenant } from '../persistence/pool';
 import { logger } from '../common/logger';
+import { env } from '../config/env';
 
-export type MessagePurpose = 'signup-code' | 'billing-reminder';
+export type MessagePurpose = 'signup-code' | 'billing-reminder' | 'expiry-alert';
 
 export interface OutboundMessage {
   to: string;
@@ -36,10 +37,55 @@ export class MockProvider implements MessageProvider {
   }
 }
 
+/**
+ * Africa's Talking bulk SMS over plain fetch. Written from the provider's public description (form-encoded POST with an `apiKey` header,
+ * a JSON reply listing each recipient's status). UNVERIFIED against the real service: it has only been exercised against a stub HTTP server
+ * in tests/notify.test.ts. A body is never logged here, because it may carry a verification code.
+ */
+export class AfricasTalkingProvider implements MessageProvider {
+  readonly name = 'africastalking';
+
+  constructor(private readonly cfg: { username: string; apiKey: string; senderId?: string; baseUrl: string; timeoutMs?: number }) {}
+
+  async send(message: OutboundMessage): Promise<DeliveryOutcome> {
+    const to = message.to.startsWith('+') ? message.to : `+${message.to}`;
+    const form = new URLSearchParams({ username: this.cfg.username, to, message: message.body });
+    if (this.cfg.senderId) form.set('from', this.cfg.senderId);
+    let response: Response;
+    try {
+      response = await fetch(this.cfg.baseUrl, {
+        method: 'POST',
+        headers: { apiKey: this.cfg.apiKey, Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: form,
+        signal: AbortSignal.timeout(this.cfg.timeoutMs ?? 10_000)
+      });
+    } catch (error) {
+      return { status: 'failed', error: `network: ${error instanceof Error ? error.message : String(error)}` };
+    }
+    if (!response.ok) return { status: 'failed', error: `http ${response.status}` };
+    let json: any;
+    try {
+      json = await response.json();
+    } catch {
+      return { status: 'failed', error: 'reply was not JSON' };
+    }
+    const recipients: Array<{ status?: string; statusCode?: number }> = json?.SMSMessageData?.Recipients ?? [];
+    const first = recipients[0];
+    if (!first) return { status: 'failed', error: `no recipient in reply: ${String(json?.SMSMessageData?.Message ?? 'empty').slice(0, 120)}` };
+    // 101 is the code the provider documents for "Sent"; the status text is "Success" for an accepted message
+    if (first.status === 'Success' || first.statusCode === 101) return { status: 'sent' };
+    return { status: 'failed', error: `provider status ${first.status ?? first.statusCode ?? 'unknown'}` };
+  }
+}
+
 let active: MessageProvider | null = null;
 
 export function provider(): MessageProvider {
-  active ??= new MockProvider();
+  if (!active) {
+    active = env.NOTIFY_PROVIDER === 'africastalking' && env.AT_USERNAME && env.AT_API_KEY
+      ? new AfricasTalkingProvider({ username: env.AT_USERNAME, apiKey: env.AT_API_KEY, senderId: env.AT_SENDER_ID, baseUrl: env.AT_BASE_URL })
+      : new MockProvider();
+  }
   return active;
 }
 

@@ -69,3 +69,6 @@
   .ops-printable { position: absolute; left: 0; top: 0; width: 100%; border-color: #000; color: #000; background: #fff; }
   .ops-noprint { display: none !important; }
 }
+.ops-kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 4px 16px; margin: 0; }
+.ops-kv dt { color: var(--ui-muted, var(--c-muted)); }
+.ops-kv dd { margin: 0; }

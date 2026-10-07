@@ -13,6 +13,8 @@ import salesRoutes from './sales';
 import operationsRoutes from './operations';
 import signupRoutes from './signup';
 import billingRoutes from './billing';
+import procurementRoutes from './procurement';
+import { limiterStore } from '../ratelimit/store';
 
 export function createApiApp(): Express {
   const app = express();
@@ -53,6 +55,7 @@ export function createApiApp(): Express {
       limit: env.API_RATE_LIMIT_PER_MINUTE,
       standardHeaders: true,
       legacyHeaders: false,
+      store: limiterStore('api'),
       keyGenerator: (req) => {
         const header = req.headers.authorization;
         if (header?.startsWith('Bearer ')) {
@@ -75,6 +78,7 @@ export function createApiApp(): Express {
   app.use('/v1', catalogueRoutes);
   app.use('/v1', stockRoutes);
   app.use('/v1', operationsRoutes);
+  app.use('/v1', procurementRoutes);
 
   app.use(notFound);
   app.use(errorHandler);

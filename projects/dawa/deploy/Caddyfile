@@ -1,0 +1,25 @@
+# TLS in front of Dawa. Caddy gets and renews a certificate for DAWA_DOMAIN by itself (the name must resolve to this host,
+# and ports 80/443 must be reachable from the internet for the first issue).
+#
+# Only two things are exposed: the console, and the M-Pesa confirmation URL that Safaricom calls. Everything else the console
+# needs from the API it fetches on the compose network, never through the internet.
+{$DAWA_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "same-origin"
+		-Server
+	}
+
+	# Daraja posts here; the path carries our own secret, so it is the only public API route.
+	@mpesa path /v1/mpesa/*
+	handle @mpesa {
+		reverse_proxy api:4200
+	}
+
+	handle {
+		reverse_proxy console:3700
+	}
+}

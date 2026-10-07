@@ -3,6 +3,7 @@ import { assertBillingSafeForProduction, assertSimulatorSafeForProduction, env }
 import { logger } from '../common/logger';
 import { assertRlsIsEffective, closePool, pool } from '../persistence/pool';
 import { runBillingCycle } from '../billing/service';
+import { startDailyJobs } from '../loans/scheduler';
 
 async function main(): Promise<void> {
   assertBillingSafeForProduction();
@@ -25,6 +26,9 @@ async function main(): Promise<void> {
   }, env.BILLING_RUN_INTERVAL_MINUTES * 60_000);
   billingTimer.unref();
 
+  // accrual, penalties and (optionally) reminders, once a day Nairobi time, one instance at a time per organisation
+  const dailyTimer = startDailyJobs();
+
   if (env.BILLING_MODE === 'mock' && env.NODE_ENV === 'production') {
     logger.warn('BILLING_MODE=mock in production: owners can simulate payments and nothing real is collected');
   }
@@ -35,6 +39,7 @@ async function main(): Promise<void> {
     stopping = true;
     logger.info('shutting down', { signal });
     clearInterval(billingTimer);
+    if (dailyTimer) clearInterval(dailyTimer);
     const forced = setTimeout(() => process.exit(1), env.SHUTDOWN_GRACE_MS);
     forced.unref();
     server.close(async () => {

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
+import { accounts, tokenIsCurrent } from './accounts';
 import { env, isProduction } from '../config/env';
 import { logger } from '../common/logger';
 import { AppError, UnauthorizedError } from '../domain/errors';
@@ -33,7 +34,7 @@ export const requestContext = (req: Request, res: Response, next: NextFunction) 
     logger.info('request', {
       requestId: req.id,
       method: req.method,
-      path: req.originalUrl,
+      path: redactPath(req.originalUrl),
       status: res.statusCode,
       durationMs: Math.round(Number(process.hrtime.bigint() - startedAt) / 1e5) / 10,
       orgId: req.principal?.orgId
@@ -43,27 +44,32 @@ export const requestContext = (req: Request, res: Response, next: NextFunction) 
   next();
 };
 
-export const authenticate = (req: Request, _res: Response, next: NextFunction) => {
+export const authenticate = async (req: Request, _res: Response, next: NextFunction) => {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     return next(new UnauthorizedError('A bearer token is required.'));
   }
 
+  let claims: Record<string, unknown>;
   try {
-    const claims = jwt.verify(header.slice(7).trim(), env.JWT_SECRET) as Record<string, unknown>;
-    if (typeof claims.orgId !== 'string' || typeof claims.sub !== 'string') {
-      return next(new UnauthorizedError('Token does not identify an organisation.'));
-    }
-
-    req.principal = {
-      userId: claims.sub,
-      orgId: claims.orgId,
-      siteId: typeof claims.siteId === 'string' ? claims.siteId : null,
-      role: claims.role as Principal['role']
-    };
-    next();
+    claims = jwt.verify(header.slice(7).trim(), env.JWT_SECRET) as Record<string, unknown>;
   } catch {
-    next(new UnauthorizedError('Invalid or expired token.'));
+    return next(new UnauthorizedError('Invalid or expired token.'));
+  }
+  if (typeof claims.orgId !== 'string' || typeof claims.sub !== 'string') {
+    return next(new UnauthorizedError('Token does not identify an organisation.'));
+  }
+
+  try {
+    // The token proves who signed in; the account row decides whether they still may, and as what.
+    const account = await accounts.get(claims.orgId, claims.sub);
+    if (!tokenIsCurrent(account, claims.tv)) {
+      return next(new UnauthorizedError('This session has ended. Sign in again.'));
+    }
+    req.principal = { userId: claims.sub, orgId: claims.orgId, siteId: account.siteId, role: account.role };
+    next();
+  } catch (error) {
+    next(error);
   }
 };
 
@@ -126,10 +132,18 @@ export const errorHandler = (
 
   logger.error('unhandled error', {
     requestId: req.id,
-    path: req.originalUrl,
+    path: redactPath(req.originalUrl),
     error: error instanceof Error ? error.message : String(error),
     stack: isProduction ? undefined : error instanceof Error ? error.stack : undefined
   });
 
   res.status(500).json({ code: 'internal', message: 'Internal Server Error', requestId: req.id });
 };
+
+/**
+ * Callback URLs carry the shared secret as a path segment, so it must never reach a log line. Anyone
+ * who can read the logs could otherwise forge payment confirmations.
+ */
+export function redactPath(url: string): string {
+  return url.replace(/(\/(?:mpesa(?:\/c2b)?|hooks\/pay)\/)[^/?]+(?=\/(?:confirmation|validation))/, '$1[redacted]');
+}

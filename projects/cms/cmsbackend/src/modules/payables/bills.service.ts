@@ -1,4 +1,7 @@
+import { randomUUID } from 'node:crypto';
 import { Transaction } from 'sequelize';
+import { env } from '../../config/env';
+import { objectStore, safeFileName, sha256, tenantKey } from '../../common/object-store';
 import { allocate, fromMinor, MAX_MINOR, toInt } from '../../common/money';
 import { decodeCursor, toKeysetPage } from '../../common/keyset';
 import { BadRequestError, ConflictError, NotFoundError } from '../../utils/errors';
@@ -368,17 +371,75 @@ export async function voidBill(t: Transaction, churchId: number, actorId: number
   return getBill(t, churchId, id);
 }
 
-export async function addAttachment(t: Transaction, churchId: number, actorId: number, billId: number, a: { fileName: string; contentType: string; sizeBytes: number; storageKey: string }) {
+/** What may be attached to a bill, with the leading bytes each type must have so a renamed file is refused. */
+export const ATTACHMENT_TYPES: Record<string, (head: Buffer) => boolean> = {
+  'application/pdf': (h) => h.subarray(0, 5).toString('latin1') === '%PDF-',
+  'image/png': (h) => h.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+  'image/jpeg': (h) => h[0] === 0xff && h[1] === 0xd8 && h[2] === 0xff,
+  'image/webp': (h) => h.subarray(0, 4).toString('latin1') === 'RIFF' && h.subarray(8, 12).toString('latin1') === 'WEBP',
+  'text/csv': () => true,
+  'text/plain': () => true
+};
+
+export interface AttachmentUpload {
+  fileName: string;
+  contentType: string;
+  body: Buffer;
+  /** Optional checksum the client computed; a mismatch means the upload was damaged in transit. */
+  expectedSha256?: string;
+}
+
+/**
+ * Stores the file in the object store under a tenant-prefixed key, then records it. The key is made
+ * here and never taken from the caller, so one church can never point a row at another's object.
+ */
+export async function addAttachment(t: Transaction, churchId: number, actorId: number, billId: number, upload: AttachmentUpload) {
   const row = await loadRow(t, churchId, billId);
   if (row.status === 'VOID') throw new ConflictError('a void bill takes no attachments');
-  await exec(t, `INSERT INTO bill_attachments (church_id, bill_id, file_name, content_type, size_bytes, storage_key, uploaded_by) VALUES (:churchId, :billId, :fileName, :contentType, :sizeBytes, :storageKey, :actorId)`, { churchId, billId, ...a, actorId });
+  const type = upload.contentType.toLowerCase();
+  const check = ATTACHMENT_TYPES[type];
+  if (!check) throw new BadRequestError(`${upload.contentType} is not an accepted attachment type (PDF, PNG, JPEG, WebP, CSV or plain text)`);
+  if (upload.body.length === 0) throw new BadRequestError('the file is empty');
+  if (upload.body.length > env.ATTACHMENT_MAX_BYTES) throw new BadRequestError(`the file is larger than the ${Math.floor(env.ATTACHMENT_MAX_BYTES / 1024 / 1024)} MB limit`);
+  if (!check(upload.body.subarray(0, 16))) throw new BadRequestError('the file content does not match its declared type');
+  const digest = sha256(upload.body);
+  if (upload.expectedSha256 && upload.expectedSha256.toLowerCase() !== digest) throw new BadRequestError('the checksum does not match the uploaded bytes; try again');
+  const count = await selectOne<any>(t, `SELECT COUNT(*) AS n FROM bill_attachments WHERE church_id = :churchId AND bill_id = :billId`, { churchId, billId });
+  if (toInt(count?.n) >= 20) throw new ConflictError('a bill holds at most 20 attachments');
+
+  const fileName = safeFileName(upload.fileName);
+  const key = tenantKey(churchId, 'bills', String(billId), `${randomUUID()}-${fileName}`);
+  const store = objectStore();
+  await store.put(key, upload.body, type);
+  try {
+    await exec(t, `INSERT INTO bill_attachments (church_id, bill_id, file_name, content_type, size_bytes, storage_key, sha256, uploaded_by, created_at) VALUES (:churchId, :billId, :fileName, :contentType, :sizeBytes, :key, :digest, :actorId, :now)`, { churchId, billId, fileName, contentType: type, sizeBytes: upload.body.length, key, digest, actorId, now: new Date() });
+    await recordAudit(t, churchId, { action: 'bill.attachment.add', entityType: 'bill', entityId: billId, actorId, data: { fileName, sizeBytes: upload.body.length, sha256: digest } });
+  } catch (error) {
+    await store.delete(key).catch(() => undefined);
+    throw error;
+  }
   return getBill(t, churchId, billId);
+}
+
+/** A short-lived download link for one attachment; the row is looked up by church AND bill, so ids from another church find nothing. */
+export async function attachmentLink(t: Transaction, churchId: number, billId: number, attachmentId: number) {
+  await loadRow(t, churchId, billId);
+  const a = await selectOne<any>(t, `SELECT * FROM bill_attachments WHERE church_id = :churchId AND bill_id = :billId AND id = :attachmentId`, { churchId, billId, attachmentId });
+  if (!a) throw new NotFoundError(`attachment ${attachmentId} was not found on this bill`);
+  // Belt and braces: a row can only ever hold its own church's prefix, and a doctored one is refused.
+  if (!String(a.storage_key).startsWith(`tenants/${churchId}/`)) throw new NotFoundError(`attachment ${attachmentId} was not found on this bill`);
+  const ttlSeconds = 300;
+  const url = await objectStore().downloadUrl(a.storage_key, { fileName: a.file_name, contentType: a.content_type, ttlSeconds });
+  return { url, expiresAt: new Date(Date.now() + ttlSeconds * 1000).toISOString(), fileName: a.file_name, sha256: a.sha256 ?? null };
 }
 
 export async function removeAttachment(t: Transaction, churchId: number, billId: number, attachmentId: number) {
   const row = await loadRow(t, churchId, billId);
   if (row.status === 'PAID' || row.status === 'VOID') throw new ConflictError('attachments on a settled bill are kept');
+  const a = await selectOne<any>(t, `SELECT storage_key FROM bill_attachments WHERE church_id = :churchId AND bill_id = :billId AND id = :attachmentId`, { churchId, billId, attachmentId });
+  if (!a) throw new NotFoundError(`attachment ${attachmentId} was not found on this bill`);
   await exec(t, `DELETE FROM bill_attachments WHERE church_id = :churchId AND bill_id = :billId AND id = :attachmentId`, { churchId, billId, attachmentId });
+  if (String(a.storage_key).startsWith(`tenants/${churchId}/`)) await objectStore().delete(a.storage_key).catch(() => undefined);
   return getBill(t, churchId, billId);
 }
 
@@ -398,7 +459,7 @@ export async function getBill(t: Transaction, churchId: number, id: number) {
     })),
     approvals: approvals.map((a) => ({ approverId: toInt(a.approver_id), approvedAt: iso(a.approved_at), auto: a.auto === true || a.auto === 1 })),
     payments: payments.map(mapPayment),
-    attachments: attachments.map((a) => ({ id: toInt(a.id), fileName: a.file_name, contentType: a.content_type, sizeBytes: toInt(a.size_bytes), storageKey: a.storage_key }))
+    attachments: attachments.map((a) => ({ id: toInt(a.id), fileName: a.file_name, contentType: a.content_type, sizeBytes: toInt(a.size_bytes), sha256: a.sha256 ?? null, createdAt: iso(a.created_at) }))
   };
 }
 

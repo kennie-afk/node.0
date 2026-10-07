@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import { Op, WhereOptions } from 'sequelize';
 import db from '@models';
 import { createCrudController } from '../common/crud-controller';
-import { paginationSchema } from '../common/pagination';
+import { keysetParams, paginationSchema, wantsOffsetPaging } from '../common/pagination';
 import service from './attendance.service';
 
 const controller = createCrudController(service, 'Attendance');
@@ -41,7 +41,13 @@ export function attendanceWhere(query: Request['query']): WhereOptions | undefin
 export const createAttendance = controller.create;
 export const getAllAttendance = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    res.status(200).json(await service.list(paginationSchema.parse(req.query), attendanceWhere(req.query)));
+    // Cursor paging by default (no count(*) over the largest table in a church); `page=` keeps the old shape.
+    if (wantsOffsetPaging(req.query)) {
+      res.status(200).json(await service.list(paginationSchema.parse(req.query), attendanceWhere(req.query)));
+      return;
+    }
+    const { limit, cursor } = keysetParams(req.query);
+    res.status(200).json(await service.listKeyset(attendanceWhere(req.query), limit, cursor));
   } catch (error) {
     next(error);
   }

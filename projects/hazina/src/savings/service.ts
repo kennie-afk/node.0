@@ -16,8 +16,10 @@ import { z } from 'zod';
 import { BadRequestError, ConflictError, ForbiddenError, NotFoundError } from '../domain/errors';
 import { Ctx, audit, getSettings, mayCheck, orgInfo } from '../common/context';
 import { CODES, Channel, settlementAccount } from '../ledger/chart';
+import { moneyText } from '../domain/money';
 import { memberBalance, postEntry } from '../ledger/service';
 import { getMemberRow } from '../members/service';
+import { cursorTs, decodeCursor, encodeCursor, likeContains } from '../common/search';
 
 export const PRODUCT_ACCOUNT = { savings: CODES.savings, shares: CODES.shares, deposits: CODES.deposits } as const;
 export type SavingsProduct = keyof typeof PRODUCT_ACCOUNT;
@@ -56,7 +58,8 @@ async function requireActiveMember(client: PoolClient, memberId: string): Promis
   return member;
 }
 
-export async function postDeposit(client: PoolClient, ctx: Ctx, input: z.infer<typeof depositSchema>) {
+/** `fundsAccount` replaces the channel's settlement account as the debit side (M-Pesa money already held in suspense). */
+export async function postDeposit(client: PoolClient, ctx: Ctx, input: z.infer<typeof depositSchema>, fundsAccount?: string) {
   await requireSacco(client);
   const member = await requireActiveMember(client, input.memberId);
   if (input.channel === 'mpesa') {
@@ -77,7 +80,7 @@ export async function postDeposit(client: PoolClient, ctx: Ctx, input: z.infer<t
     sourceId: txn.id,
     postedBy: ctx.userId,
     lines: [
-      { accountCode: settlementAccount(input.channel as Channel), debitCents: input.amountCents },
+      { accountCode: fundsAccount ?? settlementAccount(input.channel as Channel), debitCents: input.amountCents },
       { accountCode: PRODUCT_ACCOUNT[input.product], creditCents: input.amountCents, memberId: member.id }
     ]
   });
@@ -107,7 +110,7 @@ export async function requestWithdrawal(client: PoolClient, ctx: Ctx, input: z.i
   const date = input.occurredOn ?? (await today(client));
   if (await hasArrears(client, member.id, date)) throw new ConflictError('This member has a loan in arrears, so savings cannot be withdrawn.');
   const available = (await memberBalance(client, member.id, CODES.savings)) - (await pendingWithdrawals(client, member.id));
-  if (input.amountCents > available) throw new ConflictError(`The savings balance available is KSh ${(available / 100).toLocaleString('en-KE')}, which is less than the withdrawal.`);
+  if (input.amountCents > available) throw new ConflictError(`The savings balance available is KSh ${moneyText(available)}, which is less than the withdrawal.`);
 
   const settings = await getSettings(client);
   const needsApproval = input.amountCents >= settings.withdrawalApprovalCents;
@@ -166,28 +169,36 @@ export async function decideWithdrawal(client: PoolClient, ctx: Ctx, txnId: stri
   return { id: txnId, status: 'posted' as const, journalSeq: seq };
 }
 
-export async function listSavings(client: PoolClient, opts: { memberId?: string; status?: string; limit: number }) {
+export async function listSavings(client: PoolClient, opts: { memberId?: string; status?: string; search?: string; limit: number; after?: string }) {
   const params: unknown[] = [];
   const where: string[] = [];
-  if (opts.memberId) {
-    params.push(opts.memberId);
-    where.push(`t.member_id = $${params.length}`);
+  if (opts.memberId) { params.push(opts.memberId); where.push(`t.member_id = $${params.length}`); }
+  if (opts.status) { params.push(opts.status); where.push(`t.status = $${params.length}`); }
+  if (opts.search) {
+    params.push(likeContains(opts.search));
+    where.push(`(lower(m.member_no) LIKE $${params.length} OR lower(m.full_name) LIKE $${params.length} OR lower(t.reference) LIKE $${params.length})`);
   }
-  if (opts.status) {
-    params.push(opts.status);
-    where.push(`t.status = $${params.length}`);
+  if (opts.after) {
+    const c = decodeCursor(opts.after);
+    params.push(c.at, c.id);
+    where.push(`(t.created_at, t.id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`);
   }
-  params.push(opts.limit);
+  params.push(opts.limit + 1);
   const rows = (await client.query(
-    `SELECT t.*, m.member_no, m.full_name FROM savings_txns t JOIN members m ON m.id = t.member_id
-      ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY t.created_at DESC LIMIT $${params.length}`,
+    `SELECT t.*, ${cursorTs('t.created_at')} AS cur, m.member_no, m.full_name FROM savings_txns t JOIN members m ON m.id = t.member_id
+      ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY t.created_at DESC, t.id DESC LIMIT $${params.length}`,
     params
   )).rows;
-  return rows.map((r) => ({
-    id: r.id, memberId: r.member_id, memberNo: r.member_no, memberName: r.full_name, product: r.product, kind: r.kind,
-    amountCents: Number(r.amount_cents), channel: r.channel, reference: r.reference, status: r.status, occurredOn: r.occurred_on,
-    requestedBy: r.requested_by, decidedBy: r.decided_by
-  }));
+  const page = rows.slice(0, opts.limit);
+  const last = page[page.length - 1];
+  return {
+    items: page.map((r) => ({
+      id: r.id, memberId: r.member_id, memberNo: r.member_no, memberName: r.full_name, product: r.product, kind: r.kind,
+      amountCents: Number(r.amount_cents), channel: r.channel, reference: r.reference, status: r.status, occurredOn: r.occurred_on,
+      requestedBy: r.requested_by, decidedBy: r.decided_by
+    })),
+    nextCursor: rows.length > opts.limit && last ? encodeCursor(last.cur as string, last.id as string) : null
+  };
 }
 
 /** A member's savings statement: every posted movement with the running balance. */

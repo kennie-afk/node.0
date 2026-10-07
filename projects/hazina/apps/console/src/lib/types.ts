@@ -54,6 +54,15 @@ export interface Upload { id: string; filename: string; format: string; status: 
 export interface DocCheck { id: string; kind: "payslip" | "national_id"; input: Record<string, unknown>; flags: Flag[]; createdAt: string }
 export interface Intake { statements: Upload[]; checks: DocCheck[] }
 
-export interface Settings { organisation: { kind: OrgKind; isDemo: boolean; name: string }; settings: { makerChecker: "strict" | "relaxed"; withdrawalApprovalCents: number; capacityShareBp: number; financialYearStartMonth: number }; capabilities?: { mpesaSimulator: boolean; billingMode: string } }
+export interface Settings { organisation: { kind: OrgKind; isDemo: boolean; name: string }; settings: { makerChecker: "strict" | "relaxed"; withdrawalApprovalCents: number; capacityShareBp: number; financialYearStartMonth: number; provisionRatesBp: Record<string, number> }; capabilities?: { mpesaSimulator: boolean; billingMode: string } }
 export interface Onboarding { kind: OrgKind; isSample: boolean; items: { key: string; title: string; done: boolean; hint: string }[]; doneCount: number; total: number }
 export interface Billing { mode: "mock" | "live"; status: string; writesAllowed: boolean; trialEndsAt: string; coveredUntil: string; suspendsAt: string; daysLeft: number; billingRef: string; billedUnits: number; kind: OrgKind; quote: { planCode: string; unitCount: number; unitCents: number; amountCents: number }; creditCents: number; outstandingCents: number; pay: { shortcode: string; accountNumber: string; amountCents: number } | null; invoices: { id: string; number: string; periodStart: string; periodEnd: string; unitCount: number; planCode: string; amountCents: number; paidCents: number; status: string; issuedAt: string }[] }
+
+export interface Paged<T> { items: T[]; nextCursor: string | null }
+export interface AuditPage { items: { id: number; action: string; entity: string; detail: unknown; at: string }[]; nextBefore: number | null }
+export interface ReconDay { day: string; count: number; receivedCents: number; appliedCents: number; unmatchedCents: number; ignoredCents: number }
+export interface Reconciliation { from: string; to: string; days: ReconDay[]; totals: { count: number; receivedCents: number; appliedCents: number; unmatchedCents: number; ignoredCents: number }; suspense: { ledgerCents: number; paymentsCents: number; paymentsCount: number; differenceCents: number; unmatchedBeforeSuspenseCount: number } }
+export interface PeriodStatus { lockedThrough: string | null; lockedAt: string | null; note: string | null; snapshots: string[] }
+export interface ProvisionBucket { bucket: string; loans: number; exposureCents: number; rateBp: number; requiredCents: number }
+export interface Provisioning { preview: { asOf: string; buckets: ProvisionBucket[]; requiredCents: number }; ratesBp: Record<string, number>; history: { id: string; asOf: string; requiredCents: number; adjustmentCents: number; createdAt: string }[]; notice: string }
+export interface DividendRun { id: string; kind: string; periodEnd: string; rateBp: number; members: number; totalCents: number; createdAt: string }

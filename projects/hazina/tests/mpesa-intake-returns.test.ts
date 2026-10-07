@@ -82,7 +82,7 @@ describe.runIf(on)('M-Pesa paybill reconciliation (real Postgres)', () => {
     const body = confirmation(code, m.memberNo, 750);
     await Promise.all([callback(body), callback(body), callback(body)]);
     expect((await get(t.owner.auth, `/v1/members/${m.id}`)).body.balances.savingsCents).toBe(K(750));
-    expect((await get(t.owner.auth, '/v1/mpesa/payments')).body).toHaveLength(1);
+    expect((await get(t.owner.auth, '/v1/mpesa/payments')).body.items).toHaveLength(1);
     await assertLedgerBalanced(t);
   });
 
@@ -94,7 +94,7 @@ describe.runIf(on)('M-Pesa paybill reconciliation (real Postgres)', () => {
     await callback(confirmation(code, 'MARY', 400));
     await callback(confirmation(code, '', 100));
     await callback(confirmation(code, 'M99999', 50));
-    const queue = (await get(teller.auth, '/v1/mpesa/payments?status=unmatched')).body;
+    const queue = (await get(teller.auth, '/v1/mpesa/payments?status=unmatched')).body.items;
     expect(queue).toHaveLength(3);
     expect(queue.find((p: { billRef: string }) => p.billRef === 'MARY').note).toMatch(/does not name a member or loan/);
     expect(queue.find((p: { billRef: string }) => p.billRef === 'M99999').note).toMatch(/No member/);
@@ -105,7 +105,7 @@ describe.runIf(on)('M-Pesa paybill reconciliation (real Postgres)', () => {
     expect((await get(t.owner.auth, `/v1/members/${m.id}`)).body.balances.savingsCents).toBe(K(400));
     const blank = queue.find((p: { billRef: string }) => p.billRef === '');
     expect((await post(teller.auth, `/v1/mpesa/payments/${blank.id}/ignore`, { note: 'Sent to the wrong paybill' })).status).toBe(200);
-    expect((await get(teller.auth, '/v1/mpesa/payments?status=unmatched')).body).toHaveLength(1);
+    expect((await get(teller.auth, '/v1/mpesa/payments?status=unmatched')).body.items).toHaveLength(1);
     await assertLedgerBalanced(t);
   });
 
@@ -114,7 +114,7 @@ describe.runIf(on)('M-Pesa paybill reconciliation (real Postgres)', () => {
     const code = await setPaybill(t);
     const m = await makeMember(t.owner.auth);
     await callback(confirmation(code, m.memberNo, 500));
-    const q = (await get(t.owner.auth, '/v1/mpesa/payments?status=unmatched')).body;
+    const q = (await get(t.owner.auth, '/v1/mpesa/payments?status=unmatched')).body.items;
     expect(q).toHaveLength(1);
     expect(q[0].note).toMatch(/non-deposit-taking/);
   });
@@ -129,8 +129,8 @@ describe.runIf(on)('M-Pesa paybill reconciliation (real Postgres)', () => {
     // B's paybill with A's member number: B has no such member, so it waits in B's queue, never touching A
     await callback(confirmation(codeB, mA.memberNo, 100));
     expect((await get(a.owner.auth, `/v1/members/${mA.id}`)).body.balances.savingsCents).toBe(0);
-    expect((await get(b.owner.auth, '/v1/mpesa/payments?status=unmatched')).body).toHaveLength(1);
-    expect((await get(a.owner.auth, '/v1/mpesa/payments')).body).toHaveLength(0);
+    expect((await get(b.owner.auth, '/v1/mpesa/payments?status=unmatched')).body.items).toHaveLength(1);
+    expect((await get(a.owner.auth, '/v1/mpesa/payments')).body.items).toHaveLength(0);
     void codeA;
   });
 
@@ -307,7 +307,7 @@ describe.runIf(on)('returns (real Postgres)', () => {
     expect(q.body.payload.notes.join(' ')).toMatch(/Portfolio-at-risk rows are as at/);
     const csv = await get(s.accountant.auth, `/v1/exports/return/${made.body.id}.csv`);
     expect(csv.text).toMatch(/NOT AN OFFICIAL REGULATOR RETURN/);
-    expect((await get(s.accountant.auth, '/v1/returns')).body.length).toBe(2);
+    expect((await get(s.accountant.auth, '/v1/returns')).body.items.length).toBe(2);
   });
 
   it('lets only the owner add a template, versions it, and the database refuses to mark one official', async () => {

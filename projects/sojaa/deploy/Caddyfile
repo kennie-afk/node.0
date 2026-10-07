@@ -1,0 +1,16 @@
+# TLS is automatic: Caddy obtains and renews a certificate for {$SOJAA_DOMAIN} from Let's Encrypt, which needs ports 80 and 443
+# reachable from the internet and a DNS record pointing the host name at this server. Nothing else in this stack speaks TLS.
+{$SOJAA_DOMAIN} {
+	encode zstd gzip
+
+	# Safaricom's confirmation callback and the console's own API calls
+	handle /v1/* {
+		reverse_proxy api:4400
+	}
+	handle /healthz {
+		reverse_proxy api:4400
+	}
+	handle {
+		reverse_proxy console:3900
+	}
+}

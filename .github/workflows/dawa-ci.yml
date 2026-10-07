@@ -1,0 +1,78 @@
+name: dawa
+
+on:
+  push:
+    paths:
+      - 'projects/dawa/**'
+      - '.github/workflows/dawa-ci.yml'
+  pull_request:
+    paths:
+      - 'projects/dawa/**'
+
+jobs:
+  # Unit tests, types and the production build: no database.
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/dawa
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: projects/dawa/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  # The integration tests connect as the restricted application role, so row-level security is in force.
+  # Without them a broken tenant boundary would pass CI, because they are skipped when no database is set.
+  integration:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: projects/dawa
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: dawa
+          POSTGRES_PASSWORD: ci-owner-pw
+          POSTGRES_DB: dawa_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U dawa" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+      # the shared rate-limit store is tested against a real Redis
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://dawa_app:ci-app-password-123@localhost:5432/dawa_test
+      DATABASE_MIGRATION_URL: postgres://dawa:ci-owner-pw@localhost:5432/dawa_test
+      DAWA_APP_PASSWORD: ci-app-password-123
+      JWT_SECRET: ci-jwt-secret-ci-jwt-secret-ci-jwt-secret
+      MPESA_CALLBACK_SECRET: ci-mpesa-secret-1234567
+      NODE_ENV: test
+      DAWA_INTEGRATION: '1'
+      SIGNUP_RESEND_COOLDOWN_SECONDS: '0'
+      API_RATE_LIMIT_PER_MINUTE: '100000'
+      MPESA_SIMULATOR: 'true'
+      DAWA_CI: 'true'
+      REDIS_TEST_URL: redis://localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: projects/dawa/package-lock.json
+      - run: npm ci
+      - run: npm run migrate
+      - run: npx vitest run

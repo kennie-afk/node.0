@@ -129,8 +129,13 @@ export async function fullStaff(t: Tenant): Promise<Staff> {
   };
 }
 
-export async function lendUntil(s: Staff, memberId: string, productId: string, amountCents: number, termMonths: number, stage: 'applied' | 'appraised' | 'approved' | 'disbursed', disbursedOn?: string): Promise<string> {
-  const applied = await post(s.officer.auth, '/v1/loans', { memberId, productId, principalCents: amountCents, termMonths });
+export interface LendExtras {
+  guarantors?: Array<{ memberId: string; guaranteedCents: number }>;
+  firstDueDate?: string;
+}
+
+export async function lendUntil(s: Staff, memberId: string, productId: string, amountCents: number, termMonths: number, stage: 'applied' | 'appraised' | 'approved' | 'disbursed', disbursedOn?: string, extras: LendExtras = {}): Promise<string> {
+  const applied = await post(s.officer.auth, '/v1/loans', { memberId, productId, principalCents: amountCents, termMonths, ...(extras.guarantors ? { guarantors: extras.guarantors } : {}) });
   if (applied.status !== 201) throw new Error(`apply failed: ${applied.status} ${JSON.stringify(applied.body)}`);
   const id = applied.body.id as string;
   if (stage === 'applied') return id;
@@ -140,7 +145,7 @@ export async function lendUntil(s: Staff, memberId: string, productId: string, a
   const decided = await post(s.manager.auth, `/v1/loans/${id}/decision`, { approve: true });
   if (decided.status !== 200) throw new Error(`approve failed: ${decided.status} ${JSON.stringify(decided.body)}`);
   if (stage === 'approved') return id;
-  const out = await post(s.accountant.auth, `/v1/loans/${id}/disburse`, { channel: 'bank', ...(disbursedOn ? { disbursedOn } : {}) });
+  const out = await post(s.accountant.auth, `/v1/loans/${id}/disburse`, { channel: 'bank', ...(disbursedOn ? { disbursedOn } : {}), ...(extras.firstDueDate ? { firstDueDate: extras.firstDueDate } : {}) });
   if (out.status !== 200) throw new Error(`disburse failed: ${out.status} ${JSON.stringify(out.body)}`);
   return id;
 }
@@ -174,4 +179,9 @@ export async function assertLoanBookAgrees(t: Tenant): Promise<void> {
     return { ledger, schedules };
   });
   if (ledger !== schedules) throw new Error(`loans receivable ${ledger} disagrees with schedules ${schedules}`);
+}
+
+/** Nairobi's calendar date, shifted by whole days: the business day the server uses (UTC plus 3 hours). */
+export function nairobiDay(offsetDays = 0): string {
+  return new Date(Date.now() + 3 * 3_600_000 + offsetDays * 86_400_000).toISOString().slice(0, 10);
 }

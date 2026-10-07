@@ -4,7 +4,8 @@
  * can add to. A non-bank lender does not take deposits, so it has no savings or deposits accounts and its equity is
  * called capital, not shares.
  *
- * Interest is recognised when it is received (cash basis); penalties are recognised when they are charged and held as a
+ * Interest is accrued per instalment when it falls due (accrued interest receivable, 1120) and cleared when paid; interest
+ * paid before its due date is recognised on receipt. Penalties are recognised when they are charged and held as a
  * receivable until paid. Both are documented in docs/ACCOUNTING.md and need an accountant's sign-off before an
  * organisation treats the statements as its audited position.
  */
@@ -23,9 +24,12 @@ export const CODES = {
   bank: '1030',
   loans: '1100',
   penaltiesReceivable: '1110',
+  accruedInterest: '1120',
+  loanLossProvision: '1190',
   savings: '2100',
   deposits: '2200',
   unapplied: '2300',
+  mpesaSuspense: '2310',
   payables: '2400',
   borrowings: '2500',
   shares: '3100',
@@ -38,9 +42,11 @@ export const CODES = {
   otherIncome: '4400',
   recoveries: '4500',
   badDebts: '5100',
+  provisionExpense: '5150',
   salaries: '5200',
   rent: '5300',
   admin: '5400',
+  savingsInterestExpense: '5500',
   otherExpense: '5900'
 } as const;
 
@@ -50,7 +56,11 @@ const COMMON: ChartAccount[] = [
   { code: CODES.bank, name: 'Bank', type: 'asset', system: true },
   { code: CODES.loans, name: 'Loans receivable (principal)', type: 'asset', system: true },
   { code: CODES.penaltiesReceivable, name: 'Penalties receivable', type: 'asset', system: true },
+  { code: CODES.accruedInterest, name: 'Accrued interest receivable', type: 'asset', system: true },
+  // a contra-asset: it carries a credit balance and is netted against the loans on the balance sheet
+  { code: CODES.loanLossProvision, name: 'Loan loss provision', type: 'asset', system: true },
   { code: CODES.unapplied, name: 'Unapplied receipts', type: 'liability', system: true },
+  { code: CODES.mpesaSuspense, name: 'M-Pesa suspense (received, not yet applied)', type: 'liability', system: true },
   { code: CODES.payables, name: 'Payables', type: 'liability', system: false },
   { code: CODES.borrowings, name: 'Borrowings', type: 'liability', system: false },
   { code: CODES.reserves, name: 'Reserves', type: 'equity', system: false },
@@ -62,6 +72,7 @@ const COMMON: ChartAccount[] = [
   { code: CODES.otherIncome, name: 'Other income', type: 'income', system: false },
   { code: CODES.recoveries, name: 'Bad debts recovered', type: 'income', system: true },
   { code: CODES.badDebts, name: 'Bad debts written off', type: 'expense', system: true },
+  { code: CODES.provisionExpense, name: 'Loan loss provision expense', type: 'expense', system: true },
   { code: CODES.salaries, name: 'Salaries and wages', type: 'expense', system: false },
   { code: CODES.rent, name: 'Rent and utilities', type: 'expense', system: false },
   { code: CODES.admin, name: 'Administration', type: 'expense', system: false },
@@ -76,9 +87,22 @@ export function defaultChart(kind: 'sacco' | 'lender'): ChartAccount[] {
     ...COMMON,
     { code: CODES.savings, name: 'Member savings', type: 'liability', system: true },
     { code: CODES.deposits, name: 'Member deposits', type: 'liability', system: true },
-    { code: CODES.shares, name: 'Member share capital', type: 'equity', system: true }
+    { code: CODES.shares, name: 'Member share capital', type: 'equity', system: true },
+    { code: CODES.savingsInterestExpense, name: 'Interest on member savings', type: 'expense', system: true }
   ];
 }
+
+/**
+ * Accounts added after organisations already existed. postEntry creates a missing one on first use (inside the
+ * organisation's own transaction, so no cross-tenant migration is needed).
+ */
+export const LATE_SYSTEM_ACCOUNTS: ChartAccount[] = [
+  { code: CODES.accruedInterest, name: 'Accrued interest receivable', type: 'asset', system: true },
+  { code: CODES.loanLossProvision, name: 'Loan loss provision', type: 'asset', system: true },
+  { code: CODES.mpesaSuspense, name: 'M-Pesa suspense (received, not yet applied)', type: 'liability', system: true },
+  { code: CODES.provisionExpense, name: 'Loan loss provision expense', type: 'expense', system: true },
+  { code: CODES.savingsInterestExpense, name: 'Interest on member savings', type: 'expense', system: true }
+];
 
 export type Channel = 'cash' | 'mpesa' | 'bank' | 'transfer';
 

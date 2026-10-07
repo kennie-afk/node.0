@@ -24,6 +24,7 @@ export interface Incident { id: string; incidentNo: string; siteId: string; site
 export interface Settings {
   minWageCents: number; allowancesCountTowardMin: boolean; standardMonthlyHours: number; overtimeMultiplierBp: number; restDayMultiplierBp: number; holidayMultiplierBp: number; checkinEarlyMinutes: number;
   lateGraceMinutes: number; missedAfterMinutes: number; defaultGeofenceM: number; maxHoursPerWeek: number | null; minRestHours: number | null; billBasis: "scheduled" | "actual";
+  annualLeaveDays: number; sickLeaveDays: number | null; absenceDeduction: "off" | "unpaid_leave" | "unpaid_leave_and_missed";
 }
 export interface SettingsView { organisation: { isDemo: boolean; name: string; psraLicenceNo: string | null }; settings: Settings; permissions: string[]; capabilities: { billingMode: string } }
 export interface Overview {
@@ -51,3 +52,23 @@ export interface Portal { client: string; month: string; sites: { site: string; 
 export interface Holiday { day: string; name: string }
 export interface AuditRow { id: number; actor: string | null; action: string; entity: string; entityId: string | null; detail: Record<string, unknown>; at: string }
 export interface PostPick { id: string; name: string; siteId: string; site: string; client: string }
+
+export interface AuditEntry {
+  id: number;
+  actorId: string | null;
+  actor: string | null;
+  action: string;
+  entity: string;
+  entityId: string | null;
+  detail: Record<string, unknown>;
+  at: string;
+}
+
+export interface AuditPage {
+  items: AuditEntry[];
+  next: number | null;
+}
+
+export interface LeaveRow { id: string; guardId: string; guard: string; guardNo: string; kind: string; startDay: string; endDay: string; days: number; status: string; reason: string | null; decidedBy: string | null; decisionNote: string | null }
+export interface ExpiryRow { kind: string; refId: string; guardId: string; guard: string; guardNo: string; label: string; due: string; daysLeft: number }
+export interface ExpiryPage { today: string; days: number; total: number; page: number; pageSize: number; items: ExpiryRow[] }

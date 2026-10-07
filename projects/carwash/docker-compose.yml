@@ -11,7 +11,7 @@ services:
     volumes:
       - forecourt-data:/var/lib/postgresql/data
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-forecourt}"]
       interval: 10s
@@ -82,6 +82,29 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  # Scheduled backups. Off unless asked for: `docker compose --profile backup up -d backup`.
+  # One dump a day by default into the forecourt-backups volume, verified and pruned (scripts/backup.sh).
+  # Prove it restores:  docker compose --profile backup run --rm backup sh /scripts/restore-drill.sh
+  backup:
+    image: postgres:16-alpine
+    profiles: ["backup"]
+    restart: unless-stopped
+    environment:
+      DATABASE_MIGRATION_URL: postgres://${POSTGRES_USER:-forecourt}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-forecourt}
+      BACKUP_DIR: /backups
+      MIGRATIONS_DIR: /migrations
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+      BACKUP_SKIP_RAW_TELEMETRY: ${BACKUP_SKIP_RAW_TELEMETRY:-0}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+    command: ["sh", "-c", "while true; do sh /scripts/backup.sh || echo 'BACKUP FAILED' >&2; sleep \"$$BACKUP_INTERVAL_SECONDS\"; done"]
+    volumes:
+      - ./scripts:/scripts:ro
+      - ./migrations:/migrations:ro
+      - forecourt-backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   console:
     build:
       context: ./apps/console
@@ -96,3 +119,4 @@ services:
 
 volumes:
   forecourt-data:
+  forecourt-backups:

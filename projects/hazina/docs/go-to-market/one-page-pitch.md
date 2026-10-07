@@ -18,7 +18,7 @@
 
 ## Straight about the limits
 - It does **not file anything with SASRA, the Commissioner for Co-operatives or the Central Bank.** The returns it makes are generic and marked "not official". We have not been given the real formats.
-- Interest is counted when received (cash basis), not accrued. Your accountant must agree before you treat the statements as audited.
+- Interest is accrued per instalment and a loan loss provision can be posted from percentages you set (placeholders until your accountant sets them; not regulatory guidance). Your accountant must agree before you treat the statements as audited.
 - It is not core banking: no cheques, cards or ATM. No member app yet. No SMS reminders yet.
 - Live M-Pesa on your paybill is set up with you and is not yet proven with a real customer.
 

@@ -87,7 +87,16 @@ export interface Bill extends BillSummary {
   lines: BillLine[];
   approvals: Array<{ approverId: number; approvedAt: string; auto: boolean }>;
   payments: BillPayment[];
-  attachments: Array<{ id: number; fileName: string; contentType: string; sizeBytes: number }>;
+  attachments: BillAttachment[];
+}
+
+export interface BillAttachment {
+  id: number;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  sha256: string | null;
+  createdAt?: string;
 }
 
 export interface BillLineInput {
@@ -162,6 +171,13 @@ export const voidBill = (id: number, reason: string) => http.post<Bill>(`/payabl
 export const payBill = (id: number, body: { amount: string; paidDate?: string; bankAccountId?: number; reference?: string | null }, key: string) =>
   http.postIdempotent<PayResult>(`/payables/bills/${id}/pay`, body, key);
 export const voidPayment = (billId: number, paymentId: number, reason: string) => http.post<Bill>(`/payables/bills/${billId}/payments/${paymentId}/void`, { reason });
+
+/** The file is the raw body (its own Content-Type), the name rides in the query: no multipart, no base64. */
+export const uploadAttachment = (billId: number, file: File) =>
+  http.post<Bill>(`/payables/bills/${billId}/attachments?fileName=${encodeURIComponent(file.name)}`, file, { headers: { 'Content-Type': file.type || 'application/octet-stream' } });
+export const attachmentLink = (billId: number, attachmentId: number) =>
+  http.get<{ url: string; expiresAt: string; fileName: string }>(`/payables/bills/${billId}/attachments/${attachmentId}/link`);
+export const removeAttachment = (billId: number, attachmentId: number) => http.delete<Bill>(`/payables/bills/${billId}/attachments/${attachmentId}`);
 
 export const getAging = (asOf?: string) => http.get<Aging>('/payables/reports/aging', { asOf });
 

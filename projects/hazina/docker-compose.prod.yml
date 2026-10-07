@@ -1,0 +1,48 @@
+# Production override. Use it ON TOP of docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# docker-compose.yml is the local / demo path: it ships mock billing and lets the M-Pesa simulator run in a production-mode
+# image. This file turns both off, refuses to start without the settings a real deployment needs, and stops publishing the
+# database port. Needs Docker Compose 2.24 or newer (it uses !reset / !override).
+#
+# What it does NOT do: terminate TLS (put a reverse proxy in front of the api and console and keep the api private),
+# provide a managed or replicated database, or take backups by itself (see scripts/backup.sh and scripts/restore-drill.sh).
+services:
+  postgres:
+    ports: !reset []
+    restart: always
+  migrate:
+    environment:
+      NODE_ENV: production
+  api:
+    restart: always
+    environment:
+      NODE_ENV: production
+      # live billing needs the shortcode Safaricom issued for Hazina's own subscription
+      BILLING_MODE: live
+      BILLING_SHORTCODE: ${BILLING_SHORTCODE:?BILLING_SHORTCODE must be set for live billing}
+      BILLING_ALLOW_MOCK_IN_PRODUCTION: "false"
+      # no simulated payments in production
+      MPESA_SIMULATOR: "false"
+      MPESA_SIMULATOR_ALLOW_IN_PRODUCTION: "false"
+      CORS_ORIGINS: ${CORS_ORIGINS:?CORS_ORIGINS must be set to the console's public origin}
+      # a real signup resend cooldown; the daily accrual/penalty jobs run at this hour, Nairobi time
+      SIGNUP_RESEND_COOLDOWN_SECONDS: ${SIGNUP_RESEND_COOLDOWN_SECONDS:-60}
+      DAILY_JOBS_HOUR: ${DAILY_JOBS_HOUR:-1}
+      # NOTIFY_PROVIDER=africastalking needs AT_USERNAME and AT_API_KEY (UNVERIFIED against the real service: try the sandbox first)
+      NOTIFY_PROVIDER: ${NOTIFY_PROVIDER:-mock}
+      AT_USERNAME: ${AT_USERNAME:-}
+      AT_API_KEY: ${AT_API_KEY:-}
+      AT_SENDER_ID: ${AT_SENDER_ID:-}
+      AT_BASE_URL: ${AT_BASE_URL:-https://api.africastalking.com}
+      SMS_REMINDERS_AUTO: ${SMS_REMINDERS_AUTO:-false}
+    # readiness, not just liveness: also checks that every migration this build ships has been applied
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4300/readyz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+  console:
+    restart: always

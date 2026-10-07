@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { api, describeError } from "@/lib/api";
 import { clearSession, writeSession } from "@/lib/session";
-import { toCents } from "@/lib/format";
+import { ksh, toCents } from "@/lib/format";
 import type { MemberPage, Preview } from "@/lib/types";
 
 export interface FormState {
@@ -286,8 +286,9 @@ export async function restructureLoan(_previous: FormState, form: FormData): Pro
 
 export async function runPenalties(_previous: FormState, _form: FormData): Promise<FormState> {
   return run(async () => {
-    const out = await api.send<{ charged: number; totalCents: number }>("POST", "/v1/penalties/run", {});
-    return out.charged === 0 ? "Nothing new to charge today (a second run in the same month adds nothing)." : `${out.charged} instalment(s) charged, KSh ${(out.totalCents / 100).toLocaleString("en-KE")} in penalties.`;
+    const out = await api.send<{ charged: number; totalCents: number; skippedBusy: number }>("POST", "/v1/penalties/run", {});
+    const busy = out.skippedBusy ? ` ${out.skippedBusy} loan(s) were being repaid at that moment; run again to include them.` : "";
+    return (out.charged === 0 ? "Nothing new to charge today (a second run in the same month adds nothing)." : `${out.charged} instalment(s) charged, ${ksh(out.totalCents)} in penalties.`) + busy;
   });
 }
 
@@ -428,7 +429,8 @@ export async function saveSettings(_previous: FormState, form: FormData): Promis
   return run(async () => {
     await api.send("PATCH", "/v1/settings", {
       makerChecker: text(form, "makerChecker") || undefined, withdrawalApprovalCents: toCents(form.get("withdrawalApproval")),
-      capacityShareBp: Math.round(Number(text(form, "capacityShare") || "30") * 100), financialYearStartMonth: Number.parseInt(text(form, "fyMonth") || "1", 10)
+      capacityShareBp: Math.round(Number(text(form, "capacityShare") || "30") * 100), financialYearStartMonth: Number.parseInt(text(form, "fyMonth") || "1", 10),
+      provisionRatesBp: Object.fromEntries(["current", "1-30", "31-60", "61-90", "91-180", "180+"].filter((b) => text(form, `prov_${b}`) !== "").map((b) => [b, Math.round(Number(text(form, `prov_${b}`)) * 100)]))
     });
     return "Settings saved.";
   });
@@ -476,5 +478,76 @@ export async function changePin(_previous: FormState, form: FormData): Promise<F
     if (text(form, "newPin") !== text(form, "confirm")) throw new Error("The two PINs are not the same.");
     await api.send("POST", "/v1/auth/pin", { currentPin: text(form, "currentPin"), newPin: text(form, "newPin") });
     return "PIN changed.";
+  });
+}
+
+// ---- month end: accrual, provision, closing, dividends, reconciliation, reminders, guarantees ----
+
+export async function runAccrual(_previous: FormState, _form: FormData): Promise<FormState> {
+  return run(async () => {
+    const out = await api.send<{ installments: number; accruedCents: number }>("POST", "/v1/interest-accrual/run", {});
+    return out.installments === 0 ? "Nothing new to accrue: every instalment that has fallen due is already booked." : `${out.installments} instalment(s) accrued, ${ksh(out.accruedCents)} of interest.`;
+  });
+}
+
+export async function runProvisioning(_previous: FormState, _form: FormData): Promise<FormState> {
+  return run(async () => {
+    const out = await api.send<{ requiredCents: number; adjustmentCents: number }>("POST", "/v1/provisioning/run", {});
+    return out.adjustmentCents === 0 ? `The provision already stands at ${ksh(out.requiredCents)}; nothing to post.` : `Provision set to ${ksh(out.requiredCents)} (${out.adjustmentCents > 0 ? "increase" : "release"} of ${ksh(Math.abs(out.adjustmentCents))}).`;
+  });
+}
+
+export async function closePeriod(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const out = await api.send<{ lockedThrough: string }>("POST", "/v1/periods/close", { through: text(form, "through"), note: optional(form, "note") });
+    return `The books are closed through ${out.lockedThrough}. Nothing can be posted on or before that day.`;
+  });
+}
+
+export async function reopenPeriod(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const through = optional(form, "through");
+    await api.send("POST", "/v1/periods/reopen", { through: through ?? null, note: text(form, "note") });
+    return through ? `Reopened: the books are now closed through ${through}.` : "Reopened: no period is closed.";
+  });
+}
+
+export async function runDividend(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const out = await api.send<{ duplicate: boolean; members: number; totalCents: number }>("POST", "/v1/dividends/run", {
+      kind: text(form, "kind"), periodEnd: text(form, "periodEnd"), rateBp: Math.round(Number(text(form, "rate")) * 100)
+    });
+    return out.duplicate ? `That run was already made: ${out.members} member(s), ${ksh(out.totalCents)}. Nothing was posted again.` : `Credited ${ksh(out.totalCents)} to ${out.members} member(s).`;
+  });
+}
+
+export async function compareMpesaStatement(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    const file = await fileBase64(form, "file");
+    const out = await api.send<{
+      statementReceipts: number; matchedCount: number; amountDiffersCount: number; missingInHazinaCount: number;
+      amountDiffers: { receiptNo: string; statementCents: number; hazinaCents: number }[]; missingInHazina: { receiptNo: string; amountCents: number }[]; notInStatement: { receiptNo: string; amountCents: number }[];
+    }>("POST", "/v1/mpesa/reconciliation/statement", { contentBase64: file.base64 });
+    const some = (rows: string[]) => (rows.length === 0 ? "" : ` ${rows.slice(0, 8).join(", ")}${rows.length > 8 ? ", and more" : ""}.`);
+    return [
+      `${out.statementReceipts} received payment(s) in the file: ${out.matchedCount} match. Nothing was posted.`,
+      out.amountDiffersCount ? `Amount differs (${out.amountDiffersCount}):${some(out.amountDiffers.map((r) => `${r.receiptNo} file ${ksh(r.statementCents)} vs Hazina ${ksh(r.hazinaCents)}`))}` : "",
+      out.missingInHazinaCount ? `In the file but not in Hazina (${out.missingInHazinaCount}):${some(out.missingInHazina.map((r) => `${r.receiptNo} ${ksh(r.amountCents)}`))}` : "",
+      out.notInStatement.length ? `In Hazina but not in the file (${out.notInStatement.length}):${some(out.notInStatement.map((r) => `${r.receiptNo} ${ksh(r.amountCents)}`))}` : ""
+    ].filter(Boolean).join(" ");
+  });
+}
+
+export async function sendReminders(_previous: FormState, _form: FormData): Promise<FormState> {
+  return run(async () => {
+    const out = await api.send<{ sent: number; failed: number; alreadySent: number }>("POST", "/v1/reminders/run", {});
+    return `${out.sent} reminder(s) sent, ${out.failed} failed, ${out.alreadySent} already sent today.`;
+  });
+}
+
+export async function callGuarantee(_previous: FormState, form: FormData): Promise<FormState> {
+  return run(async () => {
+    await api.send("POST", `/v1/loans/${text(form, "id")}/guarantee-calls`, { guarantorMemberId: text(form, "guarantorMemberId"), amountCents: toCents(form.get("amount")), note: optional(form, "note") });
+    return "The guarantor's savings were applied to the loan.";
   });
 }

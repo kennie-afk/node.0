@@ -8,6 +8,11 @@
  *   account reference L00034       -> repayment of loan L00034
  *   anything else, or a reference that cannot be applied -> the unmatched queue, for a person to assign
  *
+ * Money is in the ledger from the moment it arrives: a receipt entry debits M-Pesa collections and credits the M-Pesa suspense
+ * liability (2310). Applying the payment (automatically, or by a person assigning it) debits the suspense instead of M-Pesa
+ * collections, so suspense holds exactly the money received and not yet applied, and the trial balance shows it. Payments
+ * received before suspense existed have no receipt entry and are applied the way they always were.
+ *
  * A payment for an unknown paybill is logged and dropped (there is nobody to hold it for). A payment for a known paybill is
  * NEVER dropped: it is recorded first, so the M-Pesa transaction id (unique across the system) makes a delivery repeated by
  * Safaricom a no-op, and if applying it fails for a business reason it is kept as unmatched with the reason.
@@ -22,6 +27,9 @@ import { AppError, ConflictError, NotFoundError } from '../domain/errors';
 import { Ctx, audit, orgInfo } from '../common/context';
 import { postDeposit } from '../savings/service';
 import { repayLoan } from '../loans/service';
+import { CODES } from '../ledger/chart';
+import { postEntry, postingDateFor } from '../ledger/service';
+import { cursorTs, decodeCursor, encodeCursor, likeContains } from '../common/search';
 
 /** Payments applied by the system are attributed to this id in the audit trail and on repayments. */
 export const SYSTEM_USER_ID = '00000000-0000-0000-0000-000000000000';
@@ -48,16 +56,17 @@ export function parseReference(raw: string): Target | null {
   return null;
 }
 
-async function applyToTarget(client: PoolClient, ctx: Ctx, payment: { externalRef: string; amountCents: number; receivedOn: string }, target: Target): Promise<{ type: string; id: string; unapplied: number }> {
+async function applyToTarget(client: PoolClient, ctx: Ctx, payment: { externalRef: string; amountCents: number; receivedOn: string; fromSuspense: boolean }, target: Target): Promise<{ type: string; id: string; unapplied: number }> {
   if (target.type === 'loan') {
     const loan = (await client.query('SELECT id, status FROM loans WHERE loan_no = $1', [target.loanNo])).rows[0];
     if (!loan) throw new NotFoundError(`No loan ${target.loanNo}.`);
-    const result = await repayLoan(client, ctx, loan.id, { amountCents: payment.amountCents, channel: 'mpesa', reference: payment.externalRef, receivedOn: payment.receivedOn });
+    const funds = payment.fromSuspense ? { accountCode: CODES.mpesaSuspense } : undefined;
+    const result = await repayLoan(client, ctx, loan.id, { amountCents: payment.amountCents, channel: 'mpesa', reference: payment.externalRef, receivedOn: payment.receivedOn }, funds);
     return { type: 'loan', id: loan.id, unapplied: result.unappliedCents };
   }
   const member = (await client.query('SELECT id FROM members WHERE member_no = $1', [target.memberNo])).rows[0];
   if (!member) throw new NotFoundError(`No member ${target.memberNo}.`);
-  await postDeposit(client, ctx, { memberId: member.id, product: target.type, amountCents: payment.amountCents, channel: 'mpesa', reference: payment.externalRef, occurredOn: payment.receivedOn });
+  await postDeposit(client, ctx, { memberId: member.id, product: target.type, amountCents: payment.amountCents, channel: 'mpesa', reference: payment.externalRef, occurredOn: payment.receivedOn }, payment.fromSuspense ? CODES.mpesaSuspense : undefined);
   return { type: target.type, id: member.id, unapplied: 0 };
 }
 
@@ -75,6 +84,13 @@ export async function applyConfirmation(client: PoolClient, orgId: string, branc
   const id = inserted.rows[0].id as string;
 
   const ctx: Ctx = { orgId, userId: SYSTEM_USER_ID, role: 'owner', branchId: null };
+  // the money is in the ledger now, whatever happens next; a closed period moves the date forward rather than refuse the money
+  const receivedDay = await postingDateFor(client, eatDay(payment.receivedAt));
+  const receipt = await postEntry(client, orgId, {
+    entryDate: receivedDay, memo: `M-Pesa received ${payment.externalRef}`, sourceType: 'mpesa_receipt', sourceId: id, postedBy: SYSTEM_USER_ID,
+    lines: [{ accountCode: CODES.mpesa, debitCents: payment.amountCents }, { accountCode: CODES.mpesaSuspense, creditCents: payment.amountCents }]
+  });
+  await client.query('UPDATE mpesa_payments SET receipt_entry_id = $2 WHERE id = $1', [id, receipt.id]);
   const target = parseReference(payment.reference);
   let note: string | null = null;
   if (!target) {
@@ -83,7 +99,7 @@ export async function applyConfirmation(client: PoolClient, orgId: string, branc
     // a savepoint: if applying fails for a business reason the payment stays recorded as unmatched, with the reason
     await client.query('SAVEPOINT apply_payment');
     try {
-      const applied = await applyToTarget(client, ctx, { externalRef: payment.externalRef, amountCents: payment.amountCents, receivedOn: eatDay(payment.receivedAt) }, target);
+      const applied = await applyToTarget(client, ctx, { externalRef: payment.externalRef, amountCents: payment.amountCents, receivedOn: receivedDay, fromSuspense: true }, target);
       await client.query('RELEASE SAVEPOINT apply_payment');
       await client.query(
         `UPDATE mpesa_payments SET status = 'applied', applied_to_type = $2, applied_to_id = $3, unapplied_cents = $4 WHERE id = $1`,
@@ -101,6 +117,17 @@ export async function applyConfirmation(client: PoolClient, orgId: string, branc
   return { matched: false, duplicate: false, status: 'unmatched', note };
 }
 
+async function keepUnclaimed(payment: NormalisedPayment, raw: unknown): Promise<void> {
+  await withoutTenant(async (client) => {
+    await client.query(
+      `INSERT INTO mpesa_unclaimed (short_code, external_ref, amount_cents, payer_msisdn, bill_ref, received_at, raw)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (external_ref) DO NOTHING`,
+      [payment.shortCode, payment.externalRef, payment.amountCents, payment.payerMsisdn, payment.reference || null, payment.receivedAt, JSON.stringify(raw)]
+    );
+  });
+}
+
 export async function ingestConfirmation(raw: unknown): Promise<IngestOutcome | null> {
   const payment = normaliseConfirmation(raw);
 
@@ -116,7 +143,9 @@ export async function ingestConfirmation(raw: unknown): Promise<IngestOutcome | 
     return rows[0] as { org_id: string; branch_id: string } | undefined;
   });
   if (!paybill) {
-    logger.warn('payment for an unknown paybill', { shortCode: payment.shortCode });
+    // The money is real and Daraja will not send it again, so keep it for an operator instead of dropping it.
+    await keepUnclaimed(payment, raw);
+    logger.warn('payment for an unknown paybill kept for an operator', { shortCode: payment.shortCode, externalRef: payment.externalRef });
     return null;
   }
   const outcome = await withOrg(paybill.org_id, (client) => applyConfirmation(client, paybill.org_id, paybill.branch_id, payment));
@@ -126,19 +155,45 @@ export async function ingestConfirmation(raw: unknown): Promise<IngestOutcome | 
 
 // ---- the people's side: the queue and manual assignment -------------------------------------------------------------
 
-export async function listPayments(client: PoolClient, opts: { status?: string; limit: number }) {
+function toPayment(r: Record<string, any>) {
+  return {
+    id: r.id as string, externalRef: r.external_ref as string, billRef: r.bill_ref as string, amountCents: Number(r.amount_cents), payer: r.payer_msisdn as string | null, receivedAt: r.received_at as Date,
+    status: r.status as string, appliedToType: r.applied_to_type as string | null, appliedToId: r.applied_to_id as string | null, unappliedCents: Number(r.unapplied_cents), note: r.note as string | null
+  };
+}
+
+/** Newest first, keyset-paged on (received_at, id); `search` matches the M-Pesa code, the account reference and the payer's number. */
+export async function listPaymentPage(client: PoolClient, opts: { status?: string; search?: string; limit: number; after?: string }) {
   const params: unknown[] = [];
-  let where = '';
-  if (opts.status) {
-    params.push(opts.status);
-    where = `WHERE status = $1`;
+  const where: string[] = [];
+  if (opts.status) { params.push(opts.status); where.push(`status = $${params.length}`); }
+  if (opts.search) {
+    params.push(likeContains(opts.search));
+    where.push(`(lower(external_ref) LIKE $${params.length} OR lower(bill_ref) LIKE $${params.length} OR payer_msisdn LIKE $${params.length})`);
   }
-  params.push(opts.limit);
-  const rows = (await client.query(`SELECT * FROM mpesa_payments ${where} ORDER BY received_at DESC LIMIT $${params.length}`, params)).rows;
-  return rows.map((r) => ({
-    id: r.id, externalRef: r.external_ref, billRef: r.bill_ref, amountCents: Number(r.amount_cents), payer: r.payer_msisdn, receivedAt: r.received_at,
-    status: r.status, appliedToType: r.applied_to_type, appliedToId: r.applied_to_id, unappliedCents: Number(r.unapplied_cents), note: r.note
-  }));
+  if (opts.after) {
+    const c = decodeCursor(opts.after);
+    params.push(c.at, c.id);
+    where.push(`(received_at, id) < ($${params.length - 1}::timestamptz, $${params.length}::uuid)`);
+  }
+  params.push(opts.limit + 1);
+  const rows = (await client.query(`SELECT *, ${cursorTs('received_at')} AS cur FROM mpesa_payments ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY received_at DESC, id DESC LIMIT $${params.length}`, params)).rows;
+  const page = rows.slice(0, opts.limit);
+  const last = page[page.length - 1];
+  return { items: page.map(toPayment), nextCursor: rows.length > opts.limit && last ? encodeCursor(last.cur as string, last.id as string) : null };
+}
+
+/** Every payment matching the filter, in pages, for exports: memory is bounded by one page whatever the volume. */
+export async function eachPaymentPage(client: PoolClient, opts: { status?: string }, onPage: (rows: ReturnType<typeof toPayment>[]) => Promise<void>): Promise<number> {
+  let after: string | undefined;
+  let count = 0;
+  for (;;) {
+    const page = await listPaymentPage(client, { status: opts.status, limit: 1000, after });
+    if (page.items.length > 0) await onPage(page.items);
+    count += page.items.length;
+    if (!page.nextCursor) return count;
+    after = page.nextCursor;
+  }
 }
 
 export const assignSchema = z.object({
@@ -157,7 +212,7 @@ export async function assignPayment(client: PoolClient, ctx: Ctx, id: string, in
   const applied = await applyToTarget(
     client,
     ctx,
-    { externalRef: payment.external_ref, amountCents: Number(payment.amount_cents), receivedOn: eatDay(payment.received_at) },
+    { externalRef: payment.external_ref, amountCents: Number(payment.amount_cents), receivedOn: await postingDateFor(client, eatDay(payment.received_at)), fromSuspense: payment.receipt_entry_id !== null },
     target
   );
   await client.query(

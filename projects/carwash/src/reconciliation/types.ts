@@ -11,6 +11,7 @@ export type DiscrepancyType =
   | 'job_without_payment'
   | 'abandoned_job_pattern'
   | 'cash_ratio_spike'
+  | 'cash_amount_mismatch'
   | 'device_silent'
   | 'device_tamper';
 
@@ -38,6 +39,8 @@ export interface PaymentRecord {
   externalRef: string | null;
   jobId: string | null;
   receivedAt: Date;
+  /** set when a supervisor, manager or owner recorded an amount different from the quote */
+  varianceAuthorisedBy?: string | null;
 }
 
 export interface TelemetryWindow {
@@ -65,6 +68,17 @@ export interface ConsumableDraw {
   unit: string;
 }
 
+/** What a measuring device reported on the day, for the device_silent rule. */
+export interface DeviceActivity {
+  deviceId: string;
+  type: string;
+  bayId: string | null;
+  /** when it was registered; it is not blamed for any time before that */
+  registeredAt: Date;
+  /** distinct minutes in which it sent at least one reading, a little beyond the day on both sides */
+  readingMinutes: Date[];
+}
+
 export interface OperatingHours {
   opensMinute: number;
   closesMinute: number;
@@ -78,6 +92,8 @@ export interface SiteBaseline {
   cashRatio: number;
   discountRateByWorker: Record<string, number>;
   consumablePerWash: Record<string, number>;
+  /** how long a measuring device may be quiet while a job runs before it is flagged (default 120) */
+  deviceSilentMinutes?: number;
 }
 
 export interface ReconciliationInput {
@@ -92,6 +108,7 @@ export interface ReconciliationInput {
   telemetry: TelemetryWindow[];
   observations: VehicleObservation[];
   consumables: ConsumableDraw[];
+  devices?: DeviceActivity[];
 }
 
 export interface Discrepancy {

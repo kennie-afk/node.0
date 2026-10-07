@@ -22,6 +22,8 @@ export type Permission =
   | 'attendance_record'
   | 'attendance_override'
   | 'overtime_approve'
+  | 'leave_write'
+  | 'leave_approve'
   | 'patrol_scan'
   | 'incident_write'
   | 'incident_close'
@@ -49,6 +51,8 @@ const MATRIX: Record<Permission, readonly Role[]> = {
   attendance_record: ['owner', 'ops_manager', 'supervisor'],
   attendance_override: ['owner', 'ops_manager', 'supervisor'],
   overtime_approve: ['owner', 'ops_manager'],
+  leave_write: ['owner', 'ops_manager', 'supervisor'],
+  leave_approve: ['owner', 'ops_manager'],
   patrol_scan: ['owner', 'ops_manager', 'supervisor'],
   incident_write: ['owner', 'ops_manager', 'supervisor'],
   incident_close: ['owner', 'ops_manager'],

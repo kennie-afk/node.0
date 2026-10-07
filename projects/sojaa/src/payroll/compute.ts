@@ -13,6 +13,7 @@
  * with the prorated minimum. Overtime and premiums never count toward the minimum.
  */
 import { applyDeductions, DeductionLine, TableState } from './deductions';
+import { splitByLocalDay } from '../common/time';
 
 export interface GuardPay {
   id: string;
@@ -37,14 +38,27 @@ export interface PaySettings {
   overtimeMultiplierBp: number;
   restDayMultiplierBp: number;
   holidayMultiplierBp: number;
+  /** the employer's own choice, off unless switched on; see migration 0010 */
+  absenceDeduction?: 'off' | 'unpaid_leave' | 'unpaid_leave_and_missed';
 }
 
 export interface WorkedShift {
-  /** the local calendar day the shift started, YYYY-MM-DD */
+  /** the local calendar day the shift started, YYYY-MM-DD (used when windowStart is not given) */
   day: string;
+  /**
+   * When the regular minutes begin (the later of check-in and scheduled start). Given, a shift that crosses midnight is split by Nairobi
+   * calendar day, so a night shift running into a public holiday or a rest day earns the premium for the minutes on that day.
+   */
+  windowStart?: Date;
   workedMinutes: number;
   scheduledMinutes: number;
   overtimeApprovedMinutes: number;
+}
+
+/** Days in the month a guard was away without pay, as counted from approved unpaid leave and from missed shifts. */
+export interface Absence {
+  unpaidLeaveDays: number;
+  missedShiftDays: number;
 }
 
 export interface Flag {
@@ -61,6 +75,7 @@ export interface Payslip {
   premiumCents: number;
   overtimeCents: number;
   adjustmentsCents: number;
+  absenceDeductionCents: number;
   grossCents: number;
   deductions: DeductionLine[];
   employeeDeductionsCents: number;
@@ -69,7 +84,7 @@ export interface Payslip {
   minRequiredCents: number;
   belowMinimum: boolean;
   flags: Flag[];
-  breakdown: { premiumMinutes: { holiday: number; restDay: number }; overtimeMinutes: number; hourlyRateCents: number; shifts: number };
+  breakdown: { premiumMinutes: { holiday: number; restDay: number }; overtimeMinutes: number; hourlyRateCents: number; shifts: number; absence?: Absence & { mode: string; deductedDays: number } };
 }
 
 export function daysInMonth(month: string): number {
@@ -99,6 +114,7 @@ export function computePayslip(input: {
   holidays: ReadonlySet<string>;
   shifts: readonly WorkedShift[];
   adjustmentsCents: number;
+  absence?: Absence;
   tables: readonly TableState[];
   today?: string;
 }): Payslip {
@@ -115,13 +131,24 @@ export function computePayslip(input: {
   for (const shift of input.shifts) {
     const regular = Math.min(shift.workedMinutes, shift.scheduledMinutes);
     overtimeMin += Math.min(shift.overtimeApprovedMinutes, Math.max(0, shift.workedMinutes - shift.scheduledMinutes));
-    if (holidays.has(shift.day)) holidayMin += regular;
-    else if (guard.restWeekday !== null && weekdayOf(shift.day) === guard.restWeekday) restMin += regular;
+    const parts = shift.windowStart ? splitByLocalDay(shift.windowStart, regular) : [{ day: shift.day, minutes: regular }];
+    for (const part of parts) {
+      if (holidays.has(part.day)) holidayMin += part.minutes;
+      else if (guard.restWeekday !== null && weekdayOf(part.day) === guard.restWeekday) restMin += part.minutes;
+    }
   }
   const premium = Math.round(((holidayMin * settings.holidayMultiplierBp + restMin * settings.restDayMultiplierBp) / 10_000 / 60) * hourly);
   const overtime = Math.round(((overtimeMin * settings.overtimeMultiplierBp) / 10_000 / 60) * hourly);
 
-  const gross = basic + allowance + premium + overtime + input.adjustmentsCents;
+  // Absence: only what the employer switched on. Calendar-day proration, the same as a guard hired mid-month; never more than was payable.
+  const mode = settings.absenceDeduction ?? 'off';
+  const absence = input.absence ?? { unpaidLeaveDays: 0, missedShiftDays: 0 };
+  const unpaidDays = Math.min(employed, absence.unpaidLeaveDays);
+  const missedDays = Math.min(Math.max(0, employed - unpaidDays), absence.missedShiftDays);
+  const deductedDays = mode === 'off' ? 0 : unpaidDays + (mode === 'unpaid_leave_and_missed' ? missedDays : 0);
+  const absenceDeduction = Math.min(basic + allowance, prorate(guard.monthlyBasicCents + guard.allowanceCents, deductedDays, dim));
+
+  const gross = basic + allowance + premium + overtime + input.adjustmentsCents - absenceDeduction;
   const deductions = applyDeductions(Math.max(0, gross), input.tables);
   const employee = deductions.reduce((s, d) => s + d.employeeCents, 0);
   const employer = deductions.reduce((s, d) => s + d.employerCents, 0);
@@ -132,6 +159,11 @@ export function computePayslip(input: {
 
   const flags: Flag[] = [];
   if (belowMinimum) flags.push({ code: 'below_minimum', severity: 'block', message: `Contractual pay ${contractual / 100} is below the configured minimum ${minRequired / 100} for ${employed} of ${dim} days.` });
+  const notDeducted = [
+    mode === 'off' && unpaidDays > 0 ? `${unpaidDays} day(s) of approved unpaid leave` : '',
+    mode !== 'unpaid_leave_and_missed' && missedDays > 0 ? `${missedDays} day(s) with a missed shift` : ''
+  ].filter(Boolean);
+  if (notDeducted.length > 0) flags.push({ code: 'absence_not_deducted', severity: 'warn', message: `Not deducted, because the absence deduction setting does not cover it: ${notDeducted.join(' and ')}.` });
   if (gross - employee < 0) flags.push({ code: 'negative_net', severity: 'block', message: 'Deductions exceed pay: the net is negative.' });
   if (!guard.nationalId) flags.push({ code: 'missing_national_id', severity: 'warn', message: 'No national ID number on record.' });
   const statuses = new Map(input.tables.map((t) => [t.kind, t.status]));
@@ -150,6 +182,7 @@ export function computePayslip(input: {
     premiumCents: premium,
     overtimeCents: overtime,
     adjustmentsCents: input.adjustmentsCents,
+    absenceDeductionCents: absenceDeduction,
     grossCents: gross,
     deductions,
     employeeDeductionsCents: employee,
@@ -158,6 +191,6 @@ export function computePayslip(input: {
     minRequiredCents: minRequired,
     belowMinimum,
     flags,
-    breakdown: { premiumMinutes: { holiday: holidayMin, restDay: restMin }, overtimeMinutes: overtimeMin, hourlyRateCents: Math.round(hourly), shifts: input.shifts.length }
+    breakdown: { premiumMinutes: { holiday: holidayMin, restDay: restMin }, overtimeMinutes: overtimeMin, hourlyRateCents: Math.round(hourly), shifts: input.shifts.length, ...(unpaidDays + missedDays > 0 ? { absence: { unpaidLeaveDays: unpaidDays, missedShiftDays: missedDays, mode, deductedDays } } : {}) }
   };
 }

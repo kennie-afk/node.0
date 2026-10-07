@@ -14,6 +14,8 @@ import { audit, BranchRow, businessDayNow, Ctx, need, verifyWitness, WitnessInpu
 import { allocateFefo, BatchLike, InsufficientStock } from '../inventory/fefo';
 import { writeRegister } from '../inventory/service';
 import { can } from '../domain/roles';
+import { likeContains } from '../common/like';
+import { toPage } from '../common/paging';
 
 const witnessSchema = z.object({ phone: z.string().min(6).max(20), pin: z.string().min(4).max(64) });
 
@@ -214,11 +216,13 @@ export async function createSale(client: PoolClient, ctx: Ctx, branch: BranchRow
 
     const batchRows = (
       await client.query(
-        `SELECT id, to_char(expiry_date, 'YYYY-MM-DD') AS expiry_date, qty_on_hand, received_at, unit_cost_cents
+        `SELECT id, to_char(expiry_date, 'YYYY-MM-DD') AS expiry_date, qty_on_hand, received_at, unit_cost_cents, status
            FROM stock_batches WHERE branch_id = $1 AND product_id = $2 AND qty_on_hand > 0 FOR UPDATE`,
         [branch.id, product.id]
       )
     ).rows;
+    // quarantined and recalled batches are on the shelf but are never sold, whichever way the sale was scanned or keyed
+    const held = new Set(batchRows.filter((row) => row.status !== 'available').map((row) => row.id as string));
     const batches: BatchLike[] = batchRows.map((row) => ({ id: row.id, expiryDate: row.expiry_date, qtyOnHand: row.qty_on_hand, receivedAt: row.received_at, unitCostCents: Number(row.unit_cost_cents) }));
 
     let allocations: Planned['allocations'];
@@ -236,13 +240,14 @@ export async function createSale(client: PoolClient, ctx: Ctx, branch: BranchRow
       for (const [batchId, list] of perBatch) {
         const batch = batches.find((b) => b.id === batchId);
         if (!batch) throw new AppError(409, 'insufficient-stock', `${product.name}: the batch for a scanned pack has no stock left on record.`);
+        if (held.has(batchId)) throw new AppError(409, 'batch-held', `A scanned pack of ${product.name} is from a batch that is quarantined or recalled. Do not sell it: set it aside and tell the manager.`);
         if (batch.expiryDate < day) throw new AppError(422, 'expired', `A scanned pack of ${product.name} is from an expired batch (${batch.expiryDate}). It cannot be sold.`);
         if (batch.qtyOnHand < list.length) throw new AppError(409, 'insufficient-stock', `${product.name}: only ${batch.qtyOnHand} left on record in that batch.`);
         allocations.push({ batchId, qty: list.length, unitCostCents: batch.unitCostCents, serials: list });
       }
     } else {
       try {
-        allocations = allocateFefo(batches, qty, day).map((a) => ({ ...a, serials: [] }));
+        allocations = allocateFefo(batches.filter((b) => !held.has(b.id)), qty, day).map((a) => ({ ...a, serials: [] }));
       } catch (error) {
         if (error instanceof InsufficientStock) {
           throw new AppError(409, 'insufficient-stock', `${product.name}: ${error.available} in date, ${error.requested} asked for.`);
@@ -589,7 +594,7 @@ export async function getSale(client: PoolClient, ctx: Ctx, saleId: string) {
   };
 }
 
-export async function listSales(client: PoolClient, ctx: Ctx, branchId: string, opts: { day?: string; status?: string; limit?: number; offset?: number }) {
+export async function listSales(client: PoolClient, ctx: Ctx, branchId: string, opts: { day?: string; status?: string; q?: string; limit?: number; offset?: number }) {
   const params: unknown[] = [branchId];
   let clause = 's.branch_id = $1';
   if (opts.day) {
@@ -600,19 +605,24 @@ export async function listSales(client: PoolClient, ctx: Ctx, branchId: string, 
     params.push(opts.status);
     clause += ` AND s.status = $${params.length}`;
   }
+  if (opts.q) {
+    params.push(likeContains(opts.q));
+    clause += ` AND s.number ILIKE $${params.length}`;
+  }
   // a cashier sees their own sales; anyone who can close the day sees the branch's
   if (!can(ctx.role, 'day_close') && !can(ctx.role, 'dispense')) {
     params.push(ctx.userId);
     clause += ` AND s.cashier_id = $${params.length}`;
   }
   const limit = Math.min(opts.limit ?? 50, 200);
+  const offset = Math.max(0, opts.offset ?? 0);
   const rows = (
     await client.query(
       `SELECT s.id, s.number, to_char(s.business_day, 'YYYY-MM-DD') AS day, s.status, s.total_cents, s.created_at, u.display_name AS cashier,
               COALESCE((SELECT sum(amount_cents) FROM sale_payments p WHERE p.sale_id = s.id), 0)::bigint AS paid
-         FROM sales s JOIN users u ON u.id = s.cashier_id WHERE ${clause} ORDER BY s.created_at DESC LIMIT ${limit} OFFSET ${Math.max(0, opts.offset ?? 0)}`,
+         FROM sales s JOIN users u ON u.id = s.cashier_id WHERE ${clause} ORDER BY s.created_at DESC, s.id DESC LIMIT ${limit + 1} OFFSET ${offset}`,
       params
     )
   ).rows;
-  return rows.map((r) => ({ id: r.id as string, number: r.number as string, day: r.day as string, status: r.status as string, totalCents: Number(r.total_cents), paidCents: Number(r.paid), cashier: r.cashier as string, createdAt: r.created_at as Date }));
+  return toPage(rows.map((r) => ({ id: r.id as string, number: r.number as string, day: r.day as string, status: r.status as string, totalCents: Number(r.total_cents), paidCents: Number(r.paid), cashier: r.cashier as string, createdAt: r.created_at as Date })), limit, offset);
 }

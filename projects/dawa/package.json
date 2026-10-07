@@ -13,7 +13,9 @@
     "dev:api": "tsx watch src/api/server.ts",
     "start": "node dist/api/server.js",
     "migrate": "node --import tsx src/persistence/migrate.ts",
-    "admin": "node --import tsx src/admin/cli.ts"
+    "admin": "node --import tsx src/admin/cli.ts",
+    "unclaimed:list": "node --import tsx src/admin/cli.ts unclaimed:list",
+    "unclaimed:assign": "node --import tsx src/admin/cli.ts unclaimed:assign"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

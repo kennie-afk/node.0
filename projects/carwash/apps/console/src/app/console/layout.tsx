@@ -3,7 +3,10 @@ import { MobileBar, Rail, type RailItem } from "@/components/rail";
 import { readSession } from "@/lib/session";
 import { StatusBanner } from "@/components/status-banner";
 
-const WORKER_ITEMS: RailItem[] = [{ href: "/console/work", label: "Work", icon: "jobs" }];
+const WORKER_ITEMS: RailItem[] = [
+  { href: "/console/work", label: "Work", icon: "jobs" },
+  { href: "/console/account", label: "PIN", icon: "team" }
+];
 
 const ITEMS: RailItem[] = [
   { href: "/console", label: "Overview", icon: "home" },
@@ -12,6 +15,8 @@ const ITEMS: RailItem[] = [
   { href: "/console/flags", label: "Flags", icon: "flags" },
   { href: "/console/jobs", label: "Jobs", icon: "jobs" },
   { href: "/console/payments", label: "Payments", icon: "payments" },
+  { href: "/console/activity", label: "Activity", icon: "report" },
+  { href: "/console/earnings", label: "Earnings", icon: "payments" },
   { href: "/console/telemetry", label: "Water", icon: "telemetry" },
   { href: "/console/sites", label: "Sites", icon: "sites" },
   { href: "/console/services", label: "Prices", icon: "services" },
@@ -19,7 +24,8 @@ const ITEMS: RailItem[] = [
   { href: "/console/devices", label: "Devices", icon: "devices" },
   { href: "/console/found", label: "Found", icon: "report" },
   { href: "/console/report", label: "Report", icon: "report" },
-  { href: "/console/billing", label: "Billing", icon: "billing" }
+  { href: "/console/billing", label: "Billing", icon: "billing" },
+  { href: "/console/account", label: "PIN", icon: "team" }
 ];
 
 export default async function ConsoleLayout({ children }: { children: React.ReactNode }) {

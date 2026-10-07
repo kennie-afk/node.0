@@ -13,6 +13,7 @@ import { withOrg, withoutTenant } from '../persistence/pool';
 import { normalisePhone } from '../admin/phone';
 import { checkWindow, classifyShift, effectiveAttendance, EventRow, Rules, ShiftState } from './attendance';
 import { geofenceResult, validFix } from './geo';
+import { invalidateOrg } from '../common/ttl-cache';
 
 export const fixSchema = z.object({ lat: z.number().min(-90).max(90), lng: z.number().min(-180).max(180), accuracyM: z.number().min(0).max(100_000).optional() }).optional().nullable();
 
@@ -93,7 +94,8 @@ export async function guardCheck(input: { phone: string; pin: string; kind: 'in'
   // the same message whichever part was wrong
   if (!found) throw new UnauthorizedError('That phone number or PIN is not right.');
   const guardId = found.id;
-  return withOrg(found.org_id, async (client) => {
+  const orgOfGuard = found.org_id;
+  return withOrg(orgOfGuard, async (client) => {
     const settings = await getSettings(client);
     const early = settings.checkinEarlyMinutes;
     const open = (
@@ -108,7 +110,7 @@ export async function guardCheck(input: { phone: string; pin: string; kind: 'in'
     ).rows[0];
     if (!open) throw new ConflictError(input.kind === 'in' ? 'You have no shift open for check-in right now.' : 'You are not checked in on any shift.');
     return record(client, found!.org_id, { method: 'guard_pin', userId: null, guardId, branchId: null }, open.id, input.kind, input.fix);
-  });
+  }).finally(() => invalidateOrg(orgOfGuard)); // a guard's own tap is a write with no signed-in person: clear the dashboard cache here
 }
 
 export const overrideSchema = z.object({
@@ -191,12 +193,33 @@ export function boardRow(r: Record<string, any>, rules: Rules, now: Date): Board
 }
 
 /**
- * Today's attendance, or any day's. Counts cover the whole day; the rows are one page of it, worst first (missed, then late, then the rest),
- * so a supervisor sees what needs a phone call before what is fine.
+ * The same classification as classifyShift (attendance.ts), written in SQL so the board can count and page in the database instead of
+ * loading a whole day of shifts into the process. tests/board-sql.test.ts holds the two to the same answers on a seeded day. The rule values
+ * and "now" are bind parameters; boardRow above is the JavaScript reference that test compares against.
  */
-export async function board(client: PoolClient, ctx: Ctx, opts: { day: string; siteId?: string; branchId?: string; state?: string; page: number; pageSize: number }) {
-  const settings = await getSettings(client);
-  const rules = rulesOf(settings);
+function boardBase(where: string[], nowParam: string, graceParam: string, missedParam: string): string {
+  return `SELECT x.*,
+      CASE
+        WHEN x.status = 'cancelled' THEN 'cancelled'
+        WHEN x.guard_id IS NULL THEN 'open'
+        WHEN x.in_at IS NOT NULL AND x.out_at IS NOT NULL THEN 'completed'
+        WHEN x.in_at IS NOT NULL THEN CASE WHEN ${nowParam}::timestamptz > x.end_at + (${missedParam}::int * interval '1 minute') THEN 'no_checkout' ELSE 'on_site' END
+        WHEN ${nowParam}::timestamptz < x.start_at THEN 'upcoming'
+        WHEN ${nowParam}::timestamptz >= x.start_at + (${missedParam}::int * interval '1 minute') THEN 'missed'
+        ELSE 'awaiting' END AS state,
+      (x.guard_id IS NOT NULL AND x.in_at IS NOT NULL AND floor(extract(epoch FROM (x.in_at - x.start_at)) / 60) > ${graceParam}::int) AS is_late,
+      CASE WHEN x.guard_id IS NOT NULL AND x.in_at IS NOT NULL AND floor(extract(epoch FROM (x.in_at - x.start_at)) / 60) > ${graceParam}::int
+           THEN floor(extract(epoch FROM (x.in_at - x.start_at)) / 60)::int ELSE 0 END AS late_minutes
+    FROM (
+      SELECT s.id, s.site_id, si.name AS site, c.name AS client, p.name AS post, s.guard_id, g.full_name AS guard, g.guard_no, s.start_at, s.end_at, s.scheduled_minutes, s.status, ${ATTENDANCE_SQL}
+        FROM shifts s JOIN sites si ON si.id = s.site_id JOIN clients c ON c.id = si.client_id JOIN posts p ON p.id = s.post_id LEFT JOIN guards g ON g.id = s.guard_id
+       WHERE ${where.join(' AND ')}
+    ) x`;
+}
+
+const BOARD_RANK = `CASE b.state WHEN 'missed' THEN 0 WHEN 'no_checkout' THEN 1 WHEN 'open' THEN 2 WHEN 'awaiting' THEN 3 WHEN 'on_site' THEN 4 WHEN 'upcoming' THEN 5 WHEN 'completed' THEN 6 ELSE 7 END`;
+
+function boardWhere(ctx: Ctx, opts: { day: string; siteId?: string; branchId?: string }): { where: string[]; params: unknown[] } {
   const params: unknown[] = [opts.day];
   // A day's board is the shifts that STARTED that day. For today it also carries shifts that started before midnight and are still running
   // or ended after it: a night shift must not vanish from the board at 00:01, which is when it matters most.
@@ -207,26 +230,50 @@ export async function board(client: PoolClient, ctx: Ctx, opts: { day: string; s
   if (ctx.branchId) add('s.branch_id = ?', ctx.branchId);
   else if (opts.branchId) add('s.branch_id = ?', opts.branchId);
   if (opts.siteId) add('s.site_id = ?', opts.siteId);
-  const rows = (
-    await client.query(
-      `SELECT s.id, s.site_id, si.name AS site, c.name AS client, p.name AS post, s.guard_id, g.full_name AS guard, g.guard_no, s.start_at, s.end_at, s.scheduled_minutes, s.status, ${ATTENDANCE_SQL}
-         FROM shifts s JOIN sites si ON si.id = s.site_id JOIN clients c ON c.id = si.client_id JOIN posts p ON p.id = s.post_id LEFT JOIN guards g ON g.id = s.guard_id
-        WHERE ${where.join(' AND ')} ORDER BY s.start_at, si.name, s.id`,
-      params
-    )
-  ).rows;
-  const now = new Date();
-  const all = rows.map((r) => boardRow(r, rules, now));
-  const counts: Record<string, number> = { total: all.length, upcoming: 0, awaiting: 0, missed: 0, on_site: 0, no_checkout: 0, completed: 0, open: 0, late: 0, outsideGeofence: 0 };
-  for (const r of all) {
-    counts[r.state] = (counts[r.state] ?? 0) + 1;
-    if (r.late) counts.late! += 1;
-    if (r.geofence === 'outside') counts.outsideGeofence! += 1;
+  return { where, params };
+}
+
+/** Counts for a day's board without loading any rows: one grouped query. */
+export async function boardCounts(client: PoolClient, ctx: Ctx, opts: { day: string; siteId?: string; branchId?: string }, now: Date = new Date()): Promise<Record<string, number>> {
+  const rules = rulesOf(await getSettings(client));
+  const { where, params } = boardWhere(ctx, opts);
+  params.push(now, rules.lateGraceMinutes, rules.missedAfterMinutes);
+  const n = params.length;
+  const rows = (await client.query(
+    `SELECT b.state, count(*)::int AS n, count(*) FILTER (WHERE b.is_late)::int AS late, count(*) FILTER (WHERE b.in_geofence = 'outside')::int AS outside
+       FROM (${boardBase(where, `$${n - 2}`, `$${n - 1}`, `$${n}`)}) b GROUP BY b.state`, params)).rows;
+  const counts: Record<string, number> = { total: 0, upcoming: 0, awaiting: 0, missed: 0, on_site: 0, no_checkout: 0, completed: 0, open: 0, late: 0, outsideGeofence: 0 };
+  for (const r of rows) {
+    counts[r.state] = (counts[r.state] ?? 0) + r.n;
+    counts.total! += r.n;
+    counts.late! += r.late;
+    counts.outsideGeofence! += r.outside;
   }
-  const rank: Record<string, number> = { missed: 0, no_checkout: 1, open: 2, awaiting: 3, on_site: 4, upcoming: 5, completed: 6, cancelled: 7 };
-  const filtered = (opts.state ? all.filter((r) => (opts.state === 'late' ? r.late : r.state === opts.state)) : all).sort((a, b) => rank[a.state]! - rank[b.state]! || Number(b.late) - Number(a.late) || a.startAt.getTime() - b.startAt.getTime());
-  const start = (opts.page - 1) * opts.pageSize;
-  return { day: opts.day, counts, items: filtered.slice(start, start + opts.pageSize), total: filtered.length, page: opts.page, pageSize: opts.pageSize };
+  return counts;
+}
+
+/**
+ * Today's attendance, or any day's. Counts cover the whole day; the rows are one page of it, worst first (missed, then late, then the rest),
+ * so a supervisor sees what needs a phone call before what is fine. Filtering, ordering and paging all happen in SQL.
+ */
+export async function board(client: PoolClient, ctx: Ctx, opts: { day: string; siteId?: string; branchId?: string; state?: string; page: number; pageSize: number }, now: Date = new Date()) {
+  const rules = rulesOf(await getSettings(client));
+  const counts = await boardCounts(client, ctx, opts, now);
+  const { where, params } = boardWhere(ctx, opts);
+  params.push(now, rules.lateGraceMinutes, rules.missedAfterMinutes);
+  const n = params.length;
+  let filter = '';
+  if (opts.state === 'late') filter = 'WHERE b.is_late';
+  else if (opts.state) { params.push(opts.state); filter = `WHERE b.state = $${params.length}`; }
+  const total = opts.state ? (opts.state === 'late' ? counts.late! : counts[opts.state] ?? 0) : counts.total!;
+  const rows = (await client.query(
+    `SELECT b.* FROM (${boardBase(where, `$${n - 2}`, `$${n - 1}`, `$${n}`)}) b ${filter}
+      ORDER BY ${BOARD_RANK}, b.is_late DESC, b.start_at, b.site, b.id LIMIT ${opts.pageSize} OFFSET ${(opts.page - 1) * opts.pageSize}`, params)).rows;
+  const items: BoardRow[] = rows.map((r) => ({
+    shiftId: r.id, siteId: r.site_id, site: r.site, client: r.client, post: r.post, guardId: r.guard_id, guard: r.guard, guardNo: r.guard_no, startAt: r.start_at, endAt: r.end_at,
+    state: r.state, late: r.is_late, lateMinutes: r.late_minutes, inAt: r.in_at, outAt: r.out_at, inOverridden: r.in_overridden, outOverridden: r.out_overridden, geofence: r.in_geofence, method: r.in_method
+  }));
+  return { day: opts.day, counts, items, total, page: opts.page, pageSize: opts.pageSize };
 }
 
 export async function shiftHistory(client: PoolClient, ctx: Ctx, shiftId: string) {

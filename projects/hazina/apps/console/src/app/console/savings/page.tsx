@@ -4,20 +4,24 @@ import { readSession } from "@/lib/session";
 import { can } from "@/lib/roles";
 import { decideWithdrawal, postDeposit, requestWithdrawal } from "@/app/actions";
 import { ActionForm } from "@/components/forms";
-import type { SavingsTxn, Settings } from "@/lib/types";
-import { Badge, Card, EmptyState, Field, PageHeader, Table, cell, dangerButtonClass, inputClass, num, rowClass, secondaryButtonClass, selectClass } from "@/components/ui";
+import type { Paged, SavingsTxn, Settings } from "@/lib/types";
+import { Badge, Card, EmptyState, Field, PageHeader, Pager, Table, cell, dangerButtonClass, inputClass, num, rowClass, secondaryButtonClass, selectClass } from "@/components/ui";
 import { day, ksh, label } from "@/lib/format";
 
 const CHANNELS = [["cash", "Cash"], ["mpesa", "M-Pesa"], ["bank", "Bank"], ["transfer", "Transfer"]];
 
-export default async function Savings() {
+export default async function Savings({ searchParams }: { searchParams: Promise<{ search?: string; after?: string }> }) {
+  const { search, after } = await searchParams;
   const role = (await readSession())?.role ?? "";
   const settings = await api.get<Settings>("/v1/settings");
   if (settings.organisation.kind !== "sacco") return <><PageHeader title="Savings" /><EmptyState message="A lender does not take savings, shares or deposits." /></>;
-  const [pending, recent] = await Promise.all([
-    api.get<SavingsTxn[]>("/v1/savings?status=pending_approval&limit=100"),
-    api.get<SavingsTxn[]>("/v1/savings?limit=40")
+  const [pendingPage, recentPage] = await Promise.all([
+    api.get<Paged<SavingsTxn>>("/v1/savings?status=pending_approval&limit=100"),
+    api.get<Paged<SavingsTxn>>(`/v1/savings?${new URLSearchParams({ limit: "40", ...(search ? { search } : {}), ...(after ? { after } : {}) })}`)
   ]);
+  const pending = pendingPage.items;
+  const recent = recentPage.items;
+  const more = new URLSearchParams({ ...(search ? { search } : {}), ...(recentPage.nextCursor ? { after: recentPage.nextCursor } : {}) });
   const limit = settings.settings.withdrawalApprovalCents;
 
   return (
@@ -44,11 +48,16 @@ export default async function Savings() {
       ) : null}
       <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
         <Card title="Recent movements">
-          {recent.length === 0 ? <EmptyState message="Nothing recorded yet." /> : (
+          <form className="mb-3 flex flex-wrap items-end gap-2" action="/console/savings">
+            <div className="min-w-[200px] flex-1"><Field label="Search"><input name="search" defaultValue={search ?? ""} placeholder="Member name, number or reference" className={inputClass} /></Field></div>
+            <button type="submit" className={secondaryButtonClass}>Search</button>
+          </form>
+          {recent.length === 0 ? <EmptyState message={search ? "No movement matches that." : "Nothing recorded yet."} /> : (
             <Table head={["Date", "Member", "Kind", "Into", "Amount", "Status"]}>
               {recent.map((t) => <tr key={t.id} className={rowClass}><td className={cell}>{day(t.occurredOn)}</td><td className={cell}>{t.memberName} <span className="font-mono text-[0.6875rem] text-[var(--color-faint)]">{t.memberNo}</span></td><td className={cell}>{label(t.kind)}</td><td className={cell}>{label(t.product)}</td><td className={num}>{ksh(t.amountCents)}</td><td className={cell}><Badge value={t.status} /></td></tr>)}
             </Table>
           )}
+          <Pager href={recentPage.nextCursor ? `/console/savings?${more}` : null} label="Older movements" />
         </Card>
         {can(role, "savings_post") ? (
           <div className="flex flex-col gap-5">

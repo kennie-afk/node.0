@@ -1,12 +1,13 @@
 import { createApiApp } from './app';
-import { assertBillingSafeForProduction, assertSimulatorSafeForProduction, env } from '../config/env';
+import { assertBillingSafeForProduction, env } from '../config/env';
 import { logger } from '../common/logger';
 import { assertRlsIsEffective, closePool, pool } from '../persistence/pool';
 import { runBillingCycle } from '../billing/service';
+import { purgeThrottle } from './throttle';
+import { dispatchAllOutboxes } from '../ops/expiries';
 
 async function main(): Promise<void> {
   assertBillingSafeForProduction();
-  assertSimulatorSafeForProduction();
   await pool.query('SELECT 1');
   await assertRlsIsEffective();
   logger.info('database reachable');
@@ -24,6 +25,11 @@ async function main(): Promise<void> {
       .catch((error) => logger.error('billing cycle failed', { error: error instanceof Error ? error.message : String(error) }));
   }, env.BILLING_RUN_INTERVAL_MINUTES * 60_000);
   billingTimer.unref();
+  const purgeTimer = setInterval(() => void purgeThrottle().catch(() => undefined), 6 * 3_600_000);
+  purgeTimer.unref();
+  // drains each firm's queued alerts through the SMS provider; a failed send is retried later by the outbox itself
+  const outboxTimer = setInterval(() => void dispatchAllOutboxes().catch((error) => logger.error('outbox dispatch failed', { error: error instanceof Error ? error.message : String(error) })), 5 * 60_000);
+  outboxTimer.unref();
 
   if (env.BILLING_MODE === 'mock' && env.NODE_ENV === 'production') {
     logger.warn('BILLING_MODE=mock in production: owners can simulate payments and nothing real is collected');

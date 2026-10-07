@@ -3,15 +3,24 @@ import { PoolClient } from 'pg';
 import { Ctx, getSettings } from '../common/context';
 import { localDayOf, monthBounds, TZ } from '../common/time';
 import { can } from '../domain/roles';
-import { board, ATTENDANCE_SQL } from './attendance-service';
+import { boardCounts, ATTENDANCE_SQL } from './attendance-service';
+import { cached } from '../common/ttl-cache';
 import { computeMonth, summarise, tablesReady } from '../payroll/service';
-import { debtors } from '../invoicing/service';
+import { debtorsSummary } from '../invoicing/service';
 import { NotFoundError } from '../domain/errors';
 import { classifyShift } from './attendance';
 
+/**
+ * The dashboard. Counts and the debtors total are SQL aggregates (no rows are loaded), and the whole view is cached for a few seconds
+ * per firm, branch and role (see ttl-cache.ts); the payroll figure, the one part that needs the full month computed, is the main reason.
+ */
 export async function overview(client: PoolClient, ctx: Ctx) {
+  return cached(`${ctx.orgId}|overview|${ctx.branchId ?? '-'}|${ctx.role}`, () => overviewUncached(client, ctx));
+}
+
+async function overviewUncached(client: PoolClient, ctx: Ctx) {
   const today = localDayOf(new Date());
-  const b = await board(client, ctx, { day: today, page: 1, pageSize: 1 });
+  const counts = await boardCounts(client, ctx, { day: today });
   const params: unknown[] = [];
   let branch = '';
   if (ctx.branchId) {
@@ -30,7 +39,7 @@ export async function overview(client: PoolClient, ctx: Ctx) {
   const swaps = Number((await client.query(`SELECT count(*) AS n FROM swap_requests w JOIN shifts s ON s.id = w.shift_id WHERE w.status = 'pending'${ctx.branchId ? ' AND s.branch_id = $1' : ''}`, ctx.branchId ? [ctx.branchId] : [])).rows[0].n);
   const openShifts = Number((await client.query(`SELECT count(*) AS n FROM shifts s WHERE s.status = 'scheduled' AND s.guard_id IS NULL AND s.start_at > now() AND s.start_at < now() + interval '7 days'${ctx.branchId ? ' AND s.branch_id = $1' : ''}`, ctx.branchId ? [ctx.branchId] : [])).rows[0].n);
 
-  const out: Record<string, unknown> = { day: today, attendance: b.counts, openIncidents, pendingSwaps: swaps, openShiftsNextWeek: openShifts };
+  const out: Record<string, unknown> = { day: today, attendance: counts, openIncidents, pendingSwaps: swaps, openShiftsNextWeek: openShifts };
 
   if (can(ctx.role, 'reports') && !ctx.branchId) {
     out.unbilledShifts = Number((await client.query(
@@ -46,8 +55,8 @@ export async function overview(client: PoolClient, ctx: Ctx) {
     const computed = await computeMonth(client, ctx, month);
     const s = summarise(computed.rows);
     out.payroll = { month, ...s, tables: tablesReady(computed.tables), unresolvedShifts: computed.unresolvedShifts };
-    const d = await debtors(client);
-    out.debtors = { totalCents: d.totalCents, overdueCents: d.totalCents - d.totals.not_due!, clients: d.items.length };
+    const d = await debtorsSummary(client);
+    out.debtors = { totalCents: d.totalCents, overdueCents: d.totalCents - d.totals.not_due!, clients: d.clients };
   }
   return out;
 }

@@ -51,8 +51,24 @@ const schema = z.object({
   SIGNUP_CODE_TTL_MINUTES: z.coerce.number().int().positive().default(15),
   SIGNUP_CODE_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
   SIGNUP_RESEND_COOLDOWN_SECONDS: z.coerce.number().int().nonnegative().default(60),
-  // 'mock' only logs and records the message; there is deliberately no real SMS provider wired in
-  NOTIFY_PROVIDER: z.enum(['mock']).default('mock'),
+  // 'mock' only logs and records the message. 'africastalking' sends through Africa's Talking's SMS API; that
+  // integration is written from their public documentation and has NOT been run against the real service.
+  NOTIFY_MODE: z.enum(['mock', 'africastalking']).default('mock'),
+  AT_USERNAME: z.preprocess(blankIsUnset, z.string().trim().min(1).optional()),
+  AT_API_KEY: z.preprocess(blankIsUnset, z.string().trim().min(1).optional()),
+  // optional registered sender id; without one Africa's Talking uses its shared sender
+  AT_SENDER_ID: z.preprocess(blankIsUnset, z.string().trim().min(1).max(11).optional()),
+  // the sandbox host is api.sandbox.africastalking.com; leave unset for production
+  AT_BASE_URL: z.preprocess(blankIsUnset, z.string().url().default('https://api.africastalking.com')),
+  AT_TIMEOUT_MS: z.coerce.number().int().positive().default(10_000),
+  // ---- rate limits shared between replicas ----
+  // Without REDIS_URL each API process counts on its own, so N replicas allow N times the limit.
+  REDIS_URL: z.preprocess(blankIsUnset, z.string().url().optional()),
+  // ---- sign-in lockout (kept in Postgres, so it holds across restarts and replicas) ----
+  // after this many wrong PINs in a row for one phone number, further attempts wait; the wait doubles each time
+  LOGIN_LOCKOUT_THRESHOLD: z.coerce.number().int().positive().default(5),
+  LOGIN_LOCKOUT_BASE_SECONDS: z.coerce.number().int().positive().default(30),
+  LOGIN_LOCKOUT_MAX_SECONDS: z.coerce.number().int().positive().default(900),
   // ---- stock rules (owner-tunable defaults) ----
   EXPIRY_WARNING_DAYS: z.coerce.number().int().positive().default(90),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
@@ -62,6 +78,9 @@ const schema = z.object({
 export type Env = z.infer<typeof schema>;
 
 const schemaChecked = schema.superRefine((value, context) => {
+  if (value.NOTIFY_MODE === 'africastalking' && (!value.AT_USERNAME || !value.AT_API_KEY)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['AT_API_KEY'], message: 'AT_USERNAME and AT_API_KEY are required when NOTIFY_MODE=africastalking' });
+  }
   if (value.BILLING_MODE === 'live' && !value.BILLING_SHORTCODE) {
     context.addIssue({
       code: z.ZodIssueCode.custom,

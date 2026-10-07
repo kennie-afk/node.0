@@ -1,31 +1,38 @@
 import { api } from "@/lib/api";
 import { saveProduct } from "@/app/actions";
 import { ActionForm } from "@/components/forms";
-import type { Product } from "@/lib/types";
+import { Pager } from "@/components/pager";
+import type { Page, Product } from "@/lib/types";
 import { Badge, Card, EmptyState, Field, PageHeader, Table, inputClass, rowClass, selectClass } from "@/components/ui";
 import { ksh } from "@/lib/format";
+import { PAGE, href, whole } from "@/lib/paging";
 
-export default async function Products({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  const { q } = await searchParams;
-  const { items, total } = await api.get<{ items: Product[]; total: number }>(`/v1/products?limit=100${q ? `&search=${encodeURIComponent(q)}` : ""}`);
+export default async function Products({ searchParams }: { searchParams: Promise<{ q?: string; offset?: string }> }) {
+  const { q, offset: rawOffset } = await searchParams;
+  const offset = whole(rawOffset);
+  const { items, total, hasMore } = await api.get<Page<Product> & { total: number }>(`/v1/products?limit=${PAGE}&offset=${offset}${q ? `&search=${encodeURIComponent(q)}` : ""}`);
+  const path = "/console/products";
   return (
     <>
       <PageHeader title="Products" subtitle="Your catalogue. Say how each medicine is classified: you decide that, Dawa does not." />
       <div className="grid gap-5 lg:grid-cols-[1.6fr_1fr]">
-        <Card title={`${total} product${total === 1 ? "" : "s"}`} actions={
+        <Card title={`${total} product${total === 1 ? "" : "s"}${q ? ` matching "${q}"` : ""}`} actions={
           <form className="flex gap-2"><input name="q" defaultValue={q} placeholder="Search" className="rounded-lg border border-[var(--color-line)] px-2.5 py-1.5 text-[0.8125rem]" /></form>}>
-          {items.length === 0 ? <EmptyState message="No products yet." detail="Add your first one on the right." /> : (
-            <Table head={["Product", "Class", "GTIN", "Price", "Reorder at"]}>
-              {items.map((p) => (
-                <tr key={p.id} className={rowClass}>
-                  <td className="px-3.5 py-2.5"><div className="font-medium">{p.name}</div><div className="text-[0.6875rem] text-[var(--color-faint)]">{[p.strength, p.form, p.packSize].filter(Boolean).join(" · ")}</div></td>
-                  <td className="px-3.5 py-2.5">{p.category === "otc" ? <span className="text-[var(--color-muted)]">Over the counter</span> : <Badge value={p.category} />}</td>
-                  <td className="px-3.5 py-2.5 font-mono text-[0.75rem] text-[var(--color-muted)]">{p.gtin ?? "—"}</td>
-                  <td className="px-3.5 py-2.5 tabular-nums">{ksh(p.listPriceCents)}</td>
-                  <td className="px-3.5 py-2.5 tabular-nums">{p.reorderLevel || "—"}</td>
-                </tr>
-              ))}
-            </Table>
+          {items.length === 0 ? <EmptyState message={q ? "Nothing matches that search." : "No products yet."} detail={q ? undefined : "Add your first one on the right."} /> : (
+            <>
+              <Table head={["Product", "Class", "GTIN", "Price", "Reorder at"]}>
+                {items.map((p) => (
+                  <tr key={p.id} className={rowClass}>
+                    <td className="px-3.5 py-2.5"><div className="font-medium">{p.name}</div><div className="text-[0.6875rem] text-[var(--color-faint)]">{[p.strength, p.form, p.packSize].filter(Boolean).join(" · ")}</div></td>
+                    <td className="px-3.5 py-2.5">{p.category === "otc" ? <span className="text-[var(--color-muted)]">Over the counter</span> : <Badge value={p.category} />}</td>
+                    <td className="px-3.5 py-2.5 font-mono text-[0.75rem] text-[var(--color-muted)]">{p.gtin ?? "—"}</td>
+                    <td className="px-3.5 py-2.5 tabular-nums">{ksh(p.listPriceCents)}</td>
+                    <td className="px-3.5 py-2.5 tabular-nums">{p.reorderLevel || "—"}</td>
+                  </tr>
+                ))}
+              </Table>
+              <Pager from={offset} count={items.length} noun="products" prev={offset > 0 ? href(path, { q, offset: Math.max(0, offset - PAGE) }) : null} next={hasMore ? href(path, { q, offset: offset + PAGE }) : null} />
+            </>
           )}
         </Card>
         <Card title="Add a product">

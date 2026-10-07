@@ -20,7 +20,7 @@ describe.runIf(on)('receiving, FEFO selling and oversell protection (real Postgr
     expect(sale.status).toBe(201);
     expect(sale.body).toMatchObject({ status: 'completed', totalCents: 70000, paidCents: 70000, dueCents: 0 });
 
-    const batches = (await get(t.owner.auth, `/v1/stock/batches?productId=${p}`)).body;
+    const batches = (await get(t.owner.auth, `/v1/stock/batches?productId=${p}`)).body.items;
     const by = Object.fromEntries(batches.map((b: any) => [b.batchNo, b.qtyOnHand]));
     expect(by).toEqual({ LATE: 8 }); // SOON (5) was emptied first, then 2 from LATE
     await assertLedgerAgrees(t);
