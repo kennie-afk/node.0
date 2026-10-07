@@ -53,7 +53,7 @@ export async function margin(client: PoolClient, branchIds: string[], from: stri
               COALESCE(sum(l.cost_cents::numeric * (l.qty - l.returned_qty) / l.qty), 0)::bigint AS cost
          FROM sale_lines l JOIN sales s ON s.id = l.sale_id JOIN products p ON p.id = l.product_id
         WHERE s.branch_id = ANY($1::uuid[]) AND s.business_day BETWEEN $2 AND $3 AND s.status <> 'voided'
-        GROUP BY p.id ORDER BY revenue DESC LIMIT 500`,
+        GROUP BY p.id ORDER BY revenue DESC`,
       [branchIds, from, to]
     )
   ).rows;
@@ -64,7 +64,9 @@ export async function margin(client: PoolClient, branchIds: string[], from: stri
   });
   const revenue = items.reduce((s, i) => s + i.revenueCents, 0);
   const cost = items.reduce((s, i) => s + i.costCents, 0);
-  return { from, to, revenueCents: revenue, costCents: cost, marginCents: revenue - cost, marginPct: revenue > 0 ? Math.round(((revenue - cost) / revenue) * 1000) / 10 : null, items };
+  // totals cover every product sold; only the product list is capped, and it says so
+  const MAX_ITEMS = 500;
+  return { from, to, revenueCents: revenue, costCents: cost, marginCents: revenue - cost, marginPct: revenue > 0 ? Math.round(((revenue - cost) / revenue) * 1000) / 10 : null, itemCount: items.length, truncated: items.length > MAX_ITEMS, items: items.slice(0, MAX_ITEMS) };
 }
 
 /** Fast and slow movers over the last `days` days, with how many days the stock in hand will last at that rate. */

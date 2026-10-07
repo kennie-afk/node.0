@@ -387,7 +387,7 @@ describe.runIf(on)('onboarding, sample data, scanning and the track-and-trace lo
     expect(sales.salesCount).toBe(1);
     expect(sales.netCents).toBe(40000 - 10000);
     const m = (await get(t.owner.auth, '/v1/reports/margin')).body;
-    expect(m).toMatchObject({ revenueCents: 30000, costCents: 18000, marginCents: 12000, marginPct: 40 });
+    expect(m).toMatchObject({ revenueCents: 30000, costCents: 18000, marginCents: 12000, marginPct: 40, itemCount: 1, truncated: false });
     const movers = (await get(t.owner.auth, '/v1/reports/movers')).body;
     expect(movers.fast[0]).toMatchObject({ name: 'Report product', sold: 3 });
     const loss = (await get(t.owner.auth, '/v1/reports/expiry-loss')).body;
