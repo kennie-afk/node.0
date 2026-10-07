@@ -495,11 +495,12 @@ export async function alerts(client: PoolClient, branch: BranchRow, today: strin
       [branch.id, today]
     )
   ).rows;
+  const HELD_LIMIT = 200;
   const held = (
     await client.query(
       `SELECT b.id AS batch_id, p.name AS product, p.category, b.batch_no, to_char(b.expiry_date, 'YYYY-MM-DD') AS expiry_date, b.qty_on_hand, b.unit_cost_cents, b.status, b.status_reason
          FROM stock_batches b JOIN products p ON p.id = b.product_id
-        WHERE b.branch_id = $1 AND b.qty_on_hand > 0 AND b.status <> 'available' ORDER BY b.status_changed_at DESC NULLS LAST LIMIT 200`,
+        WHERE b.branch_id = $1 AND b.qty_on_hand > 0 AND b.status <> 'available' ORDER BY b.status_changed_at DESC NULLS LAST LIMIT ${HELD_LIMIT + 1}`,
       [branch.id]
     )
   ).rows;
@@ -516,7 +517,8 @@ export async function alerts(client: PoolClient, branch: BranchRow, today: strin
   return {
     expired: expired.map(shape),
     expiring: expiring.map(shape),
-    held: held.map((row) => ({ ...shape(row), status: row.status as string, reason: row.status_reason as string | null })),
+    held: held.slice(0, HELD_LIMIT).map((row) => ({ ...shape(row), status: row.status as string, reason: row.status_reason as string | null })),
+    heldTruncated: held.length > HELD_LIMIT,
     lowStock: low.map((row) => ({ productId: row.product_id as string, product: row.product as string, reorderLevel: row.reorder_level as number, inDate: row.in_date as number })),
     warningDays
   };

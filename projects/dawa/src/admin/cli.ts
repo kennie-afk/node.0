@@ -46,9 +46,10 @@ async function main(): Promise<void> {
       break;
     }
     case 'billing:unmatched': {
-      const rows = await listUnmatched();
+      const { rows, truncated } = await listUnmatched();
       if (rows.length === 0) console.log('none');
       for (const r of rows) console.log(`${r.externalRef}  ${formatKsh(r.amountCents as never)}  account "${r.reference}"  ${r.assigned ? 'assigned' : 'UNASSIGNED'}`);
+      if (truncated) console.log(`only the newest ${rows.length} are shown; more exist`);
       break;
     }
     case 'billing:assign': {

@@ -63,7 +63,9 @@ router.post('/customers/:id/payments', requireWritable, wrap(async (req, res) =>
 }));
 
 router.get('/price-lists', wrap(async (req, res) => {
-  res.json(await inOrg(req, (client) => listPriceLists(client)));
+  const lists = await inOrg(req, (client) => listPriceLists(client));
+  res.setHeader('X-Has-More', String((lists as { hasMore?: boolean }).hasMore === true));
+  res.json(lists);
 }));
 router.post('/price-lists', requireWritable, wrap(async (req, res) => {
   const input = parse(priceListSchema, req.body);

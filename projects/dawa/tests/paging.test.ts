@@ -78,6 +78,7 @@ describe.runIf(on)('every list pages, says whether there is more, and never sile
     const list = (await post(t.owner.auth, '/v1/price-lists', { name: 'Staff' })).body;
     for (const p of products) expect((await put(t.owner.auth, `/v1/price-lists/${list.id}/items`, { productId: p, priceCents: 4000 })).status).toBe(200);
     await walk(t.owner.auth, `/v1/price-lists/${list.id}/items`, 5, (i) => i.productId);
+    expect((await get(t.owner.auth, '/v1/price-lists')).headers['x-has-more']).toBe('false');
     expect((await get(t.owner.auth, '/v1/price-lists')).body[0]).toMatchObject({ name: 'Staff', itemCount: 5 });
 
     for (let i = 0; i < 5; i += 1) expect((await post(t.owner.auth, '/v1/purchase-orders', { supplierId: suppliers[0], lines: [{ productId: products[i], qty: 1 }] })).status).toBe(201);

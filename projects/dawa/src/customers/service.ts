@@ -135,14 +135,18 @@ export async function setPriceListItem(client: PoolClient, ctx: Ctx, priceListId
   return { priceListId, productId: input.productId, priceCents: input.priceCents };
 }
 
-export async function listPriceLists(client: PoolClient) {
+/** How many price lists one request returns; the route says when there were more (X-Has-More). */
+export const PRICE_LIST_LIMIT = 200;
+
+export async function listPriceLists(client: PoolClient): Promise<Array<{ id: string; name: string; itemCount: number; customerCount: number }>> {
   // lists only: a list can hold an item per product, so the items are fetched a page at a time (listPriceListItems)
   const lists = (await client.query(
     `SELECT l.id, l.name, (SELECT count(*) FROM price_list_items i WHERE i.price_list_id = l.id)::int AS item_count,
             (SELECT count(*) FROM customers c WHERE c.price_list_id = l.id AND c.active)::int AS customer_count
-       FROM price_lists l ORDER BY l.name, l.id LIMIT 200`
+       FROM price_lists l ORDER BY l.name, l.id LIMIT ${PRICE_LIST_LIMIT + 1}`
   )).rows;
-  return lists.map((l) => ({ id: l.id as string, name: l.name as string, itemCount: l.item_count as number, customerCount: l.customer_count as number }));
+  const out = lists.slice(0, PRICE_LIST_LIMIT).map((l) => ({ id: l.id as string, name: l.name as string, itemCount: l.item_count as number, customerCount: l.customer_count as number }));
+  return Object.assign(out, { hasMore: lists.length > PRICE_LIST_LIMIT });
 }
 
 export async function listPriceListItems(client: PoolClient, priceListId: string, opts: { search?: string; limit?: number; offset?: number } = {}) {

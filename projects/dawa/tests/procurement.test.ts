@@ -222,6 +222,7 @@ describe.runIf(on)('batch recall, quarantine and bulk expiry write-off (real Pos
     expect(summary).toMatchObject({ inDate: 0, held: 5 });
     const alerts = (await get(t.owner.auth, '/v1/stock/alerts')).body;
     expect(alerts.held).toHaveLength(1);
+    expect(alerts.heldTruncated).toBe(false);
     expect(alerts.held[0]).toMatchObject({ batchNo: 'BAD', status: 'recalled' });
     expect((await get(t.owner.auth, '/v1/stock/batches?status=recalled')).body.items).toHaveLength(1);
 

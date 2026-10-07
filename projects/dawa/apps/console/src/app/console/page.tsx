@@ -42,7 +42,7 @@ export default async function Overview() {
         <div className="mt-4"><Notice tone="warn">{unmatched.total} M-Pesa payment{unmatched.total === 1 ? " is" : "s are"} waiting to be matched to a sale. <Link href="/console/mpesa" className="font-medium underline">Match {unmatched.total === 1 ? "it" : "them"}</Link></Notice></div>
       ) : null}
       {alerts && alerts.held.length > 0 ? (
-        <div className="mt-4"><Notice tone="info">{alerts.held.length} batch{alerts.held.length === 1 ? " is" : "es are"} held back (quarantined or recalled) and will not be sold. <Link href="/console/batches?status=recalled" className="font-medium underline">See batches</Link></Notice></div>
+        <div className="mt-4"><Notice tone="info">{alerts.heldTruncated ? `${alerts.held.length}+` : alerts.held.length} batch{alerts.held.length === 1 ? " is" : "es are"} held back (quarantined or recalled) and will not be sold. <Link href="/console/batches?status=recalled" className="font-medium underline">See batches</Link></Notice></div>
       ) : null}
       <div className="mt-5 grid gap-5 lg:grid-cols-2">
         <Card title="Expired and expiring" description="Return to the supplier while you still can, or write off with a reason.">

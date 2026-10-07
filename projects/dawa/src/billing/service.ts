@@ -390,17 +390,20 @@ export async function recordManualPayment(orgId: string, externalRef: string, am
   return withOrg(orgId, (client) => applyPayment(client, orgId, { externalRef, amountCents, payerMsisdn: null, receivedAt, channel: 'manual' }));
 }
 
-export async function listUnmatched(): Promise<Array<{ externalRef: string; reference: string; amountCents: number; payer: string | null; receivedAt: Date; assigned: boolean }>> {
+export const UNMATCHED_LIMIT = 100;
+
+/** Newest first, at most UNMATCHED_LIMIT rows; `truncated` says there were more than that. */
+export async function listUnmatched(): Promise<{ rows: Array<{ externalRef: string; reference: string; amountCents: number; payer: string | null; receivedAt: Date; assigned: boolean }>; truncated: boolean }> {
   return withoutTenant(async (client) => {
-    const { rows } = await client.query('SELECT * FROM unmatched_billing_payments ORDER BY received_at DESC LIMIT 100');
-    return rows.map((row) => ({
+    const { rows } = await client.query('SELECT * FROM unmatched_billing_payments ORDER BY received_at DESC LIMIT ' + (UNMATCHED_LIMIT + 1));
+    return { truncated: rows.length > UNMATCHED_LIMIT, rows: rows.slice(0, UNMATCHED_LIMIT).map((row) => ({
       externalRef: row.external_ref,
       reference: row.reference,
       amountCents: Number(row.amount_cents),
       payer: row.payer_msisdn,
       receivedAt: row.received_at,
       assigned: row.assigned_org !== null
-    }));
+    })) };
   });
 }
 
