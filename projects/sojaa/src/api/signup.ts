@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import { z } from 'zod';
+import { limiterStore } from '../ratelimit/store';
 import { BadRequestError } from '../domain/errors';
 import { resendCode, startSignup, verifySignup } from '../signup/service';
 
@@ -27,10 +28,11 @@ const resendSchema = z.object({ id: z.string().uuid() });
  * signups for the whole product. The limits are per phone number (start) and per signup request (verify, resend), which is
  * what actually stops guessing codes or flooding one person's phone; the service enforces its own per-phone ceilings too.
  */
-const keyed = (windowMs: number, limit: number, key: (body: Record<string, unknown>) => string) =>
+const keyed = (scope: string, windowMs: number, limit: number, key: (body: Record<string, unknown>) => string) =>
   rateLimit({
     windowMs,
     limit,
+    store: limiterStore(`signup-${scope}`),
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => key((req.body ?? {}) as Record<string, unknown>) || ipKeyGenerator(req.ip ?? 'unknown'),
@@ -43,9 +45,9 @@ const phoneKey = (body: Record<string, unknown>) => {
 };
 const idKey = (body: Record<string, unknown>) => (typeof body.id === 'string' ? `signup:${body.id}` : '');
 
-const startLimiter = keyed(60 * 60 * 1000, 5, phoneKey);
-const verifyLimiter = keyed(15 * 60 * 1000, 20, idKey);
-const resendLimiter = keyed(60 * 60 * 1000, 10, idKey);
+const startLimiter = keyed('start', 60 * 60 * 1000, 5, phoneKey);
+const verifyLimiter = keyed('verify', 15 * 60 * 1000, 20, idKey);
+const resendLimiter = keyed('resend', 60 * 60 * 1000, 10, idKey);
 
 router.post('/signup', startLimiter, async (req, res, next) => {
   try {

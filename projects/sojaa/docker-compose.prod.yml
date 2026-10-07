@@ -21,6 +21,7 @@ services:
       BILLING_MODE: live
       BILLING_ALLOW_MOCK_IN_PRODUCTION: "false"
       BILLING_SHORTCODE: ${BILLING_SHORTCODE:?BILLING_SHORTCODE is required for live billing}
+      REDIS_URL: redis://:${REDIS_PASSWORD:?REDIS_PASSWORD must be set}@redis:6379
       SIGNUP_RESEND_COOLDOWN_SECONDS: ${SIGNUP_RESEND_COOLDOWN_SECONDS:-60}
       DATABASE_SSL: ${DATABASE_SSL:-false}
       NOTIFY_PROVIDER: ${NOTIFY_PROVIDER:-mock}
@@ -28,6 +29,23 @@ services:
       AT_API_KEY: ${AT_API_KEY:-}
       AT_SENDER_ID: ${AT_SENDER_ID:-}
     logging: *rotate
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # holds the rate-limit counters so N API replicas share one limit; counters only, so no persistence
+  redis:
+    image: redis:7-alpine
+    restart: always
+    logging: *rotate
+    command: ["redis-server", "--save", "", "--appendonly", "no", "--requirepass", "${REDIS_PASSWORD}"]
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
 
   console:
     restart: always

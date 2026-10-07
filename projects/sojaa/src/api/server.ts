@@ -4,6 +4,7 @@ import { logger } from '../common/logger';
 import { assertRlsIsEffective, closePool, pool } from '../persistence/pool';
 import { runBillingCycle } from '../billing/service';
 import { purgeThrottle } from './throttle';
+import { closeRedis, warnIfRateLimitsAreLocal } from '../ratelimit/store';
 import { dispatchAllOutboxes } from '../ops/expiries';
 
 async function main(): Promise<void> {
@@ -11,6 +12,7 @@ async function main(): Promise<void> {
   await pool.query('SELECT 1');
   await assertRlsIsEffective();
   logger.info('database reachable');
+  warnIfRateLimitsAreLocal();
 
   const server = createApiApp().listen(env.API_PORT, () => {
     logger.info('api listening', { port: env.API_PORT, environment: env.NODE_ENV });
@@ -44,6 +46,7 @@ async function main(): Promise<void> {
     const forced = setTimeout(() => process.exit(1), env.SHUTDOWN_GRACE_MS);
     forced.unref();
     server.close(async () => {
+      closeRedis();
       await closePool().catch(() => undefined);
       process.exit(0);
     });

@@ -18,6 +18,7 @@ import signupRoutes from './signup';
 import billingRoutes from './billing';
 import leaveRoutes from './leave';
 import expiryRoutes from './expiries';
+import { limiterStore } from '../ratelimit/store';
 
 export function createApiApp(): Express {
   const app = express();
@@ -65,6 +66,7 @@ export function createApiApp(): Express {
     rateLimit({
       windowMs: 60_000,
       limit: env.API_RATE_LIMIT_PER_MINUTE,
+      store: limiterStore('api'),
       standardHeaders: true,
       legacyHeaders: false,
       keyGenerator: (req) => {

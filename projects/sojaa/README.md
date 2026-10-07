@@ -50,7 +50,7 @@ Sign up at `/signup` (tick the sample box to look around first); read the code w
 ```
 docker run -d --name sojaa-pg -e POSTGRES_USER=sojaa -e POSTGRES_PASSWORD=ownerpw -e POSTGRES_DB=sojaa_test -p 55442:5432 postgres:16-alpine
 source scripts/test-env.sh
-npm run migrate && npx vitest run            # 193 tests (2026-10-06); integration tests need SOJAA_INTEGRATION=1
+npm run migrate && npx vitest run            # 193 tests without Redis, 197 with REDIS_TEST_URL set (2026-10-07); integration tests need SOJAA_INTEGRATION=1
 node scripts/isolation-check.mjs             # against a running stack: 22 live two-firm checks
 npm i --no-save puppeteer-core && node scripts/console-check.mjs   # 91 headless-Chrome checks; leaves firms behind, use a throwaway stack
 ```

@@ -30,6 +30,8 @@ const schema = z.object({
   // The M-Pesa confirmation URL registered with Safaricom carries this secret as a path segment. It is
   // our own authentication, not something Daraja signs: no Daraja signature scheme is assumed anywhere.
   MPESA_CALLBACK_SECRET: z.string().min(16, 'MPESA_CALLBACK_SECRET must be at least 16 characters'),
+  // Without REDIS_URL each API process counts the general and signup limits on its own, so N replicas allow N times the limit.
+  REDIS_URL: z.preprocess(blankIsUnset, z.string().url().optional()),
   API_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(240),
   LOGIN_RATE_LIMIT_PER_WINDOW: z.coerce.number().int().positive().default(5),
   LOGIN_RATE_LIMIT_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),

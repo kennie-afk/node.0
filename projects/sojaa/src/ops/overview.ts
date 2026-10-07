@@ -52,9 +52,11 @@ async function overviewUncached(client: PoolClient, ctx: Ctx) {
   }
   if (can(ctx.role, 'salary_view') && !ctx.branchId) {
     const month = today.slice(0, 7);
-    const computed = await computeMonth(client, ctx, month);
-    const s = summarise(computed.rows);
-    out.payroll = { month, ...s, tables: tablesReady(computed.tables), unresolvedShifts: computed.unresolvedShifts };
+    // the full-month compute is the costly part, so it is cached once per firm and month rather than once per role's dashboard
+    out.payroll = await cached(`${ctx.orgId}|payroll-summary|${month}`, async () => {
+      const computed = await computeMonth(client, ctx, month);
+      return { month, ...summarise(computed.rows), tables: tablesReady(computed.tables), unresolvedShifts: computed.unresolvedShifts };
+    });
     const d = await debtorsSummary(client);
     out.debtors = { totalCents: d.totalCents, overdueCents: d.totalCents - d.totals.not_due!, clients: d.clients };
   }
