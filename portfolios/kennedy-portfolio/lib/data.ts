@@ -468,6 +468,26 @@ export const projects = [
     image: "/images/sojaa.jpg",
     github: "https://github.com/kennie-afk/node.0/tree/main/projects/sojaa",
   },
+  {
+    id: 13,
+    slug: "hati",
+    lang: "TypeScript",
+    tests: "589",
+    domain: "Land title checks",
+    title: "Hati",
+    subtitle: "Land-title checks for people buying land in Kenya",
+    scale: "TypeScript · 160 sources",
+    description:
+      "A guided check for a buyer who has met a seller. The buyer runs the official search themselves; Hati reads the certificate (a PDF text layer is pre-filled and every value must be confirmed before anything is saved), compares it with the seller's claim and the title deed, applies a rule engine with a plain next step on every warning, and issues a hash-chained report that a lawyer, bank or SACCO can verify on a public page without seeing any personal data. A cross-customer signal counts how many different sellers a plot has been checked against, counts only. Maps use key-free Google Maps links and say plainly that a pin is not the registered boundary. Also reads a title deed from a PDF or phone photo with self-hosted OCR (nothing leaves the server; every value confirmed by the user), and carries a switched-off registry provider layer: sandbox provider with invented data that can never be issued as a report, a config-driven HTTP provider whose mapper is deliberately unwritten, a double-entry fee ledger with provisional fees, settlement and reconciliation, and a partner API with hashed keys, signed webhooks and OpenAPI 3.1. Not connected to Ardhisasa or any registry and cannot confirm ownership; OCR accuracy is measured only on synthetic deeds and is untested on real ones; all fees are unconfirmed; no data-protection review has been done. Pre-revenue; no customer uses it.",
+    metrics: [
+      { value: "589", label: "tests, passing" },
+      { value: "834", label: "browser checks" },
+      { value: "36", label: "live isolation checks" },
+    ],
+    tech: ["TypeScript", "Express", "PostgreSQL", "Zod", "Row-level security", "Next.js"],
+    image: "/images/hati.jpg",
+    github: "https://github.com/kennie-afk/node.0/tree/main/projects/hati",
+  },
 ];
 
 // icon is a Simple Icons slug (rendered via Iconify) for real, named tools and
