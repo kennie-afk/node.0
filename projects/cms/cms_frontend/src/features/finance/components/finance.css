@@ -68,7 +68,7 @@
 .roles-list { list-style: none; margin: 0; padding: 0; }
 .roles-list li { display: flex; align-items: center; gap: 8px; padding: 0 12px 0 0; border-bottom: 1px solid var(--ui-border); }
 .roles-list li.is-active { background: var(--ui-accent-soft); }
-.roles-pick { flex: 1; text-align: left; background: none; border: 0; color: inherit; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 2px; font: inherit; }
+.roles-pick { flex: 1; text-align: left; background: none; border: 0; color: inherit; padding: 6px 10px; cursor: pointer; display: flex; flex-direction: column; gap: 1px; font: inherit; }
 .roles-name { font-weight: 600; }
 .roles-meta { font-size: var(--fs-xs); color: var(--ui-muted); }
 .roles-perms { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
@@ -78,3 +78,12 @@
 .roles-perms label.is-muted { opacity: 0.5; cursor: not-allowed; }
 .roles-perms label span { display: flex; flex-direction: column; min-width: 0; }
 .roles-perms label em { font-style: normal; font-size: var(--fs-xs); color: var(--ui-muted); }
+
+/* On paper the receipt is real-sized again. */
+@media print {
+  .receipt-church { font-size: 20px; }
+  .receipt-no { font-size: 14px; }
+  .receipt-rows > div { font-size: 12px; }
+  .receipt-amount { font-size: 24px; }
+  .receipt-words { font-size: 11px; }
+}

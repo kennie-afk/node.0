@@ -20,8 +20,8 @@
   --c-ink: #111827;
   --c-text: #111827;
   --c-text-2: #4b5563;
-  --c-muted: #6b7280;
-  --c-faint: #9ca3af;
+  --c-muted: #5b6472;
+  --c-faint: #6b7280;
   /* The brand scale: SmartRE's gold-50..900 steps, in the CMS blue. 500 carries white text at 8:1. */
   --c-brand-50: #eef4fb;
   --c-brand-100: #dce8f6;
@@ -40,8 +40,8 @@
   --c-ok-rgb: 4, 120, 87;
   --c-warn: #b45309;
   --c-warn-rgb: 180, 83, 9;
-  --c-bad: #dc2626;
-  --c-bad-rgb: 220, 38, 38;
+  --c-bad: #c62828;
+  --c-bad-rgb: 198, 40, 40;
   --c-info: #0f766e;
   --c-info-rgb: 15, 118, 110;
   --c-ok-bg: #ecfdf5;
@@ -65,8 +65,8 @@
   --c-ink: #f9fafb;
   --c-text: #f3f4f6;
   --c-text-2: #d1d5db;
-  --c-muted: #9ca3af;
-  --c-faint: #6b7280;
+  --c-muted: #a3aebd;
+  --c-faint: #8b97a8;
   --c-brand-50: rgba(98, 160, 221, 0.1);
   --c-brand-100: rgba(98, 160, 221, 0.18);
   --c-brand-300: rgba(98, 160, 221, 0.4);

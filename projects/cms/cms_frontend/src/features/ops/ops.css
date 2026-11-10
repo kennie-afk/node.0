@@ -26,17 +26,17 @@
 /* Check-in station: bigger targets for a tablet */
 .ops-station { display: grid; gap: 12px; grid-template-columns: minmax(0, 3fr) minmax(240px, 2fr); align-items: start; }
 @media (max-width: 900px) { .ops-station { grid-template-columns: 1fr; } }
-.ops-big-input .ui-input { font-size: var(--fs-2xl, 24px); padding: 12px; }
-.ops-tap { display: flex; width: 100%; text-align: left; gap: 10px; align-items: center; justify-content: space-between; padding: 12px; min-height: 52px; border: 1px solid var(--ui-border, var(--c-border)); border-radius: var(--ui-radius, 8px); background: transparent; color: inherit; cursor: pointer; font: inherit; }
+.ops-big-input .ui-input { font-size: var(--fs-lg, 13px); padding: 6px 8px; }
+.ops-tap { display: flex; width: 100%; text-align: left; gap: 10px; align-items: center; justify-content: space-between; padding: 8px 10px; min-height: 40px; border: 1px solid var(--ui-border, var(--c-border)); border-radius: var(--ui-radius, 8px); background: transparent; color: inherit; cursor: pointer; font: inherit; }
 .ops-tap:hover { border-color: var(--ui-accent, var(--c-accent)); background: var(--ui-raised, rgba(var(--c-accent-rgb), .06)); }
 .ops-tap[aria-pressed='true'] { border-color: var(--ui-accent, var(--c-accent)); }
 .ops-tap[disabled] { opacity: .5; cursor: not-allowed; }
 .ops-alert-allergy { background: var(--ui-bad, #ef4444); color: #fff; padding: 6px 10px; border-radius: var(--ui-radius, 8px); font-weight: 600; font-size: var(--fs-lg, 15px); }
-.ops-codebox { font-size: 34px; letter-spacing: .3em; font-weight: 700; text-align: center; padding: 10px 0; border: 1px dashed var(--ui-border-strong, var(--c-border-strong)); border-radius: var(--ui-radius, 8px); }
+.ops-codebox { font-size: 13px; letter-spacing: .3em; font-weight: 700; text-align: center; padding: 10px 0; border: 1px dashed var(--ui-border-strong, var(--c-border-strong)); border-radius: var(--ui-radius, 8px); }
 .ops-label { border: 1px solid var(--ui-border-strong, var(--c-border-strong)); border-radius: var(--ui-radius, 8px); padding: 14px; max-width: 320px; display: flex; flex-direction: column; gap: 8px; }
 .ops-label h2 { margin: 0; font-size: var(--fs-2xl, 24px); }
-.ops-label-tag { font-size: 38px; font-weight: 700; text-align: center; letter-spacing: .1em; }
-.ops-code-input { font-size: 28px; letter-spacing: .4em; text-align: center; font-variant-numeric: tabular-nums; }
+.ops-label-tag { font-size: 13px; font-weight: 700; text-align: center; letter-spacing: .1em; }
+.ops-code-input { font-size: 13px; letter-spacing: .4em; text-align: center; font-variant-numeric: tabular-nums; }
 
 /* Week grid */
 .ops-week { display: grid; grid-template-columns: 44px repeat(7, minmax(0, 1fr)); border: 1px solid var(--ui-border, var(--c-border)); border-radius: var(--ui-radius, 8px); overflow: hidden; font-size: var(--fs-2xs, 12px); }
