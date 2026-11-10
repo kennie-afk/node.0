@@ -1,41 +1,27 @@
 :root {
+  /* Legacy aliases still read by a few older screens. */
   --primary: var(--c-accent);
   --primary-hover: var(--c-accent-hover);
   --primary-light: rgba(var(--c-accent-rgb), 0.1);
-  --aqua: #22d3ee;
-  --aqua-hover: #06b6d4;
-  --aqua-glow: rgba(34, 211, 238, 0.35);
-
   --background: var(--c-bg);
   --background-dark: var(--c-bg);
   --card-bg: var(--c-surface);
-  --sidebar-bg: var(--c-surface);
-  --hover-bg: rgba(var(--c-accent-rgb), 0.08);
-
+  --sidebar-bg: var(--c-chrome);
+  --hover-bg: var(--c-hover);
   --text-primary: var(--c-text);
   --text-secondary: var(--c-text-2);
   --text-muted: var(--c-muted);
-
   --border-light: var(--c-border);
   --border-medium: var(--c-border-strong);
-
   --success: var(--c-ok);
-  --success-dark: #22c55e;
   --error: var(--c-bad);
-  --error-dark: #ef4444;
   --warning: var(--c-warn);
-
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 10px;
-  --radius-xl: 12px;
-
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 8px;
   --shadow-sm: none;
   --shadow-md: none;
-  --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.18);
+  --shadow-lg: none;
   --shadow-glow: none;
-
-  --transition-fast: 0.15s ease;
-  --transition-normal: 0.2s ease;
-  --transition-slow: 0.3s ease;
 }

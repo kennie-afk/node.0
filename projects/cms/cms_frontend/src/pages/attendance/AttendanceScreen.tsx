@@ -1,5 +1,5 @@
 import { useCallback, useState, type FormEvent } from 'react';
-import { Badge, Button, Card, Combobox, DataTable, Field, FilterBar, InlineConfirm, Input, PageHeader, LoadMore, SearchInput, Select, Textarea, formatDate, formatDateTime, todayISO, useKeysetList, useToast, type ComboOption } from '../../ui';
+import { Badge, Button, Card, Combobox, DataTable, Field, FilterBar, InlineConfirm, Input, PageHeader, LoadMore, SearchInput, Select, Textarea, formatDate, formatDateTime, todayISO, useKeysetList, useQuery, useToast, type ComboOption } from '../../ui';
 import { http, normalizeError, type ApiError } from '../../api/http';
 import { useAuth } from '../../context/auth-context';
 import { createAttendance, deleteAttendance, updateAttendance, type Attendance, type AttendanceType } from '../../api/attendanceApi';
@@ -217,12 +217,12 @@ export default function AttendanceScreen({ kind }: { kind: AttendanceKind }) {
         <SearchInput onSearch={onSearch} placeholder={copy.search} />
         {kind !== 'sermon' && (
           <div className="ui-field">
-            <Combobox search={searchEvents} value={eventFilter} onChange={(o) => { setEventFilter(o); setPage(1); }} placeholder="Filter by event" />
+            <Combobox search={searchEvents} value={eventFilter} onChange={(o) => { setEventFilter(o); }} placeholder="Filter by event" />
           </div>
         )}
         {kind !== 'event' && (
           <div className="ui-field">
-            <Combobox search={searchSermons} value={sermonFilter} onChange={(o) => { setSermonFilter(o); setPage(1); }} placeholder="Filter by sermon" />
+            <Combobox search={searchSermons} value={sermonFilter} onChange={(o) => { setSermonFilter(o); }} placeholder="Filter by sermon" />
           </div>
         )}
       </FilterBar>

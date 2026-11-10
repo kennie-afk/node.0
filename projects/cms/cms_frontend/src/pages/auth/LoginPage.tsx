@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { describeError } from '../../api/errors';
 import { ThemeSwitch } from '../../ui/ThemeSwitch';
 import { usePublicRoles } from '../../api/rolesApi';
-import { BookOpen, Church, HandCoins, Users } from 'lucide-react';
+import { Church } from 'lucide-react';
 
 // Demo sign-in picker: fills in the seeded demo account for a role. It is not a bypass, the
 // password is still checked by the API. Compiled out unless the image is built with
@@ -46,31 +46,18 @@ export default function LoginPage() {
 
   return (
     <div className="login">
-      <aside className="login-panel">
-        <div className="login-brand">
-          <span className="ui-brand-mark"><Church size={20} aria-hidden /></span>
-          <span className="ui-side-title">Church CMS</span>
-        </div>
-        <div>
-          <h1 className="login-headline">One quiet place for the whole life of the church.</h1>
-          <p className="login-lede">Members, giving, the books, payroll and care, each with the access its role needs and nothing more.</p>
-          <ul className="login-points">
-            <li><Users size={18} aria-hidden /> People, families and ministries</li>
-            <li><HandCoins size={18} aria-hidden /> Giving, receipts and M-Pesa</li>
-            <li><BookOpen size={18} aria-hidden /> Ledger, bills and statements</li>
-          </ul>
-        </div>
-        <p className="login-foot">Every action is recorded against a named person.</p>
-      </aside>
-
       <main className="login-form-side">
-        <div className="login-theme"><ThemeSwitch label className="ui-btn is-secondary is-sm" /></div>
-        <div className="login-card">
-          <h2 className="login-title">Sign in</h2>
+        <div className="login-theme"><ThemeSwitch className="ui-btn is-ghost ui-icon-btn" /></div>
+        <div className="login-brand">
+          <span className="ui-brand-mark"><Church size={26} aria-hidden /></span>
+          <span className="ui-side-title">Church <b>CMS</b></span>
+        </div>
+        <div className="ui-card login-card" style={{ padding: 16 }}>
+          <h1 className="login-title">Sign in</h1>
           <p className="login-sub">Use the account your church administrator created for you.</p>
 
           {DEMO_LOGINS && (
-            <div className="ui-field" style={{ marginBottom: 20 }}>
+            <div className="ui-field" style={{ marginBottom: 16 }}>
               <label htmlFor="demo-role" className="ui-label">Sign in as</label>
               <select
                 id="demo-role"
@@ -92,7 +79,7 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="ui-stack" style={{ gap: 18 }}>
+          <form onSubmit={handleSubmit} className="ui-stack" style={{ gap: 12 }}>
             <div className="ui-field">
               <label htmlFor="login-email" className="ui-label">Email address</label>
               <input id="login-email" className="ui-input" type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -104,7 +91,7 @@ export default function LoginPage() {
 
             {error && <p className="ui-error-text" role="alert" style={{ margin: 0, fontSize: 'var(--fs-sm)' }}>{error}</p>}
 
-            <button type="submit" disabled={loading} className="ui-btn is-primary" style={{ width: '100%', padding: '9px 14px', fontSize: 'var(--fs-sm)' }}>
+            <button type="submit" disabled={loading} className="ui-btn is-primary" style={{ width: '100%' }}>
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>

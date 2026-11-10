@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronDown, ChevronLeft, ChevronRight, Church, LogOut, Menu, X } from 'lucide-react';
+import { ChevronDown, ChevronsLeft, ChevronsRight, Church, LogOut, Menu, User, X } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { navFor } from '../../nav/registry';
 import type { NavGroup } from '../../nav/types';
@@ -63,38 +63,27 @@ export default function DashboardLayout() {
   }, [drawerOpen]);
 
   const showSidebar = !mobile || drawerOpen;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const initials = (email ?? '?').slice(0, 2).toUpperCase();
 
   return (
     <ToastProvider>
-      <div className={cx('ui-shell', mobile && 'is-mobile')}>
-        {mobile && (
-          <div className="ui-topbar">
-            <button type="button" className="ui-btn is-ghost is-sm" aria-label={drawerOpen ? 'Close menu' : 'Open menu'} aria-expanded={drawerOpen} onClick={() => setDrawerOpen((open) => !open)}>
-              {drawerOpen ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
-            </button>
-            <span className="ui-brand-mark" style={{ width: 30, height: 30, borderRadius: 8 }}><Church size={17} aria-hidden /></span>
-            <strong>Church CMS</strong>
-          </div>
-        )}
-
+      <div className={cx('ui-shell', railMode && 'is-rail', mobile && 'is-mobile')}>
         {showSidebar && (
           <aside className={cx('ui-side', railMode && 'is-rail', mobile && 'is-drawer')}>
-            <div className="ui-side-head" style={railMode ? { justifyContent: 'center', padding: '16px 0' } : undefined}>
-              {!railMode && <span className="ui-brand-mark"><Church size={20} aria-hidden /></span>}
-              {!railMode && <span className="ui-side-title">Church CMS<span className="ui-side-sub">Console</span></span>}
-              {!mobile && (
-                <button type="button" className="ui-btn is-ghost is-sm" aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => setRail((value) => !value)} style={railMode ? { display: 'none' } : undefined}>
-                  <ChevronLeft size={16} aria-hidden />
+            <div className="ui-side-head">
+              <span className="ui-brand">
+                <span className="ui-brand-mark"><Church size={26} aria-hidden /></span>
+                {!railMode && <span className="ui-side-title">Church <b>CMS</b></span>}
+              </span>
+              {mobile && (
+                <button type="button" className="ui-btn is-ghost is-sm" aria-label="Close menu" onClick={() => setDrawerOpen(false)}>
+                  <X size={16} aria-hidden />
                 </button>
               )}
             </div>
 
             <nav className="ui-side-nav" aria-label="Main navigation">
-              {railMode && (
-                <button type="button" className="ui-nav-item" aria-label="Expand sidebar" title="Expand sidebar" onClick={() => setRail(false)} style={{ width: '100%', background: 'none', cursor: 'pointer' }}>
-                  <ChevronRight size={17} aria-hidden />
-                </button>
-              )}
               {groups.map((group, index) => {
                 const isClosed = !railMode && closed[group.id];
                 return (
@@ -109,7 +98,7 @@ export default function DashboardLayout() {
                         onClick={() => setClosed((state) => ({ ...state, [group.id]: !state[group.id] }))}
                       >
                         {group.label}
-                        <ChevronDown size={14} aria-hidden style={{ transform: isClosed ? 'rotate(-90deg)' : undefined }} />
+                        <ChevronDown size={13} aria-hidden style={{ transform: isClosed ? 'rotate(-90deg)' : undefined }} />
                       </button>
                     )}
                     {!isClosed &&
@@ -122,7 +111,7 @@ export default function DashboardLayout() {
                           aria-label={railMode ? item.label : undefined}
                           className={({ isActive }) => cx('ui-nav-item', isActive && 'is-active')}
                         >
-                          <item.icon size={18} aria-hidden />
+                          <item.icon size={17} aria-hidden />
                           {!railMode && <span>{item.label}</span>}
                         </NavLink>
                       ))}
@@ -131,37 +120,73 @@ export default function DashboardLayout() {
               })}
             </nav>
 
-            <div className="ui-side-foot">
-              {!railMode && (
-                <div>
-                  <div className="ui-who" title={email ?? undefined}>{email ?? 'Signed in'}</div>
-                  <Badge tone="accent">{roleLabel}</Badge>
-                </div>
-              )}
-              <div className="ui-foot-actions" style={railMode ? { flexDirection: 'column' } : undefined}>
-              <ThemeSwitch label={!railMode} className="ui-btn is-secondary is-sm" />
-              <button
-                type="button"
-                className="ui-btn is-secondary is-sm"
-                aria-label="Log out"
-                title="Log out"
-                onClick={() => {
-                  logout();
-                  navigate('/login');
-                }}
-              >
-                <LogOut size={15} aria-hidden />
-                {!railMode && 'Log out'}
+            {!mobile && (
+              <button type="button" className="ui-side-collapse" aria-label={rail ? 'Expand sidebar' : 'Collapse sidebar'} onClick={() => setRail((value) => !value)}>
+                {rail ? <ChevronsRight size={16} aria-hidden /> : <><ChevronsLeft size={16} aria-hidden />Collapse</>}
               </button>
+            )}
+
+            <div className="ui-side-foot">
+              <div className="ui-who-row">
+                <span className="ui-avatar" aria-hidden="true">{initials}</span>
+                {!railMode && (
+                  <div style={{ minWidth: 0 }}>
+                    <div className="ui-who" title={email ?? undefined}>{email ?? 'Signed in'}</div>
+                    <div className="ui-who-role">{roleLabel}</div>
+                  </div>
+                )}
               </div>
             </div>
           </aside>
         )}
 
+        <header className="ui-topbar">
+          {mobile && (
+            <button type="button" className="ui-btn is-ghost ui-icon-btn" aria-label={drawerOpen ? 'Close menu' : 'Open menu'} aria-expanded={drawerOpen} onClick={() => setDrawerOpen((open) => !open)}>
+              <Menu size={18} aria-hidden />
+            </button>
+          )}
+          <div className="ui-topbar-spacer" />
+          <ThemeSwitch className="ui-btn is-ghost ui-icon-btn" />
+          <div className="ui-usermenu">
+            <button type="button" className="ui-usermenu-btn" aria-haspopup="menu" aria-expanded={menuOpen} aria-label="Account menu" onClick={() => setMenuOpen((open) => !open)}>
+              <span className="ui-avatar" aria-hidden="true">{initials}</span>
+              <ChevronDown size={13} aria-hidden />
+            </button>
+            {menuOpen && (
+              <>
+                <div className="ui-usermenu-scrim" onClick={() => setMenuOpen(false)} />
+                <div className="ui-usermenu-panel" role="menu">
+                  <div className="ui-usermenu-head">
+                    <div className="ui-who" title={email ?? undefined}>{email ?? 'Signed in'}</div>
+                    <Badge tone="accent">{roleLabel}</Badge>
+                  </div>
+                  <button type="button" role="menuitem" className="ui-usermenu-item" onClick={() => { setMenuOpen(false); navigate('/me'); }}>
+                    <User size={14} aria-hidden />My account
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="ui-usermenu-item is-danger"
+                    onClick={() => {
+                      logout();
+                      navigate('/login');
+                    }}
+                  >
+                    <LogOut size={14} aria-hidden />Log out
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </header>
+
         <main className="ui-main" id="main">
-          <Suspense fallback={<PageLoader />}>
-            <Outlet />
-          </Suspense>
+          <div className="ui-main-in">
+            <Suspense fallback={<PageLoader />}>
+              <Outlet />
+            </Suspense>
+          </div>
         </main>
 
         {mobile && drawerOpen && <div className="ui-scrim" onClick={() => setDrawerOpen(false)} aria-hidden="true" />}

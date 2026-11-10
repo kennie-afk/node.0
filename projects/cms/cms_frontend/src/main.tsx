@@ -5,7 +5,8 @@ import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 
 
-import '@fontsource-variable/space-grotesk';
+import '@fontsource-variable/manrope';
+import '@fontsource-variable/fraunces';
 
 import './styles/theme.css';
 import './styles/variables.css';

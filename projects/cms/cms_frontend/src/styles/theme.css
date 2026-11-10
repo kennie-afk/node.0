@@ -1,38 +1,83 @@
 /*
- * One palette, two themes. Everything in the app reads these tokens; nothing should hard-code a
- * colour. Light is the working theme; Dark is the default for first-time visitors until they
- * choose. `data-theme="light"` on <html> (set by the theme switch, restored before first paint
- * by /theme-init.js) swaps the whole set. See ../../DESIGN.md.
+ * One palette, two themes, mirroring SmartRE's: pure white surfaces with gray-50 chrome, gray-200
+ * hairlines, gray-900 ink; dark mode is a deep surface set with the same structure. The only
+ * thing that differs from SmartRE is colour: its gold scale is replaced by the CMS blue.
+ * `data-theme="dark"` on <html> (set by the theme switch, restored before first paint by
+ * /theme-init.js) swaps the set; with no saved choice the operating system's preference wins,
+ * as in SmartRE. Nothing in the app hard-codes a colour.
  */
 :root {
+  color-scheme: light;
+  --c-bg: #ffffff;
+  --c-surface: #ffffff;
+  --c-chrome: #f9fafb;          /* SmartRE surface-2: sidebar */
+  --c-raised: #f9fafb;
+  --c-input: #ffffff;
+  --c-fill: #f3f4f6;            /* SmartRE surface-3 / gray-100 */
+  --c-fill-strong: #e5e7eb;
+  --c-border: #e5e7eb;
+  --c-border-strong: #e5e7eb;
+  --c-ink: #111827;
+  --c-text: #111827;
+  --c-text-2: #4b5563;
+  --c-muted: #6b7280;
+  --c-faint: #9ca3af;
+  /* The brand scale: SmartRE's gold-50..900 steps, in the CMS blue. 500 carries white text at 8:1. */
+  --c-brand-50: #eef4fb;
+  --c-brand-100: #dce8f6;
+  --c-brand-300: #8fb6e0;
+  --c-brand-400: #5b93cf;
+  --c-brand-500: #0053a3;
+  --c-brand-600: #00498d;
+  --c-brand-700: #02386e;
+  --c-accent: var(--c-brand-500);
+  --c-accent-rgb: 0, 83, 163;
+  --c-accent-hover: var(--c-brand-600);
+  --c-accent-deep: var(--c-brand-700);
+  --c-on-accent: #ffffff;
+  --c-accent-soft: var(--c-brand-50);
+  --c-ok: #047857;
+  --c-ok-rgb: 4, 120, 87;
+  --c-warn: #b45309;
+  --c-warn-rgb: 180, 83, 9;
+  --c-bad: #dc2626;
+  --c-bad-rgb: 220, 38, 38;
+  --c-info: #0f766e;
+  --c-info-rgb: 15, 118, 110;
+  --c-ok-bg: #ecfdf5;
+  --c-bad-bg: #fef2f2;
+  --c-hover: #f3f4f6;
+  --c-scrollbar: #d1d5db;
+  --c-scrim: rgba(0, 0, 0, 0.5);
+}
+
+:root[data-theme='dark'] {
   color-scheme: dark;
-  --c-bg: #01172d;
-  --c-surface: #091b30;
-  --c-raised: #162b44;
-  --c-input: #06203a;
-  --c-fill: #162b44;
-  --c-fill-strong: #284261;
-  --c-border: #1c3250;
-  --c-border-strong: #284261;
-  --c-ink: #eaf1f9;
-  --c-text: #eaf1f9;
-  --c-text-2: #c5d3e5;
-  --c-muted: #87a2c2;
-  --c-faint: #5f7a9b;
-  /* Brand accent: the blue of sovrano.ai. Dark mode uses a lighter step of the same blue so text
-     on navy surfaces keeps 4.5:1 (#62a0dd: 6.3 on surface, 5.2 on raised). */
-  --c-accent: #62a0dd;
+  --c-bg: #0b1320;
+  --c-surface: #0f1a2b;
+  --c-chrome: #122036;
+  --c-raised: #122036;
+  --c-input: #0f1a2b;
+  --c-fill: #172a44;
+  --c-fill-strong: #1f3350;
+  --c-border: #1f3350;
+  --c-border-strong: #1f3350;
+  --c-ink: #f9fafb;
+  --c-text: #f3f4f6;
+  --c-text-2: #d1d5db;
+  --c-muted: #9ca3af;
+  --c-faint: #6b7280;
+  --c-brand-50: rgba(98, 160, 221, 0.1);
+  --c-brand-100: rgba(98, 160, 221, 0.18);
+  --c-brand-300: rgba(98, 160, 221, 0.4);
+  --c-brand-400: #62a0dd;
+  --c-brand-500: #62a0dd;
+  --c-brand-600: #7db3e8;
+  --c-brand-700: #a5cbf0;
   --c-accent-rgb: 98, 160, 221;
-  --c-accent-hover: #7db3e8;
-  --c-accent-deep: #a5cbf0;
-  --c-on-accent: #01172d;
-  --c-accent-soft: rgba(var(--c-accent-rgb), 0.16);
-  --c-glow: #4a83bf;
-  --c-grad-from: #62a0dd;
-  --c-grad-to: #4a83bf;
-  --c-btn-shadow: rgba(0, 0, 0, 0.35);
-  --c-ok: #4ade80;
-  --c-ok-rgb: 74, 222, 128;
+  --c-on-accent: #0b1320;
+  --c-ok: #34d399;
+  --c-ok-rgb: 52, 211, 153;
   --c-warn: #fbbf24;
   --c-warn-rgb: 251, 191, 36;
   --c-bad: #f87171;
@@ -41,45 +86,7 @@
   --c-info-rgb: 90, 209, 196;
   --c-ok-bg: #12301f;
   --c-bad-bg: #3a1c24;
+  --c-hover: #172a44;
   --c-scrollbar: #284261;
-  --c-scrim: rgba(1, 23, 45, 0.7);
-}
-
-:root[data-theme='light'] {
-  color-scheme: light;
-  --c-bg: #ffffff;
-  --c-surface: #ffffff;
-  --c-raised: #f7faff;
-  --c-input: #ffffff;
-  --c-fill: #eff4fb;
-  --c-fill-strong: #dfe8f3;
-  --c-border: #dfe8f3;
-  --c-border-strong: #cfdcec;
-  --c-ink: #091b30;
-  --c-text: #162b44;
-  --c-text-2: #284261;
-  --c-muted: #52708f;
-  --c-faint: #87a2c2;
-  --c-accent: #0053a3;
-  --c-accent-rgb: 0, 83, 163;
-  --c-accent-hover: #00498d;
-  --c-accent-deep: #02386e;
-  --c-on-accent: #ffffff;
-  --c-accent-soft: rgba(var(--c-accent-rgb), 0.07);
-  --c-glow: #0053a3;
-  --c-grad-from: #0053a3;
-  --c-grad-to: #02386e;
-  --c-btn-shadow: rgba(0, 83, 163, 0.25);
-  --c-ok: #15803d;
-  --c-ok-rgb: 21, 128, 61;
-  --c-warn: #a15c07;
-  --c-warn-rgb: 180, 105, 9;
-  --c-bad: #b91c1c;
-  --c-bad-rgb: 185, 28, 28;
-  --c-info: #0f766e;
-  --c-info-rgb: 15, 118, 110;
-  --c-ok-bg: #dcfce7;
-  --c-bad-bg: #fee2e2;
-  --c-scrollbar: #cfdcec;
-  --c-scrim: rgba(9, 27, 48, 0.45);
+  --c-scrim: rgba(0, 0, 0, 0.55);
 }

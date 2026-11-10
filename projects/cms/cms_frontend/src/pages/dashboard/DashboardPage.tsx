@@ -25,9 +25,8 @@ export default function DashboardPage() {
   const members = people?.members;
 
   return (
-    <div className="ui-page ui-stack ui-glow">
+    <div className="ui-page ui-stack">
       <PageHeader
-        gradient
         title="Dashboard"
         subtitle={`${formatDate(data.asOf)} · ${name ? `${name}, ` : ''}${roleLabel}`}
         actions={
