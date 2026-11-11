@@ -374,3 +374,32 @@ textarea.ui-input { resize: vertical; height: auto; min-height: 60px; padding: 6
 .login-card { width: 100%; }
 .login-title { font-family: var(--ui-font-head); font-size: var(--fs-lg); font-weight: 600; margin: 0 0 3px; color: var(--c-ink); }
 .login-sub { margin: 0 0 12px; color: var(--ui-muted); font-size: var(--fs-sm); }
+
+/* ---- dashboard only: tighter than the shared kit, at or below SmartRE's dashboard values ---- */
+.ui-page.dash-page { gap: 8px; }
+.dash-page .ui-page-title { font-size: var(--fs-lg); line-height: 16px; }
+.dash-page .ui-page-sub { margin-top: 1px; font-size: var(--fs-xs); }
+.dash-page .ui-actions .ui-btn { height: 22px; padding: 0 7px; font-size: var(--fs-xs); }
+.dash-page .dash-tiles, .dash-page .dash-two, .dash-page .dash-three { gap: 8px; }
+.dash-page .ui-tile { padding: 7px 8px; }
+.dash-page .ui-tile-label { font-size: var(--fs-2xs); line-height: 13px; margin-bottom: 1px; padding-right: 24px; }
+.dash-page .ui-tile-value { font-size: 12px; line-height: 16px; }
+.dash-page .ui-tile-foot { margin-top: 2px; font-size: 9px; line-height: 12px; }
+.dash-page .ui-tile-icon { top: 7px; right: 7px; width: 18px; height: 18px; border-radius: 4px; }
+.dash-page .ui-tile-icon svg { width: 11px; height: 11px; }
+.dash-page .ui-card { padding: 7px 8px; }
+.dash-page .ui-card.is-flush { padding: 0; }
+.dash-page .ui-card-head { margin-bottom: 4px; }
+.dash-page .ui-card.is-flush > .ui-card-head { padding: 5px 8px; margin-bottom: 0; }
+.dash-page .ui-card-title { font-size: var(--fs-sm); line-height: 15px; }
+.dash-page .ui-card-sub { font-size: var(--fs-2xs); margin-top: 0; }
+.dash-page .ui-card-head a { font-size: var(--fs-xs); }
+.dash-page .ui-table th { padding: 4px 8px; font-size: 9px; }
+.dash-page .ui-table td { padding: 3px 8px; font-size: var(--fs-xs); line-height: 15px; }
+.dash-page .dash-list li { padding: 4px 0; font-size: var(--fs-xs); line-height: 15px; }
+.dash-page .dash-list li:first-child { padding-top: 0; }
+.dash-page .dash-list li:last-child { padding-bottom: 0; }
+.dash-page .dash-muted { font-size: var(--fs-xs); }
+.dash-page .ui-chart { max-height: 150px; }
+.dash-page .ui-badge { font-size: 9px; padding: 0 4px; }
+@media (max-width: 720px) { .dash-page .ui-actions .ui-btn { height: 32px; } }
