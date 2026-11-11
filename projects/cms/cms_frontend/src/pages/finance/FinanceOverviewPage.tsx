@@ -12,7 +12,7 @@ export default function FinanceOverviewPage() {
   const { data, error, loading, refetch } = useQuery(() => getDashboard(), []);
 
   return (
-    <div className="ui-page ui-stack">
+    <div className="ui-page ui-stack fin-page">
       <PageHeader
         title="Finance overview"
         subtitle={data ? `${data.fiscalYear.name} · as of ${data.asOf}` : 'Income, cash, bills and budget at a glance'}

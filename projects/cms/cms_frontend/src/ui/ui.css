@@ -403,3 +403,14 @@ textarea.ui-input { resize: vertical; height: auto; min-height: 60px; padding: 6
 .dash-page .ui-chart { max-height: 150px; }
 .dash-page .ui-badge { font-size: 9px; padding: 0 4px; }
 @media (max-width: 720px) { .dash-page .ui-actions .ui-btn { height: 32px; } }
+
+/* ---- finance overview only: same compact stat cards as the dashboard ---- */
+.fin-page .ui-grid { gap: 8px; }
+.fin-page .ui-tile { padding: 5px 7px; }
+.fin-page .ui-tile-label { font-size: 9px; line-height: 12px; margin-bottom: 0; padding-right: 20px; letter-spacing: 0.05em; }
+.fin-page .ui-tile-value { font-size: 10.5px; line-height: 14px; font-weight: 500; letter-spacing: 0; }
+.fin-page .ui-tile-foot { margin-top: 1px; font-size: 8.5px; line-height: 11px; }
+.fin-page .ui-tile-icon { top: 5px; right: 6px; width: 15px; height: 15px; border-radius: 4px; }
+.fin-page .ui-tile-icon svg { width: 9px; height: 9px; }
+.fin-page .ui-grid:has(> .ui-tile) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 900px) { .fin-page .ui-grid:has(> .ui-tile) { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
