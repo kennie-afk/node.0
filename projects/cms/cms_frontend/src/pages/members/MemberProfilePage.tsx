@@ -5,6 +5,7 @@ import { http } from '../../api/http';
 import { useAuth } from '../../context/auth-context';
 import type { MemberProfile } from '../../api/memberApi';
 import { OpsPage } from '../../features/ops/components/OpsPage';
+import { MemberQrCard } from '../../features/qr/MemberQrCard';
 
 /** One view of one person: what the church knows, gives and has done with them. Sections the viewer may not read are absent. */
 export default function MemberProfilePage() {
@@ -80,6 +81,7 @@ export default function MemberProfilePage() {
           )}
         </div>
         <div className="ui-stack">
+          {can('members:write') && <MemberQrCard memberId={m.id} />}
           <Card title="Family">
             {m.family ? <p><strong>{m.family.familyName}</strong></p> : <p className="ops-muted">Not linked to a family.</p>}
             <ul className="ops-list">

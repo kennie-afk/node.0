@@ -45,6 +45,8 @@ function App() {
 
         <Route path="/attendance" element={lazyPage(() => import('./pages/attendance/AttendancePage'), 'members:read')} />
         <Route path="/attendance/event" element={lazyPage(() => import('./pages/attendance/EventAttendancePage'), 'members:read')} />
+        <Route path="/attendance/scan" element={lazyPage(() => import('./pages/attendance/ScanPage'), 'members:write')} />
+        <Route path="/attendance/cards" element={lazyPage(() => import('./pages/attendance/QrCardsPage'), 'members:write')} />
         <Route path="/attendance/sermon" element={lazyPage(() => import('./pages/attendance/SermonAttendancePage'), 'members:read')} />
 
         {financeRoutes}

@@ -23,6 +23,7 @@ import selfserviceRoutes from './selfservice/routes';
 import dataopsRoutes from './dataops/routes';
 import filesRoutes from './files/routes';
 import publicGivingRoutes from './publicgiving/routes';
+import qrAttendanceRoutes from './qrattendance/routes';
 
 export const routeMounts: RouteMount[] = [
   ...financeRoutes,
@@ -44,5 +45,6 @@ export const routeMounts: RouteMount[] = [
   ...selfserviceRoutes,
   ...dataopsRoutes,
   ...filesRoutes,
-  ...publicGivingRoutes
+  ...publicGivingRoutes,
+  ...qrAttendanceRoutes
 ];
